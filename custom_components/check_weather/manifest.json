@@ -1,0 +1,10 @@
+{
+  "domain": "yasno_outages",
+  "name": "Yasno Outages",
+  "codeowners": ["@denysdovhan"],
+  "config_flow": true,
+  "documentation": "https://github.com/denysdovhan/ha-yasno-outages",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/denysdovhan/ha-yasno-outages",
+  "version": "0.0.0-unreleased"
+}

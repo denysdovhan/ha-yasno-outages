@@ -1,0 +1,14 @@
+# Default configuration
+# https://www.home-assistant.io/integrations/default_config/
+default_config:
+
+# Remote Python Debugger
+# https://www.home-assistant.io/integrations/debugpy/
+debugpy:
+
+# Logger
+# https://www.home-assistant.io/integrations/logger/
+logger:
+  default: info
+  logs:
+    custom_components.yasno_outages: debug

@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+"""Update the version in the manifest file."""
+
+import json
+import sys
+from pathlib import Path
+
+MANIFEST = "custom_components/yasno_outages/manifest.json"
+
+
+def main(version: str) -> None:
+    """Update the version in the manifest file."""
+    # Read the manifest file
+    with Path.open(MANIFEST) as file:
+        data = json.load(file)
+
+    # Update the version
+    data["version"] = version.replace("v", "")
+
+    # Write the manifest file
+    with Path.open(MANIFEST, "w") as file:
+        json.dump(data, file, indent=2)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        version = sys.argv[1]
+        main(version)
+    else:
+        print("Please provide a version argument.")  # noqa: T201
