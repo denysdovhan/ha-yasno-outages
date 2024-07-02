@@ -1,0 +1,33 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yason Outages Settings",
+        "description": "Please select your group",
+        "data": {
+          "group": "Select your group"
+        }
+      }
+    }
+  },
+  "entity": {
+    "calendar": {
+      "yasno_outages_calendar": {
+        "state_attributes": {
+          "message": {
+            "state": {
+              "off": "Electricity Outage",
+              "maybe": "Possible Outage"
+            }
+          }
+        }
+      }
+    }
+  },
+  "states": {
+    "yasno_outages_calendar": {
+      "off": "Electricity Outage",
+      "maybe": "Possible Outage"
+    }
+  }
+}

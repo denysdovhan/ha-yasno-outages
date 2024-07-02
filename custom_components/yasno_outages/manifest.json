@@ -6,5 +6,6 @@
   "documentation": "https://github.com/denysdovhan/ha-yasno-outages",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/denysdovhan/ha-yasno-outages",
+  "requirements": ["icalendar>=5.0.12", "recurring_ical_events>=2.2.1"],
   "version": "0.0.0-unreleased"
 }
