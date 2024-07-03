@@ -25,13 +25,13 @@ jobs:
 
       - name: 📦 Create zip package
         working-directory: custom_components/yasno_outages
-        run: zip -r check-weather.zip .
+        run: zip -r yasno-outages.zip .
 
       - name: 📤  Upload zip to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: custom_components/yasno_outages/check-weather.zip
-          asset_name: check-weather.zip
+          file: custom_components/yasno_outages/yasno-outages.zip
+          asset_name: yasno-outages.zip
           tag: ${{ github.ref }}
           overwrite: true
