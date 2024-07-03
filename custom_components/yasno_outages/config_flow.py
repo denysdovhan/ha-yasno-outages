@@ -13,7 +13,7 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 from homeassistant.helpers.selector import selector
 
-from .const import CONF_GROUP, DOMAIN
+from .const import CONF_GROUP, DEFAULT_GROUP, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def build_schema(config_entry: ConfigEntry) -> vol.Schema:
         {
             vol.Required(
                 CONF_GROUP,
-                default=get_config_value(config_entry, CONF_GROUP, "1"),
+                default=get_config_value(config_entry, CONF_GROUP, DEFAULT_GROUP),
             ): selector(
                 {
                     "select": {

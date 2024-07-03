@@ -6,12 +6,13 @@ import logging
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_utils
 
-from .const import ATTR_GROUP, DOMAIN, TRANSLATION_KEY_CALENDAR
+from .const import ATTR_GROUP, DOMAIN
 from .coordinator import YasnoOutagesCoordinator
 
 LOGGER = logging.getLogger(__name__)
@@ -40,8 +41,9 @@ class YasnoOutagesCalendar(CoordinatorEntity[YasnoOutagesCoordinator], CalendarE
         super().__init__(coordinator)
         self.entity_description = EntityDescription(
             key=DOMAIN,
-            name=f"Yasno Outages Group {coordinator.group}",
-            translation_key=TRANSLATION_KEY_CALENDAR,
+            # TODO(denysdovhan): Find a way to translated entity's name
+            name=f"Yasno Group {coordinator.group} Calendar",
+            translation_key="outages_calendar",
         )
         self._attr_unique_id = (
             f"{config_entry.domain}_{config_entry.entry_id}_{coordinator.group}"
@@ -52,9 +54,13 @@ class YasnoOutagesCalendar(CoordinatorEntity[YasnoOutagesCoordinator], CalendarE
         LOGGER.debug("Initiated with entry options: %s", self._config_entry.options)
 
     @property
-    def name(self) -> str:
-        """Return the name of the entity."""
-        return f"Yasno Outages Group {self.coordinator.group}"
+    def device_info(self) -> DeviceInfo:
+        """Return device information about this entity."""
+        return DeviceInfo(
+            name=f"Yasno Group {self.coordinator.group}",
+            identifiers={(DOMAIN, self._config_entry.entry_id)},
+            entry_type=DeviceEntryType.SERVICE,
+        )
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -67,11 +73,8 @@ class YasnoOutagesCalendar(CoordinatorEntity[YasnoOutagesCoordinator], CalendarE
     def event(self) -> CalendarEvent | None:
         """Return the current or next upcoming event or None."""
         now = dt_utils.now()
-        current_event = self.coordinator.data.at(now)
-        LOGGER.debug("Current event for %s is: %s", now, current_event)
-        if current_event:
-            return self._transform_event(current_event[0])
-        return None
+        LOGGER.debug("Getting current event for %s", now)
+        return self.coordinator.get_current_event(now)
 
     async def async_get_events(
         self,
@@ -80,13 +83,5 @@ class YasnoOutagesCalendar(CoordinatorEntity[YasnoOutagesCoordinator], CalendarE
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
-        events = self.coordinator.data.between(start_date, end_date)
-        return [self._transform_event(event) for event in events]
-
-    def _transform_event(self, event: dict | None) -> CalendarEvent:
-        """Transform an event into a CalendarEvent."""
-        return CalendarEvent(
-            summary=event.get("SUMMARY"),
-            start=event.decoded("DTSTART"),
-            end=event.decoded("DTEND"),
-        )
+        LOGGER.debug('Getting all events between "%s" -> "%s"', start_date, end_date)
+        return self.coordinator.get_events(start_date, end_date)

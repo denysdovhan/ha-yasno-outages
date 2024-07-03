@@ -1,20 +1,42 @@
 {
+  "title": "Yasno Outages",
   "config": {
     "step": {
       "user": {
-        "title": "Yason Outages Settings",
-        "description": "Please select your group",
+        "title": "Yasno Outages Settings",
+        "description": "Please select your group:",
         "data": {
-          "group": "Select your group"
+          "group": "Group"
+        },
+        "data_description": {
+          "group": "You can find your group on: https://yasno.com.ua"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Yasno Outages Options",
+        "description": "Please select another group:",
+        "data": {
+          "group": "Group"
+        },
+        "data_description": {
+          "group": "You can find your group on: https://yasno.com.ua"
         }
       }
     }
   },
   "entity": {
     "calendar": {
-      "yasno_outages_calendar": {
+      "outages_calendar": {
         "state_attributes": {
+          "group": {
+            "name": "Group"
+          },
           "message": {
+            "name": "Connectivity",
             "state": {
               "off": "Electricity Outage",
               "maybe": "Possible Outage"
@@ -24,10 +46,8 @@
       }
     }
   },
-  "states": {
-    "yasno_outages_calendar": {
-      "off": "Electricity Outage",
-      "maybe": "Possible Outage"
-    }
+  "common": {
+    "electricity_off": "Outage",
+    "electricity_maybe": "Possible Outage"
   }
 }

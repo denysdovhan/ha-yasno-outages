@@ -1,0 +1,53 @@
+{
+  "title": "Yasno Відключення",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Налаштування Yasno Відключення",
+        "description": "Оберіть свою групу:",
+        "data": {
+          "group": "Група"
+        },
+        "data_description": {
+          "group": "Знайдіть свою групу на: https://yasno.com.ua"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Опції Yasno Відключення",
+        "description": "Оберіть іншу групу:",
+        "data": {
+          "group": "Група"
+        },
+        "data_description": {
+          "group": "Знайдіть свою групу на: https://yasno.com.ua"
+        }
+      }
+    }
+  },
+  "entity": {
+    "calendar": {
+      "outages_calendar": {
+        "state_attributes": {
+          "group": {
+            "name": "Група"
+          },
+          "message": {
+            "name": "Підключення",
+            "state": {
+              "off": "Відключення",
+              "maybe": "Можливе відключення"
+            }
+          }
+        }
+      }
+    }
+  },
+  "common": {
+    "electricity_off": "Відключення",
+    "electricity_maybe": "Можливе відключення"
+  }
+}
