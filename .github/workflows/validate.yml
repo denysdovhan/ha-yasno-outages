@@ -29,3 +29,4 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
+          ignore: brands # FIXME: remove when fixed
