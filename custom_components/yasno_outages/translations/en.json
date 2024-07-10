@@ -28,7 +28,7 @@
       }
     }
   },
-  "devices": {
+  "device": {
     "yasno_outages": {
       "name": "Yasno Group {group}"
     }
