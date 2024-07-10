@@ -28,13 +28,16 @@
       }
     }
   },
+  "device": {
+    "yasno_outages": {
+      "name": "Yasno Група {group}"
+    }
+  },
   "entity": {
     "calendar": {
-      "outages_calendar": {
+      "calendar": {
+        "name": "Графік відключень",
         "state_attributes": {
-          "group": {
-            "name": "Група"
-          },
           "message": {
             "name": "Підключення",
             "state": {
@@ -44,9 +47,29 @@
           }
         }
       }
+    },
+    "sensor": {
+      "electricity": {
+        "name": "Електрика",
+        "state": {
+          "on": "Заживлено",
+          "off": "Відключення",
+          "maybe": "Можливе відключення"
+        }
+      },
+      "next_outage": {
+        "name": "Наступне відключення"
+      },
+      "next_possible_outage": {
+        "name": "Наступне можливе відключення"
+      },
+      "next_connectivity": {
+        "name": "Наступна заживленість"
+      }
     }
   },
   "common": {
+    "electricity_on": "Заживлено",
     "electricity_off": "Відключення",
     "electricity_maybe": "Можливе відключення"
   }
