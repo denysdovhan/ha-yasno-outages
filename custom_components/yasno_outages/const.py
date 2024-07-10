@@ -11,13 +11,13 @@ CONF_GROUP: Final = "group"
 # Defaults
 DEFAULT_GROUP: Final = "1"
 
-# Attributes
-ATTR_GROUP: Final = "group"
-
+# Consts
+UPDATE_INTERVAL: Final = 60
 
 # Values
-EVENT_OFF: Final = "off"
-EVENT_MAYBE: Final = "maybe"
+STATE_ON: Final = "on"
+STATE_OFF: Final = "off"
+STATE_MAYBE: Final = "maybe"
 
 # File paths
 CALENDAR_PATH = "schedules/group-{group}.ics"

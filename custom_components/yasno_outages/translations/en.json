@@ -28,13 +28,16 @@
       }
     }
   },
+  "devices": {
+    "yasno_outages": {
+      "name": "Yasno Group {group}"
+    }
+  },
   "entity": {
     "calendar": {
-      "outages_calendar": {
+      "calendar": {
+        "name": "Outages Calendar",
         "state_attributes": {
-          "group": {
-            "name": "Group"
-          },
           "message": {
             "name": "Connectivity",
             "state": {
@@ -44,9 +47,29 @@
           }
         }
       }
+    },
+    "sensor": {
+      "electricity": {
+        "name": "Electricity",
+        "state": {
+          "on": "Connected",
+          "off": "Outage",
+          "maybe": "Possible Outage"
+        }
+      },
+      "next_outage": {
+        "name": "Next Outage"
+      },
+      "next_possible_outage": {
+        "name": "Next Possible Outage"
+      },
+      "next_connectivity": {
+        "name": "Next Connectivity"
+      }
     }
   },
   "common": {
+    "electricity_on": "Connected",
     "electricity_off": "Outage",
     "electricity_maybe": "Possible Outage"
   }

@@ -8,15 +8,18 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_utils
 
 from .api import YasnoOutagesApi
 from .const import (
     CONF_GROUP,
     DOMAIN,
-    EVENT_MAYBE,
-    EVENT_OFF,
+    STATE_MAYBE,
+    STATE_OFF,
+    STATE_ON,
     TRANSLATION_KEY_EVENT_MAYBE,
     TRANSLATION_KEY_EVENT_OFF,
+    UPDATE_INTERVAL,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -25,15 +28,18 @@ LOGGER = logging.getLogger(__name__)
 class YasnoOutagesCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Yasno outages data."""
 
+    config_entry: ConfigEntry
+
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Initialize the coordinator."""
         super().__init__(
             hass,
             LOGGER,
             name=DOMAIN,
-            update_interval=None,  # No polling, update manually
+            update_interval=datetime.timedelta(seconds=UPDATE_INTERVAL),
         )
         self.hass = hass
+        self.config_entry = config_entry
         self.translations = {}
         self.group = config_entry.options.get(
             CONF_GROUP,
@@ -45,8 +51,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def event_name_map(self) -> dict:
         """Return a mapping of event names to translations."""
         return {
-            EVENT_OFF: self.translations.get(TRANSLATION_KEY_EVENT_OFF),
-            EVENT_MAYBE: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
+            STATE_OFF: self.translations.get(TRANSLATION_KEY_EVENT_OFF),
+            STATE_MAYBE: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
         }
 
     async def update_config(
@@ -85,21 +91,60 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         )
         LOGGER.debug("Translations loaded: %s", self.translations)
 
-    def get_current_event(self, at: datetime.datetime) -> CalendarEvent:
+    @property
+    def next_outage(self) -> CalendarEvent:
+        """Get the next outage."""
+        next_events = self.get_next_events()
+        for event in next_events:
+            if self._event_to_state(event) == STATE_OFF:
+                return event
+        return None
+
+    @property
+    def next_possible_outage(self) -> CalendarEvent:
+        """Get the next outage."""
+        next_events = self.get_next_events()
+        for event in next_events:
+            if self._event_to_state(event) == STATE_MAYBE:
+                return event
+        return None
+
+    @property
+    def current_state(self) -> str:
+        """Get the current state."""
+        now = dt_utils.now()
+        event = self.get_event_at(now)
+        return self._event_to_state(event)
+
+    def get_event_at(self, at: datetime.datetime) -> CalendarEvent:
         """Get the current event."""
         event = self.api.get_current_event(at)
-        return self._to_calendar_event(event, translate=False)
+        return self._get_calendar_event(event, translate=False)
 
-    def get_events(
+    def get_events_between(
         self,
         start_date: datetime.datetime,
         end_date: datetime.datetime,
+        *,
+        translate: bool = True,
     ) -> list[CalendarEvent]:
         """Get all events."""
         events = self.api.get_events(start_date, end_date)
-        return [self._to_calendar_event(event) for event in events]
+        return [
+            self._get_calendar_event(event, translate=translate) for event in events
+        ]
 
-    def _to_calendar_event(
+    def get_next_events(self) -> CalendarEvent:
+        """Get the next event of a specific type."""
+        now = dt_utils.now()
+        current_event = self.get_event_at(now)
+        return self.get_events_between(
+            current_event.end,
+            current_event.end + datetime.timedelta(days=1),
+            translate=False,
+        )
+
+    def _get_calendar_event(
         self,
         event: dict | None,
         *,
@@ -127,3 +172,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             end=event_end,
             description=event_summary,
         )
+
+    def _event_to_state(self, event: CalendarEvent | None) -> str:
+        summary = event.as_dict().get("summary") if event else None
+        return {
+            STATE_OFF: STATE_OFF,
+            STATE_MAYBE: STATE_MAYBE,
+            None: STATE_ON,
+        }[summary]
