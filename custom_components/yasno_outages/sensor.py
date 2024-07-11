@@ -47,21 +47,21 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         translation_key="next_outage",
         icon="mdi:calendar-remove",
         device_class=SensorDeviceClass.TIMESTAMP,
-        val_func=lambda coordinator: coordinator.next_outage.start,
+        val_func=lambda coordinator: coordinator.next_outage,
     ),
     YasnoOutagesSensorDescription(
         key="next_possible_outage",
         translation_key="next_possible_outage",
         icon="mdi:calendar-question",
         device_class=SensorDeviceClass.TIMESTAMP,
-        val_func=lambda coordinator: coordinator.next_possible_outage.start,
+        val_func=lambda coordinator: coordinator.next_possible_outage,
     ),
     YasnoOutagesSensorDescription(
         key="next_connectivity",
         translation_key="next_connectivity",
         icon="mdi:calendar-check",
         device_class=SensorDeviceClass.TIMESTAMP,
-        val_func=lambda coordinator: coordinator.next_possible_outage.end,
+        val_func=lambda coordinator: coordinator.next_connectivity,
     ),
 )
 
