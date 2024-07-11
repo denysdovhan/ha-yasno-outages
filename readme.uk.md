@@ -58,6 +58,10 @@
 
 ![Calendar view](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/b09c4db3-d0a0-4e06-8dd9-3f4a59f1d63e)
 
+Ось приклад інформаційної панелі використовуючи цю інтеграцію:
+
+![Dashboard example](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/26c75595-8984-4a9f-893a-e4b6d838b7f2)
+
 ## Розробка
 
 Бажаєте зробити внесок у проект?
