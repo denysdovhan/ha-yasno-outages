@@ -154,11 +154,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the next event of a specific type."""
         now = dt_utils.now()
         current_event = self.get_event_at(now)
-        return self.get_events_between(
-            current_event.end,
-            current_event.end + datetime.timedelta(days=1),
-            translate=False,
-        )
+        start = current_event.end if current_event else now
+        end = start + datetime.timedelta(days=1)
+        return self.get_events_between(start, end, translate=False)
 
     def _get_calendar_event(
         self,
