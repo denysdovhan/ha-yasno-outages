@@ -92,21 +92,37 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         LOGGER.debug("Translations loaded: %s", self.translations)
 
     @property
-    def next_outage(self) -> CalendarEvent:
-        """Get the next outage."""
+    def next_outage(self) -> datetime.datetime | None:
+        """Get the next outage time."""
         next_events = self.get_next_events()
         for event in next_events:
             if self._event_to_state(event) == STATE_OFF:
-                return event
+                return event.start
         return None
 
     @property
-    def next_possible_outage(self) -> CalendarEvent:
-        """Get the next outage."""
+    def next_possible_outage(self) -> datetime.datetime | None:
+        """Get the next outage time."""
         next_events = self.get_next_events()
         for event in next_events:
             if self._event_to_state(event) == STATE_MAYBE:
-                return event
+                return event.start
+        return None
+
+    @property
+    def next_connectivity(self) -> datetime.datetime | None:
+        """Get next connectivity time."""
+        now = dt_utils.now()
+        current_event = self.get_event_at(now)
+        # If current event is maybe, return the end time
+        if self._event_to_state(current_event) == STATE_MAYBE:
+            return current_event.end
+
+        # Otherwise, return the next maybe event's end
+        next_events = self.get_next_events()
+        for event in next_events:
+            if self._event_to_state(event) == STATE_MAYBE:
+                return event.end
         return None
 
     @property
