@@ -110,7 +110,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return None
 
     @property
-    def next_connectivity(self) -> CalendarEvent | None:
+    def next_connectivity(self) -> datetime.datetime | None:
         """Get next connectivity time."""
         now = dt_utils.now()
         current_event = self.get_event_at(now)
