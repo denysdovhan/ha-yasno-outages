@@ -2,7 +2,7 @@
 
 ![HA Yasno Outages Logo](./icons/logo.png)
 
-# HA Yasno Outages
+# ⚡️ HA Yasno Outages
 
 [![GitHub Release][gh-release-image]][gh-release-url]
 [![GitHub Downloads][gh-downloads-image]][gh-downloads-url]

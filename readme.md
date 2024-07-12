@@ -2,7 +2,7 @@
 
 ![HA Yasno Outages Logo](./icons/logo.png)
 
-# HA Yasno Outages
+# ⚡️ HA Yasno Outages
 
 [![GitHub Release][gh-release-image]][gh-release-url]
 [![GitHub Downloads][gh-downloads-image]][gh-downloads-url]
@@ -14,7 +14,7 @@
 
 > An integration for electricity outages plans by [Yasno][yasno].
 
-This integration provides information about electricity outages plans by [Yasno][yasno]: calendar of planned outages, time sensors for the next planned outages, and more.
+This integration for [Home Assistant][home-assistant] provides information about electricity outages plans by [Yasno][yasno]: calendar of planned outages, time sensors for the next planned outages, and more.
 
 [**🇺🇦 Читати документацію українською 🇺🇦**](./readme.uk.md)
 
