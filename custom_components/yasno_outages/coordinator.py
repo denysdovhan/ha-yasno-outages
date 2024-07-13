@@ -96,11 +96,16 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def _get_next_event_of_type(self, state_type: str) -> CalendarEvent | None:
         """Get the next event of a specific type."""
         now = dt_utils.now()
-        next_events = self.get_events_between(
-            now,
-            now + TIMEFRAME_TO_CHECK,
-            translate=False,
+        # Sort events to handle multi-day spanning events correctly
+        next_events = sorted(
+            self.get_events_between(
+                now,
+                now + TIMEFRAME_TO_CHECK,
+                translate=False,
+            ),
+            key=lambda event: event.start,
         )
+        LOGGER.debug("Next events: %s", next_events)
         for event in next_events:
             if self._event_to_state(event) == state_type and event.start > now:
                 return event
@@ -110,12 +115,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def next_outage(self) -> datetime.datetime | None:
         """Get the next outage time."""
         event = self._get_next_event_of_type(STATE_OFF)
+        LOGGER.debug("Next outage: %s", event)
         return event.start if event else None
 
     @property
     def next_possible_outage(self) -> datetime.datetime | None:
         """Get the next possible outage time."""
         event = self._get_next_event_of_type(STATE_MAYBE)
+        LOGGER.debug("Next possible outage: %s", event)
         return event.start if event else None
 
     @property
@@ -129,6 +136,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         # Otherwise, return the next maybe event's end
         event = self._get_next_event_of_type(STATE_MAYBE)
+        LOGGER.debug("Next connectivity: %s", event)
         return event.end if event else None
 
     @property
