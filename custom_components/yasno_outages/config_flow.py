@@ -11,11 +11,22 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
-from homeassistant.helpers.selector import selector
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+)
 
-from .const import CONF_GROUP, DEFAULT_GROUP, DOMAIN
+from .api import YasnoOutagesApi
+from .const import CONF_CITY, CONF_GROUP, DEFAULT_CITY, DEFAULT_GROUP, DOMAIN, NAME
 
-_LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
+
+GROUP_PREFIX = "group_"
+
+
+def extract_group_index(group: str) -> str:
+    """Extract the group index from the group name."""
+    return group[len(GROUP_PREFIX) :]
 
 
 def get_config_value(
@@ -29,22 +40,45 @@ def get_config_value(
     return default
 
 
-def build_schema(config_entry: ConfigEntry) -> vol.Schema:
-    """Build the schema for the config flow."""
+def build_city_schema(api: YasnoOutagesApi, config_entry: ConfigEntry) -> vol.Schema:
+    """Build the schema for the city selection step."""
+    cities = api.get_cities()
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_CITY,
+                default=get_config_value(config_entry, CONF_CITY, DEFAULT_CITY),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=cities,
+                    translation_key="city",
+                ),
+            ),
+        },
+    )
+
+
+def build_group_schema(
+    api: YasnoOutagesApi,
+    config_entry: ConfigEntry,
+    data: dict,
+) -> vol.Schema:
+    """Build the schema for the group selection step."""
+    city = data[CONF_CITY]
+    groups = api.get_city_groups(city).keys()
+    group_indexes = [extract_group_index(group) for group in groups]
+    LOGGER.debug("Getting %s groups: %s", city, groups)
+
     return vol.Schema(
         {
             vol.Required(
                 CONF_GROUP,
                 default=get_config_value(config_entry, CONF_GROUP, DEFAULT_GROUP),
-            ): selector(
-                {
-                    "select": {
-                        "options": [
-                            {"value": str(i), "label": f"Group {i}"}
-                            for i in range(1, 7)
-                        ],
-                    },
-                },
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=group_indexes,
+                    translation_key="group",
+                ),
             ),
         },
     )
@@ -56,16 +90,43 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
+        self.api = YasnoOutagesApi()
+        self.data: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
-        """Manage the options."""
+        """Handle the city change."""
         if user_input is not None:
-            _LOGGER.debug("Updating options: %s", user_input)
-            return self.async_create_entry(title="", data=user_input)
+            LOGGER.debug("Updating options: %s", user_input)
+            self.data.update(user_input)
+            return await self.async_step_group()
+
+        await self.hass.async_add_executor_job(self.api.fetch_schedule)
+
+        LOGGER.debug("Options: %s", self.config_entry.options)
+        LOGGER.debug("Data: %s", self.config_entry.data)
 
         return self.async_show_form(
             step_id="init",
-            data_schema=build_schema(config_entry=self.config_entry),
+            data_schema=build_city_schema(api=self.api, config_entry=self.config_entry),
+        )
+
+    async def async_step_group(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle the group change."""
+        if user_input is not None:
+            LOGGER.debug("User input: %s", user_input)
+            self.data.update(user_input)
+            return self.async_create_entry(title="", data=self.data)
+
+        return self.async_show_form(
+            step_id="group",
+            data_schema=build_group_schema(
+                api=self.api,
+                config_entry=self.config_entry,
+                data=self.data,
+            ),
         )
 
 
@@ -73,6 +134,11 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Yasno Outages."""
 
     VERSION = 1
+
+    def __init__(self) -> None:
+        """Initialize config flow."""
+        self.api = YasnoOutagesApi()
+        self.data: dict[str, Any] = {}
 
     @staticmethod
     @callback
@@ -83,10 +149,32 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is not None:
-            _LOGGER.debug("User input: %s", user_input)
-            return self.async_create_entry(title="Yasno Outages", data=user_input)
+            LOGGER.debug("City selected: %s", user_input)
+            self.data.update(user_input)
+            return await self.async_step_group()
+
+        await self.hass.async_add_executor_job(self.api.fetch_schedule)
 
         return self.async_show_form(
             step_id="user",
-            data_schema=build_schema(config_entry=None),
+            data_schema=build_city_schema(api=self.api, config_entry=None),
+        )
+
+    async def async_step_group(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle the group step."""
+        if user_input is not None:
+            LOGGER.debug("User input: %s", user_input)
+            self.data.update(user_input)
+            return self.async_create_entry(title=NAME, data=self.data)
+
+        return self.async_show_form(
+            step_id="group",
+            data_schema=build_group_schema(
+                api=self.api,
+                config_entry=None,
+                data=self.data,
+            ),
         )
