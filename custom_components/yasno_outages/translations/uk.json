@@ -4,11 +4,15 @@
     "step": {
       "user": {
         "title": "Налаштування Yasno Відключення",
-        "description": "Оберіть своє місто:"
+        "data": {
+          "city": "Оберіть своє місто:"
+        }
       },
       "group": {
         "title": "Налаштування Yasno Відключення",
-        "description": "Оберіть свою групу:",
+        "data": {
+          "group": "Оберіть свою групу:"
+        },
         "data_description": {
           "group": "Знайдіть свою групу на: https://yasno.com.ua"
         }
@@ -19,11 +23,15 @@
     "step": {
       "init": {
         "title": "Налаштування Yasno Відключення",
-        "description": "Оберіть своє місто:"
+        "data": {
+          "city": "Оберіть своє місто:"
+        }
       },
       "group": {
         "title": "Налаштування Yasno Відключення",
-        "description": "Оберіть свою групу:",
+        "data": {
+          "group": "Оберіть свою групу:"
+        },
         "data_description": {
           "group": "Знайдіть свою групу на: https://yasno.com.ua"
         }

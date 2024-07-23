@@ -4,11 +4,15 @@
     "step": {
       "user": {
         "title": "Yasno Outages Settings",
-        "description": "Please select your city:"
+        "data": {
+          "city": "Please select your city:"
+        }
       },
       "group": {
         "title": "Yasno Outages Settings",
-        "description": "Please select your group:",
+        "data": {
+          "group": "Please select your group:"
+        },
         "data_description": {
           "group": "You can find your group at: https://yasno.com.ua"
         }
@@ -19,11 +23,15 @@
     "step": {
       "init": {
         "title": "Yasno Outages Settings",
-        "description": "Please select your city:"
+        "data": {
+          "city": "Please select your city:"
+        }
       },
       "group": {
         "title": "Yasno Outages Settings",
-        "description": "Please select your group:",
+        "data": {
+          "group": "Please select your group:"
+        },
         "data_description": {
           "group": "You can find your group at: https://yasno.com.ua"
         }
