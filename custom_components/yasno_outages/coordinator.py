@@ -7,12 +7,14 @@ from homeassistant.components.calendar import CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.translation import async_get_translations
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
 from .api import YasnoOutagesApi
 from .const import (
+    CONF_CITY,
     CONF_GROUP,
+    DEFAULT_CITY,
     DOMAIN,
     EVENT_NAME_MAYBE,
     EVENT_NAME_OFF,
@@ -45,11 +47,20 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.hass = hass
         self.config_entry = config_entry
         self.translations = {}
+        self.city = config_entry.options.get(
+            CONF_CITY,
+            config_entry.data.get(CONF_CITY),
+        )
         self.group = config_entry.options.get(
             CONF_GROUP,
             config_entry.data.get(CONF_GROUP),
         )
-        self.api = YasnoOutagesApi(city="kiev", group=self.group)
+
+        if not self.city:
+            LOGGER.warning("City not set in configuration. Setting to default.")
+            self.city = DEFAULT_CITY
+
+        self.api = YasnoOutagesApi(city=self.city, group=self.group)
 
     @property
     def event_name_map(self) -> dict:
@@ -65,35 +76,32 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         config_entry: ConfigEntry,
     ) -> None:
         """Update configuration."""
+        new_city = config_entry.options.get(CONF_CITY)
         new_group = config_entry.options.get(CONF_GROUP)
-        if new_group and new_group != self.group:
+        city_updated = new_city and new_city != self.city
+        group_updated = new_group and new_group != self.group
+
+        if city_updated or group_updated:
             LOGGER.debug("Updating group from %s -> %s", self.group, new_group)
             self.group = new_group
-            self.api = YasnoOutagesApi(city="kiev", group=self.group)
+            self.api = YasnoOutagesApi(city=self.city, group=self.group)
             await self.async_refresh()
         else:
             LOGGER.debug("No group update necessary.")
 
     async def _async_update_data(self) -> None:
         """Fetch data from ICS file."""
-        try:
-            await self.async_fetch_translations()
-            return await self.hass.async_add_executor_job(self.api.fetch_schedule)
-        except FileNotFoundError as err:
-            LOGGER.exception("Cannot read file for group %s", self.group)
-            msg = f"File not found: {err}"
-            raise UpdateFailed(msg) from err
+        await self.async_fetch_translations()
+        return await self.hass.async_add_executor_job(self.api.fetch_schedule)
 
     async def async_fetch_translations(self) -> None:
         """Fetch translations."""
-        LOGGER.debug("Fetching translations for %s", DOMAIN)
         self.translations = await async_get_translations(
             self.hass,
             self.hass.config.language,
             "common",
             [DOMAIN],
         )
-        LOGGER.debug("Translations loaded: %s", self.translations)
 
     def _get_next_event_of_type(self, state_type: str) -> CalendarEvent | None:
         """Get the next event of a specific type."""
