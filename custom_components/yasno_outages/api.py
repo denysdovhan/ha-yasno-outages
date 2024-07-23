@@ -56,7 +56,6 @@ class YasnoOutagesApi:
             response = requests.get(self.api_url, timeout=60)
             response.raise_for_status()
             self.schedule = self._extract_schedule(response.json())
-            LOGGER.debug("Fetched schedule: %s", self.schedule)
         except requests.RequestException as error:
             LOGGER.exception("Error fetching schedule from Yasno API: %s", error)  # noqa: TRY401
             self.schedule = {}
@@ -76,7 +75,7 @@ class YasnoOutagesApi:
 
     def get_current_event(self, at: datetime.datetime) -> dict:
         """Get the current event."""
-        for event in self.get_events(at, at):
+        for event in self.get_events(at, at + datetime.timedelta(hours=1)):
             if event["start"] <= at < event["end"]:
                 return event
         return None
@@ -127,6 +126,4 @@ class YasnoOutagesApi:
                         )
 
         # Sort events by start time to ensure correct order
-        sorted_events = sorted(events, key=lambda event: event["start"])
-        LOGGER.debug("Generated events: %s", sorted_events)
-        return sorted_events
+        return sorted(events, key=lambda event: event["start"])
