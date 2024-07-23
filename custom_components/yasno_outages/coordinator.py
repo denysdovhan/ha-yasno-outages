@@ -14,6 +14,8 @@ from .api import YasnoOutagesApi
 from .const import (
     CONF_GROUP,
     DOMAIN,
+    EVENT_NAME_MAYBE,
+    EVENT_NAME_OFF,
     STATE_MAYBE,
     STATE_OFF,
     STATE_ON,
@@ -38,7 +40,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             hass,
             LOGGER,
             name=DOMAIN,
-            update_interval=datetime.timedelta(seconds=UPDATE_INTERVAL),
+            update_interval=datetime.timedelta(minutes=UPDATE_INTERVAL),
         )
         self.hass = hass
         self.config_entry = config_entry
@@ -47,14 +49,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             CONF_GROUP,
             config_entry.data.get(CONF_GROUP),
         )
-        self.api = YasnoOutagesApi(self.group)
+        self.api = YasnoOutagesApi(city="kiev", group=self.group)
 
     @property
     def event_name_map(self) -> dict:
         """Return a mapping of event names to translations."""
         return {
-            STATE_OFF: self.translations.get(TRANSLATION_KEY_EVENT_OFF),
-            STATE_MAYBE: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
+            EVENT_NAME_OFF: self.translations.get(TRANSLATION_KEY_EVENT_OFF),
+            EVENT_NAME_MAYBE: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
         }
 
     async def update_config(
@@ -67,7 +69,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         if new_group and new_group != self.group:
             LOGGER.debug("Updating group from %s -> %s", self.group, new_group)
             self.group = new_group
-            self.api = YasnoOutagesApi(self.group)
+            self.api = YasnoOutagesApi(city="kiev", group=self.group)
             await self.async_refresh()
         else:
             LOGGER.debug("No group update necessary.")
@@ -76,7 +78,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Fetch data from ICS file."""
         try:
             await self.async_fetch_translations()
-            return await self.hass.async_add_executor_job(self.api.fetch_calendar)
+            return await self.hass.async_add_executor_job(self.api.fetch_schedule)
         except FileNotFoundError as err:
             LOGGER.exception("Cannot read file for group %s", self.group)
             msg = f"File not found: {err}"
@@ -174,10 +176,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         if not event:
             return None
 
-        event_summary = event.get("SUMMARY")
+        event_summary = event.get("summary")
+        event_start = event.get("start")
+        event_end = event.get("end")
         translated_summary = self.event_name_map.get(event_summary)
-        event_start = event.decoded("DTSTART")
-        event_end = event.decoded("DTEND")
 
         LOGGER.debug(
             "Transforming event: %s (%s -> %s)",
@@ -196,7 +198,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def _event_to_state(self, event: CalendarEvent | None) -> str:
         summary = event.as_dict().get("summary") if event else None
         return {
-            STATE_OFF: STATE_OFF,
-            STATE_MAYBE: STATE_MAYBE,
             None: STATE_ON,
+            EVENT_NAME_OFF: STATE_OFF,
+            EVENT_NAME_MAYBE: STATE_MAYBE,
         }[summary]
