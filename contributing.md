@@ -8,7 +8,6 @@ Only native speaker can translate to specific language.
 
 1. Copy `custom_components/yasno_outages/translations/en.json` file and name it with appropriate language code.
 1. Translate only keys in this file, not values.
-1. Mention your translation in `readme.md` file.
 1. Open a PR.
 1. Find someone to check and approve your PR.
 
