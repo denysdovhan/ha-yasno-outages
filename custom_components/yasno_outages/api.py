@@ -118,6 +118,8 @@ class YasnoOutagesApi:
                     if (
                         start_date <= event_start <= end_date
                         or start_date <= event_end <= end_date
+                        or event_start <= start_date <= event_end
+                        or event_start <= end_date <= event_end
                     ):
                         events.append(
                             {
