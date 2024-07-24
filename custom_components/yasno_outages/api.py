@@ -28,7 +28,7 @@ class YasnoOutagesApi:
         self.api_url = API_ENDPOINT
         self.schedule = None
 
-    def _extract_schedule(self, data: dict) -> dict:
+    def _extract_schedule(self, data: dict) -> dict | None:
         """Extract schedule from the API response."""
         schedule_component = next(
             (
@@ -62,18 +62,18 @@ class YasnoOutagesApi:
 
     def get_cities(self) -> list[str]:
         """Get a list of available cities."""
-        return list(self.schedule.keys())
+        return list(self.schedule.keys()) if self.schedule else []
 
     def get_city_groups(self, city: str) -> dict[str, list]:
         """Get all schedules for all of available groups for a city."""
-        return self.schedule.get(city, {})
+        return self.schedule.get(city, {}) if self.schedule else {}
 
-    def get_group_schedule(self, city: str, group: int) -> list:
+    def get_group_schedule(self, city: str, group: str) -> list:
         """Get the schedule for a specific group."""
         city_groups = self.get_city_groups(city)
         return city_groups.get(self.group_name.format(group=group), [])
 
-    def get_current_event(self, at: datetime.datetime) -> dict:
+    def get_current_event(self, at: datetime.datetime) -> dict | None:
         """Get the current event."""
         for event in self.get_events(at, at + datetime.timedelta(hours=1)):
             if event["start"] <= at < event["end"]:
@@ -86,6 +86,8 @@ class YasnoOutagesApi:
         end_date: datetime.datetime,
     ) -> list[dict]:
         """Get all events."""
+        if not self.city or not self.group:
+            return []
         group_schedule = self.get_group_schedule(self.city, self.group)
         events = []
 

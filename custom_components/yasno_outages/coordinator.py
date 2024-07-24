@@ -122,28 +122,29 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return None
 
     @property
-    def next_outage(self) -> datetime.datetime | None:
+    def next_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next outage time."""
         event = self._get_next_event_of_type(STATE_OFF)
         LOGGER.debug("Next outage: %s", event)
         return event.start if event else None
 
     @property
-    def next_possible_outage(self) -> datetime.datetime | None:
+    def next_possible_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next possible outage time."""
         event = self._get_next_event_of_type(STATE_MAYBE)
         LOGGER.debug("Next possible outage: %s", event)
         return event.start if event else None
 
     @property
-    def next_connectivity(self) -> datetime.datetime | None:
+    def next_connectivity(self) -> datetime.date | datetime.datetime | None:
         """Get next connectivity time."""
         now = dt_utils.now()
         current_event = self.get_event_at(now)
+        if not current_event:
+            return None
         # If current event is maybe, return the end time
         if self._event_to_state(current_event) == STATE_MAYBE:
             return current_event.end
-
         # Otherwise, return the next maybe event's end
         event = self._get_next_event_of_type(STATE_MAYBE)
         LOGGER.debug("Next connectivity: %s", event)
@@ -156,9 +157,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         event = self.get_event_at(now)
         return self._event_to_state(event)
 
-    def get_event_at(self, at: datetime.datetime) -> CalendarEvent:
+    def get_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
         """Get the current event."""
         event = self.api.get_current_event(at)
+        if not event:
+            return None
         return self._get_calendar_event(event, translate=False)
 
     def get_events_between(
@@ -176,14 +179,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     def _get_calendar_event(
         self,
-        event: dict | None,
+        event: dict,
         *,
         translate: bool = True,
     ) -> CalendarEvent:
         """Transform an event into a CalendarEvent."""
-        if not event:
-            return None
-
         event_summary = event.get("summary")
         event_start = event.get("start")
         event_end = event.get("end")
@@ -197,9 +197,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         )
 
         return CalendarEvent(
-            summary=translated_summary if translate else event_summary,
-            start=event_start,
-            end=event_end,
+            summary=translated_summary if translate else event_summary,  # type: ignore[assignment]
+            start=event_start,  # type: ignore[assignment]
+            end=event_end,  # type: ignore[assignment]
             description=event_summary,
         )
 

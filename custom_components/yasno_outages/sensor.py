@@ -3,12 +3,13 @@
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.components.sensor import (
-    SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
 )
+from homeassistant.components.sensor.const import SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -24,13 +25,7 @@ LOGGER = logging.getLogger(__name__)
 class YasnoOutagesSensorDescription(SensorEntityDescription):
     """Yasno Outages entity description."""
 
-    val_func: Callable[[YasnoOutagesCoordinator], bool]
-
-
-def get_next_outage(coordinator: YasnoOutagesCoordinator) -> str:
-    """Return the next outage."""
-    event = coordinator.get_next_event(STATE_OFF)
-    LOGGER.debug("Events: %s", event)
+    val_func: Callable[[YasnoOutagesCoordinator], Any]
 
 
 SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
@@ -81,6 +76,8 @@ async def async_setup_entry(
 
 class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
     """Implementation of connection entity."""
+
+    entity_description: YasnoOutagesSensorDescription
 
     def __init__(
         self,
