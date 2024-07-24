@@ -33,14 +33,17 @@ def get_config_value(
     entry: ConfigEntry | None,
     key: str,
     default: Any = None,
-) -> any:
+) -> Any:
     """Get a value from the config entry or default."""
     if entry is not None:
         return entry.options.get(key, entry.data.get(key, default))
     return default
 
 
-def build_city_schema(api: YasnoOutagesApi, config_entry: ConfigEntry) -> vol.Schema:
+def build_city_schema(
+    api: YasnoOutagesApi,
+    config_entry: ConfigEntry | None,
+) -> vol.Schema:
     """Build the schema for the city selection step."""
     cities = api.get_cities()
     return vol.Schema(
@@ -60,7 +63,7 @@ def build_city_schema(api: YasnoOutagesApi, config_entry: ConfigEntry) -> vol.Sc
 
 def build_group_schema(
     api: YasnoOutagesApi,
-    config_entry: ConfigEntry,
+    config_entry: ConfigEntry | None,
     data: dict,
 ) -> vol.Schema:
     """Build the schema for the group selection step."""
