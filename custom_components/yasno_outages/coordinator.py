@@ -140,11 +140,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get next connectivity time."""
         now = dt_utils.now()
         current_event = self.get_event_at(now)
-        if not current_event:
-            return None
         # If current event is maybe, return the end time
         if self._event_to_state(current_event) == STATE_MAYBE:
-            return current_event.end
+            return current_event.end if current_event else None
         # Otherwise, return the next maybe event's end
         event = self._get_next_event_of_type(STATE_MAYBE)
         LOGGER.debug("Next connectivity: %s", event)
