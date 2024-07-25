@@ -158,8 +158,6 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def get_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
         """Get the current event."""
         event = self.api.get_current_event(at)
-        if not event:
-            return None
         return self._get_calendar_event(event, translate=False)
 
     def get_events_between(
@@ -173,19 +171,22 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         events = self.api.get_events(start_date, end_date)
         return [
             self._get_calendar_event(event, translate=translate) for event in events
-        ]
+        ]  # type: ignore[return-type]
 
     def _get_calendar_event(
         self,
-        event: dict,
+        event: dict | None,
         *,
         translate: bool = True,
-    ) -> CalendarEvent:
+    ) -> CalendarEvent | None:
+        if not event:
+            return None
+
         """Transform an event into a CalendarEvent."""
-        event_summary = event.get("summary")
-        event_start = event.get("start")
-        event_end = event.get("end")
-        translated_summary = self.event_name_map.get(event_summary)
+        event_summary = event.get("summary", None)
+        event_start = event.get("start", None)
+        event_end = event.get("end", None)
+        translated_summary = self.event_name_map.get(event_summary, None)
 
         LOGGER.debug(
             "Transforming event: %s (%s -> %s)",
@@ -195,9 +196,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         )
 
         return CalendarEvent(
-            summary=translated_summary if translate else event_summary,  # type: ignore[assignment]
-            start=event_start,  # type: ignore[assignment]
-            end=event_end,  # type: ignore[assignment]
+            summary=translated_summary if translate else event_summary,
+            start=event_start,
+            end=event_end,
             description=event_summary,
         )
 
