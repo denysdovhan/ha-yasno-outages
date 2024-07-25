@@ -75,7 +75,7 @@ class YasnoOutagesApi:
 
     def get_current_event(self, at: datetime.datetime) -> dict | None:
         """Get the current event."""
-        for event in self.get_events(at, at + datetime.timedelta(hours=1)):
+        for event in self.get_events(at, at + datetime.timedelta(days=1)):
             if event["start"] <= at < event["end"]:
                 return event
         return None
