@@ -118,6 +118,10 @@ class YasnoOutagesApi:
                     if (
                         start_date <= event_start <= end_date
                         or start_date <= event_end <= end_date
+                        # Include events that intersect beyond the timeframe
+                        # See: https://github.com/denysdovhan/ha-yasno-outages/issues/14
+                        or event_start <= start_date <= event_end
+                        or event_start <= end_date <= event_end
                     ):
                         events.append(
                             {
