@@ -48,7 +48,7 @@ If it doesn't work, adding this repository to HACS manually by adding this URL:
 
 This integration is configurable via UI. On **Devices and Services** page, click **Add Integration** and search for **Yasno Outages**.
 
-Select your city
+Select your city:
 
 ![City Selection](https://github.com/user-attachments/assets/0d3492d8-54ee-49cc-a09d-40934fcdfc6d)
 
