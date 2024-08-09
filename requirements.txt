@@ -3,4 +3,4 @@ icalendar >= 5.0.12
 pip>=21.0,<24.3
 pre-commit>=3.7.1
 recurring-ical-events>=2.2.1
-ruff==0.5.5
+ruff==0.5.7
