@@ -18,9 +18,6 @@ END_OF_DAY = 24
 class YasnoOutagesApi:
     """Class to interact with Yasno outages API."""
 
-    """Group name format"""
-    group_name = "group_{group}"
-
     def __init__(self, city: str | None = None, group: str | None = None) -> None:
         """Initialize the YasnoOutagesApi."""
         self.group = group
@@ -34,12 +31,12 @@ class YasnoOutagesApi:
             (
                 item
                 for item in data["components"]
-                if item["template_name"] == "electricity-outages-schedule"
+                if item["template_name"] == "electricity-outages-daily-schedule"
             ),
             None,
         )
         if schedule_component:
-            return schedule_component["schedule"]
+            return schedule_component["dailySchedule"]
         LOGGER.error("Schedule component not found in the API response.")
         return None
 
@@ -65,17 +62,26 @@ class YasnoOutagesApi:
         return list(self.schedule.keys()) if self.schedule else []
 
     def get_city_groups(self, city: str) -> dict[str, list]:
-        """Get all schedules for all of available groups for a city."""
-        return self.schedule.get(city, {}) if self.schedule else {}
+        """Get all schedules for all available groups for a city."""
+        # Groups are located under city -> "today" -> "groups".
+        return self.schedule.get(city, {}).get("today", {}).get("groups", {})
 
-    def get_group_schedule(self, city: str, group: str) -> list:
+    def get_group_schedule(self, city: str, group: str) -> list[dict]:
         """Get the schedule for a specific group."""
+        # Group data is located under city -> "today" -> "groups" -> group number.
         city_groups = self.get_city_groups(city)
-        return city_groups.get(self.group_name.format(group=group), [])
+        return city_groups.get(group, [])
 
     def get_current_event(self, at: datetime.datetime) -> dict | None:
         """Get the current event."""
-        for event in self.get_events(at, at + datetime.timedelta(days=1)):
+        # Fetch all events for the current day.
+        start_of_day = at.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = start_of_day + datetime.timedelta(days=1)
+
+        events = self.get_events(start_of_day, end_of_day)
+
+        # Find the current event based on the time.
+        for event in events:
             if event["start"] <= at < event["end"]:
                 return event
         return None
