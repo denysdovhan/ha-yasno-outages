@@ -21,7 +21,7 @@ from .const import CONF_CITY, CONF_GROUP, DEFAULT_CITY, DEFAULT_GROUP, DOMAIN, N
 
 LOGGER = logging.getLogger(__name__)
 
-GROUP_PREFIX = "group_"
+GROUP_PREFIX = ""
 
 
 def extract_group_index(group: str) -> str:

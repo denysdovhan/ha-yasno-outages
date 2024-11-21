@@ -86,56 +86,50 @@ class YasnoOutagesApi:
                 return event
         return None
 
-    def get_events(
-        self,
-        start_date: datetime.datetime,
-        end_date: datetime.datetime,
-    ) -> list[dict]:
+    def get_events(self, start_date: datetime.datetime, end_date: datetime.datetime) -> list[dict]:
         """Get all events."""
         if not self.city or not self.group:
             return []
         group_schedule = self.get_group_schedule(self.city, self.group)
         events = []
 
-        # For each day of the week in the schedule
-        for dow, day_events in enumerate(group_schedule):
-            # Build a recurrence rule the events between start and end dates
-            recurrance_rule = rrule(
-                WEEKLY,
-                dtstart=start_date,
-                until=end_date,
-                byweekday=dow,
-            )
+        # Build a recurrence rule the events between start and end dates
+        recurrance_rule = rrule(
+            WEEKLY,
+            dtstart=start_date,
+            until=end_date,
+            byweekday=[start_date.weekday()],
+        )
 
-            # For each event in the day
-            for event in day_events:
-                event_start_hour = event["start"]
-                event_end_hour = event["end"]
+        # For each event in the day
+        for event in group_schedule:
+            event_start_hour = event["start"]
+            event_end_hour = event["end"]
 
-                if event_end_hour == END_OF_DAY:
-                    event_end_hour = START_OF_DAY
+            if event_end_hour == END_OF_DAY:
+                event_end_hour = START_OF_DAY
 
-                # For each date in the recurrence rule
-                for dt in recurrance_rule:
-                    event_start = self._build_event_hour(dt, event_start_hour)
-                    event_end = self._build_event_hour(dt, event_end_hour)
-                    if event_end_hour == START_OF_DAY:
-                        event_end += datetime.timedelta(days=1)
-                    if (
-                        start_date <= event_start <= end_date
-                        or start_date <= event_end <= end_date
-                        # Include events that intersect beyond the timeframe
-                        # See: https://github.com/denysdovhan/ha-yasno-outages/issues/14
-                        or event_start <= start_date <= event_end
-                        or event_start <= end_date <= event_end
-                    ):
-                        events.append(
-                            {
-                                "summary": event["type"],
-                                "start": event_start,
-                                "end": event_end,
-                            },
-                        )
+            # For each date in the recurrence rule
+            for dt in recurrance_rule:
+                event_start = self._build_event_hour(dt, event_start_hour)
+                event_end = self._build_event_hour(dt, event_end_hour)
+                if event_end_hour == START_OF_DAY:
+                    event_end += datetime.timedelta(days=1)
+                if (
+                    start_date <= event_start <= end_date
+                    or start_date <= event_end <= end_date
+                    # Include events that intersect beyond the timeframe
+                    # See: https://github.com/denysdovhan/ha-yasno-outages/issues/14
+                    or event_start <= start_date <= event_end
+                    or event_start <= end_date <= event_end
+                ):
+                    events.append(
+                        {
+                            "summary": event["type"],
+                            "start": event_start,
+                            "end": event_end,
+                        },
+                    )
 
         # Sort events by start time to ensure correct order
         return sorted(events, key=lambda event: event["start"])
