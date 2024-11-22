@@ -1,4 +1,4 @@
-homeassistant==2024.9.3
+homeassistant==2024.10.4
 icalendar >= 5.0.12
 pip>=21.0,<24.3
 pre-commit>=3.7.1
