@@ -5,9 +5,7 @@ import logging
 import requests
 import re
 import heapq
-
-if TYPE_CHECKING:
-    from typing import Any, Generator
+from typing import Any, Generator
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,7 +128,7 @@ class YasnoOutagesApi:
 
                 cday += datetime.timedelta(days=1)
 
-    def gen_exception_events(self) -> Generator[any, any, any]:
+    def gen_exception_events(self, base_date: datetime.datetime) -> Generator[any, any, any]:
         if self.daily_schedule is None:
             return
         result = []
@@ -141,17 +139,17 @@ class YasnoOutagesApi:
                 LOGGER.warning(f'no date match found in "{ex['title']}"')
                 continue
             y, m, d = int(match.group(3)), int(match.group(2)), int(match.group(1))
-            base_date = datetime.datetime(year=y, month=m, day=d)
+            day_date = base_date.replace(year=y, month=m, day=d)
             yield {
-                "at": self._build_event_hour(base_date, 0),
+                "at": self._build_event_hour(day_date, 0),
                 "priority": 2,
                 "action": "open",
                 "type": "none",
             }
             for event in ex['groups'][self.group]:
-                yield from self.gen_event(base_date=base_date, event=event, priority=3)
+                yield from self.gen_event(base_date=day_date, event=event, priority=3)
             yield {
-                "at": self._build_event_hour(base_date, 24),
+                "at": self._build_event_hour(day_date, 24),
                 "priority": 2,
                 "action": "close",
                 "type": "none",
@@ -170,7 +168,7 @@ class YasnoOutagesApi:
 
         for ev in heapq.merge(
             self.gen_schedule_recurrent_events(start_date=start_date),
-            self.gen_exception_events(),
+            self.gen_exception_events(base_date=start_date),
             key=lambda ev: (ev['at'], -ev['priority'] if ev['action'] == 'close' else ev['priority']),
         ):
             at, priority, action, t = ev['at'], ev['priority'], ev['action'], ev['type']
