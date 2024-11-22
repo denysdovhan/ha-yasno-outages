@@ -130,8 +130,6 @@ class YasnoOutagesApi:
 
                 cday += datetime.timedelta(days=1)
 
-            break
-
     def gen_exception_events(self) -> Generator[any, any, any]:
         if self.daily_schedule is None:
             return
