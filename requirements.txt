@@ -1,6 +1,6 @@
-homeassistant==2024.9.3
+homeassistant==2024.10.4
 icalendar >= 5.0.12
-pip>=21.0,<24.3
+pip>=21.0,<24.4
 pre-commit>=3.7.1
 recurring-ical-events>=2.2.1
-ruff==0.6.8
+ruff==0.7.2
