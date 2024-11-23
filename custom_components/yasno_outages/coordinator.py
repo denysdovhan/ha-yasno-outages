@@ -16,12 +16,12 @@ from .const import (
     CONF_GROUP,
     DEFAULT_CITY,
     DOMAIN,
-    EVENT_NAME_MAYBE,
+#    EVENT_NAME_MAYBE,
     EVENT_NAME_OFF,
-    STATE_MAYBE,
+#    STATE_MAYBE,
     STATE_OFF,
     STATE_ON,
-    TRANSLATION_KEY_EVENT_MAYBE,
+#    TRANSLATION_KEY_EVENT_MAYBE,
     TRANSLATION_KEY_EVENT_OFF,
     UPDATE_INTERVAL,
 )
@@ -67,7 +67,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Return a mapping of event names to translations."""
         return {
             EVENT_NAME_OFF: self.translations.get(TRANSLATION_KEY_EVENT_OFF),
-            EVENT_NAME_MAYBE: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
+#            EVENT_NAME_MAYBE: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
         }
 
     async def update_config(
@@ -128,23 +128,23 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         LOGGER.debug("Next outage: %s", event)
         return event.start if event else None
 
-    @property
-    def next_possible_outage(self) -> datetime.date | datetime.datetime | None:
-        """Get the next possible outage time."""
-        event = self._get_next_event_of_type(STATE_MAYBE)
-        LOGGER.debug("Next possible outage: %s", event)
-        return event.start if event else None
+#    @property
+#    def next_possible_outage(self) -> datetime.date | datetime.datetime | None:
+#        """Get the next possible outage time."""
+#        event = self._get_next_event_of_type(STATE_MAYBE)
+#        LOGGER.debug("Next possible outage: %s", event)
+#        return event.start if event else None
 
     @property
     def next_connectivity(self) -> datetime.date | datetime.datetime | None:
         """Get next connectivity time."""
         now = dt_utils.now()
         current_event = self.get_event_at(now)
-        # If current event is maybe, return the end time
-        if self._event_to_state(current_event) == STATE_MAYBE:
+        # If current event is off, return the end time
+        if self._event_to_state(current_event) == STATE_OFF:
             return current_event.end if current_event else None
-        # Otherwise, return the next maybe event's end
-        event = self._get_next_event_of_type(STATE_MAYBE)
+        # Otherwise, return the next off event's end
+        event = self._get_next_event_of_type(STATE_OFF)
         LOGGER.debug("Next connectivity: %s", event)
         return event.end if event else None
 
@@ -207,5 +207,5 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return {
             None: STATE_ON,
             EVENT_NAME_OFF: STATE_OFF,
-            EVENT_NAME_MAYBE: STATE_MAYBE,
+#            EVENT_NAME_MAYBE: STATE_MAYBE,
         }[summary]
