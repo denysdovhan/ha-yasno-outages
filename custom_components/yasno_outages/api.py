@@ -169,15 +169,11 @@ class YasnoOutagesApi:
         for ev in heapq.merge(
             self.gen_schedule_recurrent_events(start_date=start_date),
             self.gen_exception_events(base_date=start_date),
-            key=lambda ev: (ev['at'], -ev['priority'] if ev['action'] == 'close' else ev['priority']),
+            key=lambda ev: (ev['at'], ev['priority'] if ev['action'] == 'close' else -ev['priority']),
         ):
             at, priority, action, t = ev['at'], ev['priority'], ev['action'], ev['type']
 
             if action == 'open':
-                if len(stack) == 0:
-                    stack.append({ "summary": t, "start": at })
-                    continue
-
                 while len(stack) > priority:
                     last = stack[-1]
                     if last is None:
@@ -196,8 +192,9 @@ class YasnoOutagesApi:
                 if priority < len(stack):
                     continue
 
-                if last := stack[-1]:
-                    if last["summary"] != t or ("end" in last and last["end"] < at):
+                last = stack[-1] if len(stack) > 0 else None
+                if last is None or last["summary"] != t or ("end" in last and last["end"] < at):
+                    if last is not None:
                         s = max(now, last["start"])
                         if last["summary"] != "none" and ("end" not in last or last["end"] > now) and s >= start_date:
                             yield { "end": at, **last, "start": s }
@@ -205,14 +202,14 @@ class YasnoOutagesApi:
                         if now > end_date:
                             return
 
-                        for _ in range(priority - len(stack)): stack.append(None)
-                        stack = stack[0:priority-1] + [{ "summary": t, "start": at }]
-                    else:
-                        for _ in range(priority - len(stack)): stack.append(None)
-                        stack = stack[0:priority-1] + [{ **last }]
+                    for _ in range(priority - len(stack)): stack.append(None)
+                    stack = stack[0:priority-1] + [{ "summary": t, "start": at }]
+                else:
+                    for _ in range(priority - len(stack)): stack.append(None)
+                    stack = stack[0:priority-1] + [{ **last }]
 
             else:
-                if priority <= len(stack):
+                if priority <= len(stack) and stack[priority-1] is not None:
                     stack[priority-1]['end'] = at
 
         while len(stack) > 0:
