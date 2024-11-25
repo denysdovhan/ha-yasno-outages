@@ -199,7 +199,7 @@ class YasnoOutagesApi:
                 if last := stack[-1]:
                     if last["summary"] != t or ("end" in last and last["end"] < at):
                         s = max(now, last["start"])
-                        if last["summary"] != "none" and last["end"] > now and s >= start_date:
+                        if last["summary"] != "none" and ("end" not in last or last["end"] > now) and s >= start_date:
                             yield { "end": at, **last, "start": s }
                         now = at
                         if now > end_date:
