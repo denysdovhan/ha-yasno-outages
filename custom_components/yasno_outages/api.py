@@ -206,7 +206,9 @@ class YasnoOutagesApi:
                     stack = stack[0:priority-1] + [{ "summary": t, "start": at }]
                 else:
                     for _ in range(priority - len(stack)): stack.append(None)
-                    stack = stack[0:priority-1] + [{ **last }]
+                    new_last = { **last }
+                    del new_last['end']
+                    stack = stack[0:priority-1] + [new_last]
 
             else:
                 if priority <= len(stack) and stack[priority-1] is not None:
