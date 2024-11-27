@@ -164,7 +164,7 @@ class YasnoOutagesApi:
         """Generate all events."""
 
         stack = []
-        now = start_date
+        now = None
 
         for ev in heapq.merge(
             self.gen_schedule_recurrent_events(start_date=start_date),
@@ -172,6 +172,8 @@ class YasnoOutagesApi:
             key=lambda ev: (ev['at'], ev['priority'] if ev['action'] == 'close' else -ev['priority']),
         ):
             at, priority, action, t = ev['at'], ev['priority'], ev['action'], ev['type']
+            if now is None:
+                now = at
 
             if action == 'open':
                 while len(stack) > priority:
@@ -183,8 +185,10 @@ class YasnoOutagesApi:
                         break
                     stack.pop()
                     if last["end"] > now:
-                        if last["summary"] != "none" and now >= start_date:
-                            yield { **last, "start": now }
+                        if last["summary"] != "none":
+                            res = { **last, "start": now }
+                            if res['end'] > start_date:
+                                yield res
                         now = last["end"]
                         if now > end_date:
                             return
@@ -196,8 +200,10 @@ class YasnoOutagesApi:
                 if last is None or last["summary"] != t or ("end" in last and last["end"] < at):
                     if last is not None:
                         s = max(now, last["start"])
-                        if last["summary"] != "none" and ("end" not in last or last["end"] > now) and s >= start_date:
-                            yield { "end": at, **last, "start": s }
+                        if last["summary"] != "none" and ("end" not in last or last["end"] > now):
+                            res = { "end": at, **last, "start": s }
+                            if res['end'] > start_date:
+                                yield res
                         now = at
                         if now > end_date:
                             return
@@ -219,8 +225,10 @@ class YasnoOutagesApi:
             if last is None:
                 continue
             if last["end"] > now:
-                if last["summary"] != "none" and now >= start_date:
-                    yield { **last, "start": now }
+                if last["summary"] != "none":
+                    res = { **last, "start": now }
+                    if res['end'] > start_date:
+                        yield res
                 now = last["end"]
                 if now > end_date:
                     return
