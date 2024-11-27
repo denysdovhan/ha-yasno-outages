@@ -103,50 +103,38 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             [DOMAIN],
         )
 
-    def _get_next_event_of_type(self, state_type: str) -> CalendarEvent | None:
-        """Get the next event of a specific type."""
-        now = dt_utils.now()
-        # Sort events to handle multi-day spanning events correctly
-        next_events = sorted(
-            self.get_events_between(
-                now,
-                now + TIMEFRAME_TO_CHECK,
-                translate=False,
-            ),
-            key=lambda event: event.start,
-        )
-        LOGGER.debug("Next events: %s", next_events)
-        for event in next_events:
-            if self._event_to_state(event) == state_type and event.start > now:
-                return event
-        return None
-
     @property
     def next_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next outage time."""
-        event = self._get_next_event_of_type(STATE_OFF)
-        LOGGER.debug("Next outage: %s", event)
-        return event.start if event else None
+        now = dt_utils.now()
+
+        for ev in self.api.gen_events(now):
+            if ev['start'] > now and ev['summary'] == EVENT_NAME_OFF:
+                LOGGER.debug("Next outage: %s", ev)
+                return ev['start']
 
     @property
     def next_possible_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next possible outage time."""
-        event = self._get_next_event_of_type(STATE_MAYBE)
-        LOGGER.debug("Next possible outage: %s", event)
-        return event.start if event else None
+        now = dt_utils.now()
+
+        for ev in self.api.gen_events(now):
+            if ev['start'] > now and ev['summary'] == EVENT_NAME_MAYBE:
+                LOGGER.debug("Next possible outage: %s", ev)
+                return ev['start']
 
     @property
     def next_connectivity(self) -> datetime.date | datetime.datetime | None:
         """Get next connectivity time."""
         now = dt_utils.now()
-        current_event = self.get_event_at(now)
-        # If current event is maybe, return the end time
-        if self._event_to_state(current_event) == STATE_MAYBE:
-            return current_event.end if current_event else None
-        # Otherwise, return the next maybe event's end
-        event = self._get_next_event_of_type(STATE_MAYBE)
-        LOGGER.debug("Next connectivity: %s", event)
-        return event.end if event else None
+
+        prev = None
+        for ev in self.api.gen_events(now):
+            if prev is not None and ev['start'] != prev['end']:
+                LOGGER.debug("Next possible connectivity: %s", prev['end'])
+                return prev['end']
+
+            prev = ev
 
     @property
     def current_state(self) -> str:
