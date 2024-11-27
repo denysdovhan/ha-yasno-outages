@@ -5,7 +5,7 @@ import logging
 import requests
 import re
 import heapq
-from typing import Any, Generator
+from typing import Any, Generator, Optional
 
 LOGGER = logging.getLogger(__name__)
 
@@ -159,7 +159,7 @@ class YasnoOutagesApi:
     def gen_events(
         self,
         start_date: datetime.datetime,
-        end_date: datetime.datetime,
+        end_date: Optional[datetime.datetime]=None,
     ):
         """Generate all events."""
 
@@ -190,7 +190,7 @@ class YasnoOutagesApi:
                             if res['end'] > start_date:
                                 yield res
                         now = last["end"]
-                        if now > end_date:
+                        if end_date is not None and now > end_date:
                             return
 
                 if priority < len(stack):
@@ -205,7 +205,7 @@ class YasnoOutagesApi:
                             if res['end'] > start_date:
                                 yield res
                         now = at
-                        if now > end_date:
+                        if end_date is not None and now > end_date:
                             return
 
                     for _ in range(priority - len(stack)): stack.append(None)
@@ -230,7 +230,7 @@ class YasnoOutagesApi:
                     if res['end'] > start_date:
                         yield res
                 now = last["end"]
-                if now > end_date:
+                if end_date is not None and now > end_date:
                     return
 
     def get_events(
