@@ -72,7 +72,7 @@ Here's an example of a dashboard using this integration:
 
 Want to contribute to the project?
 
-First, thanks! Check [contributing guideline](./CONTRIBUTING.md) for more information.
+First, thanks! Check [contributing guideline](./contributing.md) for more information.
 
 ## License
 
