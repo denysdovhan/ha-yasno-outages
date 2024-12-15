@@ -69,7 +69,7 @@ def build_group_schema(
     """Build the schema for the group selection step."""
     city = data[CONF_CITY]
     groups = api.get_city_groups(city).keys()
-    group_indexes = [extract_group_index(group) for group in groups]
+    group_indexes = [str(group) for group in groups]
     LOGGER.debug("Getting %s groups: %s", city, groups)
 
     return vol.Schema(
