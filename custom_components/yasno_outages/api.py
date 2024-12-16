@@ -85,7 +85,9 @@ class YasnoOutagesApi:
         date: datetime.datetime,
         start_hour: int,
     ) -> datetime.datetime:
-        return date.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+        hour = int(start_hour)
+        minute = int((start_hour - hour) * 60)
+        return date.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
     def fetch_schedule(self) -> None:
         """Fetch outages from the API."""
