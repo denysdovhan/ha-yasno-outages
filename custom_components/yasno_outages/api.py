@@ -48,11 +48,11 @@ class YasnoOutagesApi:
             ),
             None,
         )
-        if schedule_component:
+        if schedule_component and "schedule" in schedule_component:
             self.schedule = schedule_component["schedule"]
         else:
             LOGGER.error("Schedule component not found in the API response.")
-        if daily_schedule_component:
+        if daily_schedule_component and "dailySchedule" in daily_schedule_component:
             self.daily_schedule = daily_schedule_component["dailySchedule"]
         else:
             LOGGER.warning("Daily schedule component not found in the API response.")
@@ -60,12 +60,14 @@ class YasnoOutagesApi:
     def _build_event_hour(
         self,
         date: datetime.datetime,
-        start_hour: int,
+        start_hour: float,
     ) -> datetime.datetime:
         if start_hour == END_OF_DAY:
             start_hour = START_OF_DAY
             date = date + datetime.timedelta(days=1)
-        return date.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+        hour = int(start_hour // 1)
+        minute = int((start_hour % 1) * 60)
+        return date.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
     def fetch_schedule(self) -> None:
         """Fetch outages from the API."""
@@ -79,11 +81,26 @@ class YasnoOutagesApi:
 
     def get_cities(self) -> list[str]:
         """Get a list of available cities."""
-        return list(self.schedule.keys()) if self.schedule else []
+        return (
+            list(self.schedule.keys())
+            if self.schedule
+            else list(self.daily_schedule.keys())
+            if self.daily_schedule
+            else []
+        )
 
     def get_city_groups(self, city: str) -> dict[str, list]:
         """Get all schedules for all of available groups for a city."""
-        return self.schedule.get(city, {}) if self.schedule else {}
+        if self.schedule:
+            return self.schedule.get(city, {})
+        if self.daily_schedule:
+            city_groups = {}
+            for day, details in self.daily_schedule.get(city, {}).items():
+                for group, intervals in details.get("groups", {}).items():
+                    if self.group_name.format(group=group) not in city_groups:
+                        city_groups[self.group_name.format(group=group)] = {}
+            return city_groups 
+        return {} 
 
     def get_group_schedule(self, city: str, group: str) -> list:
         """Get the schedule for a specific group."""
@@ -92,7 +109,7 @@ class YasnoOutagesApi:
 
     def get_current_event(self, at: datetime.datetime) -> dict | None:
         """Get the current event."""
-        for event in self.gen_events(at, at + datetime.timedelta(days=1)):
+        for event in self.gen_events(at, at + datetime.timedelta(days = 1)):
             if event["start"] <= at < event["end"]:
                 return event
         return None
@@ -111,13 +128,20 @@ class YasnoOutagesApi:
             "type": event["type"],
         }
 
-    def gen_schedule_recurrent_events(self, start_date: datetime.datetime) -> Generator[Any, Any, Any]:
+    def gen_schedule_recurrent_events(
+        self, start_date: datetime.datetime
+    ) -> Generator[Any, Any, Any]:
         """Generate schedule recurrent events."""
         if not self.city or not self.group:
             return []
-        group_schedule = self.get_group_schedule(self.city, self.group)
 
-        cday = start_date.replace(hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=start_date.weekday())
+        group_schedule = self.get_group_schedule(self.city, self.group)
+        if not group_schedule:
+            return []
+
+        cday = start_date.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) - datetime.timedelta(days=start_date.weekday())
 
         while True:
             # For each day of the week in the schedule
