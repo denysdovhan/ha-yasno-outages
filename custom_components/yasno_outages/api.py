@@ -27,12 +27,12 @@ class YasnoOutagesApi:
         self.group = group
         self.city = city
         self.api_url = API_ENDPOINT
-        self.schedule = None
-        self.daily_schedule = None
+        self.schedule_component = None
+        self.daily_schedule_component = None
 
     def _extract_data_from_api_response(self, data: dict) -> None:
         """Extract schedule from the API response."""
-        schedule_component = next(
+        self.schedule_component = next(
             (
                 item
                 for item in data["components"]
@@ -40,7 +40,7 @@ class YasnoOutagesApi:
             ),
             None,
         )
-        daily_schedule_component = next(
+        self.daily_schedule_component = next(
             (
                 item
                 for item in data["components"]
@@ -48,15 +48,28 @@ class YasnoOutagesApi:
             ),
             None,
         )
-        merged_schedule = {**(schedule_component or {}), **(daily_schedule_component or {})}
-        if "schedule" in merged_schedule:
-            self.schedule = merged_schedule["schedule"]
-        else:
-            LOGGER.error("Schedule component not found in the API response.")
-        if "dailySchedule" in merged_schedule:
-            self.daily_schedule = merged_schedule["dailySchedule"]
-        else:
+        if not self.schedule_component:
+            LOGGER.warning("Schedule component not found in the API response.")
+        if not self.daily_schedule_component:
             LOGGER.warning("Daily schedule component not found in the API response.")
+
+    def _reset(self) -> None:
+        self.schedule_component = None
+        self.daily_schedule_component = None
+
+    @property
+    def daily_schedule(self) -> Optional[dict]:
+        if self.daily_schedule_component:
+            return self.daily_schedule_component.get("dailySchedule", {})
+        return None
+
+    @property
+    def schedule(self) -> dict:
+        if self.daily_schedule_component:
+            return self.daily_schedule_component.get("schedule", {})
+        if self.schedule_component:
+            return self.schedule_component.get("schedule", {})
+        return {}
 
     def _build_event_hour(
         self,
@@ -78,17 +91,15 @@ class YasnoOutagesApi:
             self._extract_data_from_api_response(response.json())
         except requests.RequestException as error:
             LOGGER.exception("Error fetching schedule from Yasno API: %s", error)  # noqa: TRY401
-            self.schedule = {}
+            self._reset()
 
     def get_cities(self) -> list[str]:
         """Get a list of available cities."""
-        return (
-            list(self.schedule.keys())
-            if self.schedule
-            else list(self.daily_schedule.keys())
-            if self.daily_schedule
-            else []
-        )
+        if self.schedule_component:
+            return self.schedule_component["available_regions"]
+        if self.daily_schedule_component:
+            return list(self.daily_schedule_component["available_regions"])
+        return []
 
     def get_city_groups(self, city: str) -> dict[str, list]:
         """Get all schedules for all of available groups for a city."""
@@ -157,8 +168,22 @@ class YasnoOutagesApi:
         if self.daily_schedule is None:
             return
         result = []
-        city_exceptions = self.daily_schedule[self.city]
-        for ex in city_exceptions.values():
+        city_exceptions = self.daily_schedule.get(self.city, {}).values()
+        if len(city_exceptions) == 0:
+            yield {
+                "at": self._build_event_hour(base_date, 0),
+                "priority": 2,
+                "action": "open",
+                "type": "none",
+            }
+            yield {
+                "at": self._build_event_hour(base_date, 24),
+                "priority": 2,
+                "action": "close",
+                "type": "none",
+            }
+            return
+        for ex in city_exceptions:
             match = re.search(r'(\d+)\.(\d+)\.(\d+)', ex['title'])
             if match is None:
                 LOGGER.warning(f'no date match found in "{ex['title']}"')
