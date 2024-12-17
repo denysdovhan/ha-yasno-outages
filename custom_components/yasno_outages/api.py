@@ -44,6 +44,84 @@ class YasnoOutagesApi:
                 merged.append(current)
         return merged
 
+    def _get_weekday_from_day_name(self, day_name: str) -> str:
+        date = {
+            "today": datetime.datetime.today(),  # noqa: DTZ002
+            "tomorrow": datetime.datetime.today() + datetime.timedelta(days=1),  # noqa: DTZ002
+        }
+        dow = date.get(day_name)
+        return dow.weekday() if dow else None
+
+    def _extract_daily_schedule(self, response_data: dict) -> dict:
+        data = response_data.get("dailySchedule")
+
+        if not data:
+            return {}
+
+        schedule = {}
+        for city, day_data in data.items():
+            if city not in schedule:
+                schedule[city] = {}
+            for day, details in day_data.items():
+                weekday = self._get_weekday_from_day_name(day)
+                for group, intervals in details.get("groups", {}).items():
+                    if group not in schedule[city]:
+                        schedule[city][group] = {}
+                    if weekday not in schedule[city][group]:
+                        schedule[city][group][weekday] = self._merge_intervals(
+                            sorted(intervals, key=lambda x: x["start"]),
+                        )
+
+        return schedule
+
+    def _extract_weekly_schedule(self, response_data: dict) -> dict:
+        data = response_data.get("schedule", {})
+
+        if not data:
+            return {}
+
+        schedule = {}
+        for city, groups in data.items():
+            if city not in schedule:
+                schedule[city] = {}
+            for group, weekly_schedule in groups.items():
+                group_name = str(group[len("group_") :])
+                if group_name not in schedule[city]:
+                    schedule[city][group_name] = {}
+                for weekday, intervals in enumerate(weekly_schedule):
+                    if weekday not in schedule[city][group_name]:
+                        schedule[city][group_name][weekday] = {}
+                    schedule[city][group_name][weekday] = self._merge_intervals(
+                        sorted(intervals, key=lambda x: x["start"]),
+                    )
+
+        return schedule
+
+    def _merge_schedules(self, weekly_schedule: dict, daily_schedule: dict) -> dict:
+        merged = {}
+
+        for city in weekly_schedule.keys() | daily_schedule.keys():
+            merged[city] = {}
+
+            weekly_groups = weekly_schedule.get(city, {})
+            daily_groups = daily_schedule.get(city, {})
+
+            for group in weekly_groups.keys() | daily_groups.keys():
+                merged[city][group] = {}
+
+                weekly_days = weekly_groups.get(group, {})
+                daily_days = daily_groups.get(group, {})
+
+                for weekday in weekly_days.keys() | daily_days.keys():
+                    merged[city][group][weekday] = {}
+
+                    weekly_intervals = weekly_days.get(weekday, [])
+                    daily_intervals = daily_days.get(weekday, [])
+
+                    merged[city][group][weekday] = weekly_intervals + daily_intervals
+
+        return merged
+
     def _extract_schedule(self, data: dict) -> dict | None:
         """Extract schedule from the API response."""
         schedule_component = next(
@@ -54,31 +132,15 @@ class YasnoOutagesApi:
             ),
             None,
         )
+
         if not schedule_component:
             LOGGER.error("Schedule component not found in the API response.")
             return None
 
-        daily_schedule = schedule_component["dailySchedule"]
+        weekly_schedule = self._extract_weekly_schedule(schedule_component)
+        daily_schedule = self._extract_daily_schedule(schedule_component)
 
-        schedule = {}
-        for city, day_data in daily_schedule.items():
-            if city not in schedule:
-                schedule[city] = {}
-            for day, details in day_data.items():
-                if day not in schedule[city]:
-                    schedule[city][day] = {}
-                for group, intervals in details.get("groups", {}).items():
-                    if "groups" not in schedule[city][day]:
-                        schedule[city][day]["groups"] = {}
-                    schedule[city][day]["title"] = details.get("title", "")
-
-                    if group not in schedule[city][day]["groups"]:
-                        schedule[city][day]["groups"][group] = {}
-                    schedule[city][day]["groups"][group] = self._merge_intervals(
-                        sorted(intervals, key=lambda x: x["start"]),
-                    )
-
-        return schedule
+        return self._merge_schedules(weekly_schedule, daily_schedule)
 
     def _build_event_hour(
         self,
@@ -103,25 +165,9 @@ class YasnoOutagesApi:
         """Get a list of available cities."""
         return list(self.schedule.keys()) if self.schedule else []
 
-    def _get_event_date(self, title: str) -> datetime.datetime.date:
-        date_str = title.split(", ")[1].split(" на ")[0].strip()
-        return datetime.datetime.date(datetime.datetime.strptime(date_str, "%d.%m.%Y"))  # noqa: DTZ007
-
     def get_city_groups(self, city: str) -> dict[str, list]:
         """Get all schedules for all of available groups for a city."""
-        city_data = self.schedule.get(city, {}) if self.schedule else {}
-
-        schedules = {}
-        for details in city_data.values():
-            date = self._get_event_date(details["title"])
-            for group, intervals in details.get("groups", {}).items():
-                if group not in schedules:
-                    schedules[group] = {}
-                if date not in schedules[group]:
-                    schedules[group][date] = []
-                schedules[group][date].extend(intervals)
-
-        return schedules
+        return self.schedule.get(city, {}) if self.schedule else {}
 
     def get_group_schedule(self, city: str, group: str) -> list:
         """Get the schedule for a specific group."""
@@ -143,21 +189,25 @@ class YasnoOutagesApi:
         """Get all events."""
         if not self.city or not self.group:
             return []
-        group_schedule = self.get_group_schedule(self.city, self.group)
-        events = []
 
+        group_schedule = self.get_group_schedule(self.city, self.group)
+
+        if not group_schedule:
+            return []
+
+        events = []
         # For each day of the week in the schedule
-        for date, day_events in group_schedule.items():
+        for weekday, intervals in group_schedule.items():
             # Build a recurrence rule the events between start and end dates
             recurrance_rule = rrule(
                 WEEKLY,
                 dtstart=start_date,
                 until=end_date,
-                byweekday=date.weekday(),
+                byweekday=weekday,
             )
 
             # For each event in the day
-            for event in day_events:
+            for event in intervals:
                 event_start_hour = event["start"]
                 event_end_hour = event["end"]
 
