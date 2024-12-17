@@ -28,7 +28,7 @@ from .const import (
 
 LOGGER = logging.getLogger(__name__)
 
-TIMEFRAME_TO_CHECK = datetime.timedelta(hours=24)
+TIMEFRAME_TO_CHECK = datetime.timedelta(hours=48)
 
 
 class YasnoOutagesCoordinator(DataUpdateCoordinator):
@@ -108,7 +108,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the next outage time."""
         now = dt_utils.now()
 
-        for ev in self.api.gen_events(now):
+        for ev in self.api.gen_events(now, end_date=now+TIMEFRAME_TO_CHECK):
             if ev['start'] > now and ev['summary'] == EVENT_NAME_OFF:
                 LOGGER.debug("Next outage: %s", ev)
                 return ev['start']
@@ -118,7 +118,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the next possible outage time."""
         now = dt_utils.now()
 
-        for ev in self.api.gen_events(now):
+        for ev in self.api.gen_events(now, end_date=now+TIMEFRAME_TO_CHECK):
             if ev['start'] > now and ev['summary'] == EVENT_NAME_MAYBE:
                 LOGGER.debug("Next possible outage: %s", ev)
                 return ev['start']
@@ -129,7 +129,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         now = dt_utils.now()
 
         prev = None
-        for ev in self.api.gen_events(now):
+        for ev in self.api.gen_events(now, end_date=now+TIMEFRAME_TO_CHECK):
             if prev is not None and ev['start'] != prev['end']:
                 LOGGER.debug("Next possible connectivity: %s", prev['end'])
                 return prev['end']

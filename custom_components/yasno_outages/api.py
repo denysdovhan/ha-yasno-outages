@@ -48,12 +48,13 @@ class YasnoOutagesApi:
             ),
             None,
         )
-        if schedule_component and "schedule" in schedule_component:
-            self.schedule = schedule_component["schedule"]
+        merged_schedule = {**(schedule_component or {}), **(daily_schedule_component or {})}
+        if "schedule" in merged_schedule:
+            self.schedule = merged_schedule["schedule"]
         else:
             LOGGER.error("Schedule component not found in the API response.")
-        if daily_schedule_component and "dailySchedule" in daily_schedule_component:
-            self.daily_schedule = daily_schedule_component["dailySchedule"]
+        if "dailySchedule" in merged_schedule:
+            self.daily_schedule = merged_schedule["dailySchedule"]
         else:
             LOGGER.warning("Daily schedule component not found in the API response.")
 
@@ -99,8 +100,8 @@ class YasnoOutagesApi:
                 for group, intervals in details.get("groups", {}).items():
                     if self.group_name.format(group=group) not in city_groups:
                         city_groups[self.group_name.format(group=group)] = {}
-            return city_groups 
-        return {} 
+            return city_groups
+        return {}
 
     def get_group_schedule(self, city: str, group: str) -> list:
         """Get the schedule for a specific group."""
