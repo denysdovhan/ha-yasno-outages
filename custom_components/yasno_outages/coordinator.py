@@ -10,7 +10,7 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
-from .api import YasnoOutagesApi
+from .api import YasnoWeeklyOutagesApi
 from .const import (
     CONF_CITY,
     CONF_GROUP,
@@ -60,7 +60,13 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             LOGGER.warning("City not set in configuration. Setting to default.")
             self.city = DEFAULT_CITY
 
-        self.api = YasnoOutagesApi(city=self.city, group=self.group)
+        LOGGER.debug(
+            "Creating Yasno API with city: %s, group: %s",
+            self.city,
+            self.group,
+        )
+
+        self.api = YasnoWeeklyOutagesApi(city=self.city, group=self.group)
 
     @property
     def event_name_map(self) -> dict:
@@ -84,7 +90,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         if city_updated or group_updated:
             LOGGER.debug("Updating group from %s -> %s", self.group, new_group)
             self.group = new_group
-            self.api = YasnoOutagesApi(city=self.city, group=self.group)
+            self.api = YasnoWeeklyOutagesApi(city=self.city, group=self.group)
             await self.async_refresh()
         else:
             LOGGER.debug("No group update necessary.")

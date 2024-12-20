@@ -6,16 +6,13 @@ import logging
 import requests
 from dateutil.rrule import WEEKLY, rrule
 
+from .base import YasnoOutagesApi
+from .const import API_ENDPOINT, END_OF_DAY, OUTAGES_TEMPLATE_NAME, START_OF_DAY
+
 LOGGER = logging.getLogger(__name__)
 
-API_ENDPOINT = (
-    "https://api.yasno.com.ua/api/v1/pages/home/schedule-turn-off-electricity"
-)
-START_OF_DAY = 0
-END_OF_DAY = 24
 
-
-class YasnoOutagesApi:
+class YasnoWeeklyOutagesApi(YasnoOutagesApi):
     """Class to interact with Yasno outages API."""
 
     """Group name format"""
@@ -34,7 +31,7 @@ class YasnoOutagesApi:
             (
                 item
                 for item in data["components"]
-                if item["template_name"] == "electricity-outages-schedule"
+                if item["template_name"] == OUTAGES_TEMPLATE_NAME
             ),
             None,
         )
