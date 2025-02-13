@@ -18,7 +18,8 @@ This integration for [Home Assistant][home-assistant] provides information about
 
 [**🇺🇦 Читати документацію українською 🇺🇦**](./readme.uk.md)
 
-**💡 Note:** This is not affiliated with [Yasno][yasno] in any way. This integration is developed by an individual. Information may vary from their official website.
+> [!NOTE]
+> This is not affiliated with [Yasno][yasno] in any way. This integration is developed by an individual. Information may vary from their official website.
 
 ## Sponsorship
 
