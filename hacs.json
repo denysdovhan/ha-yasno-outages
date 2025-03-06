@@ -1,6 +1,7 @@
 {
   "name": "Yasno Outages",
   "homeassistant": "2024.6.0",
+  "country": "UA",
   "render_readme": true,
   "zip_release": true,
   "filename": "yasno-outages.zip"
