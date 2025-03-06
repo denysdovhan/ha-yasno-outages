@@ -16,7 +16,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
 )
 
-from .api import YasnoOutagesApi
+from .api import YasnoOutagesApi, YasnoWeeklyOutagesApi
 from .const import CONF_CITY, CONF_GROUP, DEFAULT_CITY, DEFAULT_GROUP, DOMAIN, NAME
 
 LOGGER = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
-        self.api = YasnoOutagesApi()
+        self.api = YasnoWeeklyOutagesApi()
         self.data: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
@@ -140,7 +140,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize config flow."""
-        self.api = YasnoOutagesApi()
+        self.api = YasnoWeeklyOutagesApi()
         self.data: dict[str, Any] = {}
 
     @staticmethod

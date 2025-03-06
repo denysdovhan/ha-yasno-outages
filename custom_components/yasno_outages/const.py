@@ -11,7 +11,7 @@ CONF_GROUP: Final = "group"
 
 # Defaults
 DEFAULT_CITY: Final = "kiev"
-DEFAULT_GROUP: Final = "1"
+DEFAULT_GROUP: Final = "1.1"
 
 # Consts
 UPDATE_INTERVAL: Final = 15
