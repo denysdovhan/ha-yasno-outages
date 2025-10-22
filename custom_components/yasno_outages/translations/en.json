@@ -5,7 +5,13 @@
       "user": {
         "title": "Yasno Outages Settings",
         "data": {
-          "city": "Please select your city:"
+          "city": "Please select your region:"
+        }
+      },
+      "service": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "service": "Please select your service:"
         }
       },
       "group": {
@@ -14,7 +20,7 @@
           "group": "Please select your group:"
         },
         "data_description": {
-          "group": "You can find your group at: https://yasno.com.ua"
+          "group": "You can find your group at: https://app.yasno.ua"
         }
       }
     }
@@ -24,7 +30,13 @@
       "init": {
         "title": "Yasno Outages Settings",
         "data": {
-          "city": "Please select your city:"
+          "city": "Please select your region:"
+        }
+      },
+      "service": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "service": "Please select your service:"
         }
       },
       "group": {
@@ -33,35 +45,12 @@
           "group": "Please select your group:"
         },
         "data_description": {
-          "group": "You can find your group at: https://yasno.com.ua"
+          "group": "You can find your group at: https://app.yasno.ua"
         }
       }
     }
   },
-  "selector": {
-    "city": {
-      "options": {
-        "kiev": "Kyiv",
-        "dnipro": "Dnipro"
-      }
-    },
-    "group": {
-      "options": {
-        "1": "Group 1",
-        "2": "Group 2",
-        "3": "Group 3",
-        "4": "Group 4",
-        "5": "Group 5",
-        "6": "Group 6",
-        "7": "Group 7",
-        "8": "Group 8",
-        "9": "Group 9",
-        "10": "Group 10",
-        "11": "Group 11",
-        "12": "Group 12"
-      }
-    }
-  },
+
   "device": {
     "yasno_outages": {
       "name": "Yasno Group {group}"

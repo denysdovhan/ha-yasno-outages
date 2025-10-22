@@ -14,7 +14,7 @@ from .api import YasnoOutagesApi
 from .const import (
     CONF_CITY,
     CONF_GROUP,
-    DEFAULT_CITY,
+    CONF_SERVICE,
     DOMAIN,
     EVENT_NAME_MAYBE,
     EVENT_NAME_OFF,
@@ -47,9 +47,15 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.hass = hass
         self.config_entry = config_entry
         self.translations = {}
+
+        # Get configuration values
         self.city = config_entry.options.get(
             CONF_CITY,
             config_entry.data.get(CONF_CITY),
+        )
+        self.service = config_entry.options.get(
+            CONF_SERVICE,
+            config_entry.data.get(CONF_SERVICE),
         )
         self.group = config_entry.options.get(
             CONF_GROUP,
@@ -57,10 +63,39 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         )
 
         if not self.city:
-            LOGGER.warning("City not set in configuration. Setting to default.")
-            self.city = DEFAULT_CITY
+            city_required_msg = (
+                "City not set in configuration - this should not happen "
+                "with proper config flow"
+            )
+            city_error = "City configuration is required"
+            LOGGER.error(city_required_msg)
+            raise ValueError(city_error)
 
-        self.api = YasnoOutagesApi(city=self.city, group=self.group)
+        if not self.service:
+            service_required_msg = (
+                "Service not set in configuration - this should not happen "
+                "with proper config flow"
+            )
+            service_error = "Service configuration is required"
+            LOGGER.error(service_required_msg)
+            raise ValueError(service_error)
+
+        if not self.group:
+            group_required_msg = (
+                "Group not set in configuration - this should not happen "
+                "with proper config flow"
+            )
+            group_error = "Group configuration is required"
+            LOGGER.error(group_required_msg)
+            raise ValueError(group_error)
+
+        # Initialize with names first, then we'll update with IDs when we fetch data
+        self.region_id = None
+        self.service_id = None
+
+        # Initialize API and resolve IDs
+        self.api = YasnoOutagesApi()
+        # Note: We'll resolve IDs and update API during first data update
 
     @property
     def event_name_map(self) -> dict:
@@ -70,6 +105,20 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             EVENT_NAME_MAYBE: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
         }
 
+    async def _resolve_ids(self) -> None:
+        """Resolve region and service IDs from names."""
+        if not self.api.regions_data:
+            await self.api.fetch_regions()
+
+        if self.city:
+            region_data = self.api.get_region_by_name(self.city)
+            if region_data:
+                self.region_id = region_data["id"]
+                if self.service:
+                    service_data = self.api.get_service_by_name(self.city, self.service)
+                    if service_data:
+                        self.service_id = service_data["id"]
+
     async def update_config(
         self,
         hass: HomeAssistant,  # noqa: ARG002
@@ -77,22 +126,54 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     ) -> None:
         """Update configuration."""
         new_city = config_entry.options.get(CONF_CITY)
+        new_service = config_entry.options.get(CONF_SERVICE)
         new_group = config_entry.options.get(CONF_GROUP)
-        city_updated = new_city and new_city != self.city
-        group_updated = new_group and new_group != self.group
 
-        if city_updated or group_updated:
-            LOGGER.debug("Updating group from %s -> %s", self.group, new_group)
-            self.group = new_group
-            self.api = YasnoOutagesApi(city=self.city, group=self.group)
+        config_changed = (
+            (new_city and new_city != self.city)
+            or (new_service and new_service != self.service)
+            or (new_group and new_group != self.group)
+        )
+
+        if config_changed:
+            LOGGER.debug(
+                "Updating configuration: city=%s, service=%s, group=%s",
+                new_city,
+                new_service,
+                new_group,
+            )
+            self.city = new_city or self.city
+            self.service = new_service or self.service
+            self.group = new_group or self.group
+
+            # Resolve IDs and update API
+            await self._resolve_ids()
+            self.api = YasnoOutagesApi(
+                region_id=self.region_id,
+                service_id=self.service_id,
+                group=self.group,
+            )
             await self.async_refresh()
         else:
-            LOGGER.debug("No group update necessary.")
+            LOGGER.debug("No configuration update necessary.")
 
     async def _async_update_data(self) -> None:
-        """Fetch data from ICS file."""
+        """Fetch data from new Yasno API."""
         await self.async_fetch_translations()
-        return await self.hass.async_add_executor_job(self.api.fetch_schedule)
+
+        # Resolve IDs if not already resolved
+        if self.region_id is None or self.service_id is None:
+            await self._resolve_ids()
+
+            # Update API with resolved IDs
+            self.api = YasnoOutagesApi(
+                region_id=self.region_id,
+                service_id=self.service_id,
+                group=self.group,
+            )
+
+        # Fetch outages data (now async with aiohttp, not blocking)
+        await self.api.fetch_data()
 
     async def async_fetch_translations(self) -> None:
         """Fetch translations."""
@@ -131,6 +212,15 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def next_possible_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next possible outage time."""
+        now = dt_utils.now()
+        current_event = self.get_event_at(now)
+
+        # If currently in any outage state, return end time (when it ends)
+        current_state = self._event_to_state(current_event)
+        if current_state in [STATE_OFF, STATE_MAYBE]:
+            return current_event.end if current_event else None
+
+        # Otherwise, return the start of the next outage
         event = self._get_next_event_of_type(STATE_MAYBE)
         LOGGER.debug("Next possible outage: %s", event)
         return event.start if event else None
@@ -140,10 +230,13 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get next connectivity time."""
         now = dt_utils.now()
         current_event = self.get_event_at(now)
-        # If current event is maybe, return the end time
-        if self._event_to_state(current_event) == STATE_MAYBE:
+        current_state = self._event_to_state(current_event)
+
+        # If currently in any outage state, return when it ends
+        if current_state in [STATE_OFF, STATE_MAYBE]:
             return current_event.end if current_event else None
-        # Otherwise, return the next maybe event's end
+
+        # Otherwise, return the end of the next possible outage
         event = self._get_next_event_of_type(STATE_MAYBE)
         LOGGER.debug("Next connectivity: %s", event)
         return event.end if event else None
@@ -204,8 +297,19 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     def _event_to_state(self, event: CalendarEvent | None) -> str:
         summary = event.as_dict().get("summary") if event else None
-        return {
-            None: STATE_ON,
-            EVENT_NAME_OFF: STATE_OFF,
-            EVENT_NAME_MAYBE: STATE_MAYBE,
-        }[summary]
+
+        # Map event names to states
+        if summary == "Definite":
+            return STATE_OFF
+        if summary == "NotPlanned":
+            return STATE_MAYBE
+        if summary == EVENT_NAME_OFF:
+            return STATE_OFF
+        if summary == EVENT_NAME_MAYBE:
+            return STATE_MAYBE
+        if summary is None:
+            return STATE_ON
+
+        # Unknown states default to ON
+        LOGGER.warning("Unknown event summary: %s", summary)
+        return STATE_ON

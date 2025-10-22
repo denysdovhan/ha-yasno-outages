@@ -17,16 +17,15 @@ from homeassistant.helpers.selector import (
 )
 
 from .api import YasnoOutagesApi
-from .const import CONF_CITY, CONF_GROUP, DEFAULT_CITY, DEFAULT_GROUP, DOMAIN, NAME
+from .const import (
+    CONF_CITY,
+    CONF_GROUP,
+    CONF_SERVICE,
+    DOMAIN,
+    NAME,
+)
 
 LOGGER = logging.getLogger(__name__)
-
-GROUP_PREFIX = "group_"
-
-
-def extract_group_index(group: str) -> str:
-    """Extract the group index from the group name."""
-    return group[len(GROUP_PREFIX) :]
 
 
 def get_config_value(
@@ -44,16 +43,17 @@ def build_city_schema(
     api: YasnoOutagesApi,
     config_entry: ConfigEntry | None,
 ) -> vol.Schema:
-    """Build the schema for the city selection step."""
-    cities = api.get_cities()
+    """Build the schema for the city (region) selection step."""
+    regions = api.get_regions()
+    city_options = [region["value"] for region in regions]
     return vol.Schema(
         {
             vol.Required(
                 CONF_CITY,
-                default=get_config_value(config_entry, CONF_CITY, DEFAULT_CITY),
+                default=get_config_value(config_entry, CONF_CITY),
             ): SelectSelector(
                 SelectSelectorConfig(
-                    options=cities,
+                    options=city_options,
                     translation_key="city",
                 ),
             ),
@@ -61,25 +61,44 @@ def build_city_schema(
     )
 
 
-def build_group_schema(
+def build_service_schema(
     api: YasnoOutagesApi,
     config_entry: ConfigEntry | None,
     data: dict,
 ) -> vol.Schema:
-    """Build the schema for the group selection step."""
+    """Build the schema for the service selection step."""
     city = data[CONF_CITY]
-    groups = api.get_city_groups(city).keys()
-    group_indexes = [extract_group_index(group) for group in groups]
-    LOGGER.debug("Getting %s groups: %s", city, groups)
+    services = api.get_services_for_region(city)
+    service_options = [service["name"] for service in services]
 
     return vol.Schema(
         {
             vol.Required(
-                CONF_GROUP,
-                default=get_config_value(config_entry, CONF_GROUP, DEFAULT_GROUP),
+                CONF_SERVICE,
+                default=get_config_value(config_entry, CONF_SERVICE),
             ): SelectSelector(
                 SelectSelectorConfig(
-                    options=group_indexes,
+                    options=service_options,
+                    translation_key="service",
+                ),
+            ),
+        },
+    )
+
+
+def build_group_schema(
+    groups: list[str],
+    config_entry: ConfigEntry | None,
+) -> vol.Schema:
+    """Build the schema for the group selection step."""
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_GROUP,
+                default=get_config_value(config_entry, CONF_GROUP),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=groups,
                     translation_key="group",
                 ),
             ),
@@ -97,13 +116,13 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
         self.data: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
-        """Handle the city change."""
+        """Handle the city (region) change."""
         if user_input is not None:
             LOGGER.debug("Updating options: %s", user_input)
             self.data.update(user_input)
-            return await self.async_step_group()
+            return await self.async_step_service()
 
-        await self.hass.async_add_executor_job(self.api.fetch_schedule)
+        await self.api.fetch_regions()
 
         LOGGER.debug("Options: %s", self.config_entry.options)
         LOGGER.debug("Data: %s", self.config_entry.data)
@@ -113,23 +132,53 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
             data_schema=build_city_schema(api=self.api, config_entry=self.config_entry),
         )
 
+    async def async_step_service(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle the service change."""
+        if user_input is not None:
+            LOGGER.debug("Service selected: %s", user_input)
+            self.data.update(user_input)
+            return await self.async_step_group()
+
+        return self.async_show_form(
+            step_id="service",
+            data_schema=build_service_schema(
+                api=self.api,
+                config_entry=self.config_entry,
+                data=self.data,
+            ),
+        )
+
     async def async_step_group(
         self,
         user_input: dict | None = None,
     ) -> ConfigFlowResult:
         """Handle the group change."""
         if user_input is not None:
-            LOGGER.debug("User input: %s", user_input)
+            LOGGER.debug("Group selected: %s", user_input)
             self.data.update(user_input)
             return self.async_create_entry(title="", data=self.data)
 
+        # Fetch groups for the selected city/service
+        city = self.data[CONF_CITY]
+        service = self.data[CONF_SERVICE]
+
+        region_data = self.api.get_region_by_name(city)
+        service_data = self.api.get_service_by_name(city, service)
+        groups = []
+        if region_data and service_data:
+            temp_api = YasnoOutagesApi(
+                region_id=region_data["id"],
+                service_id=service_data["id"],
+            )
+            await temp_api.fetch_outages_data()
+            groups = temp_api.get_groups()
+
         return self.async_show_form(
             step_id="group",
-            data_schema=build_group_schema(
-                api=self.api,
-                config_entry=self.config_entry,
-                data=self.data,
-            ),
+            data_schema=build_group_schema(groups, self.config_entry),
         )
 
 
@@ -154,13 +203,42 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             LOGGER.debug("City selected: %s", user_input)
             self.data.update(user_input)
-            return await self.async_step_group()
+            return await self.async_step_service()
 
-        await self.hass.async_add_executor_job(self.api.fetch_schedule)
+        await self.api.fetch_regions()
 
         return self.async_show_form(
             step_id="user",
             data_schema=build_city_schema(api=self.api, config_entry=None),
+        )
+
+    async def async_step_service(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle the service step."""
+        if user_input is not None:
+            LOGGER.debug("Service selected: %s", user_input)
+            self.data.update(user_input)
+            return await self.async_step_group()
+
+        city = self.data[CONF_CITY]
+        services = self.api.get_services_for_region(city)
+
+        # If only one service available, auto-select it and proceed
+        if len(services) == 1:
+            service_name = services[0]["name"]
+            LOGGER.debug("Auto-selecting only available service: %s", service_name)
+            self.data[CONF_SERVICE] = service_name
+            return await self.async_step_group()
+
+        return self.async_show_form(
+            step_id="service",
+            data_schema=build_service_schema(
+                api=self.api,
+                config_entry=None,
+                data=self.data,
+            ),
         )
 
     async def async_step_group(
@@ -173,11 +251,22 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             self.data.update(user_input)
             return self.async_create_entry(title=NAME, data=self.data)
 
+        # Fetch groups for the selected city/service
+        city = self.data[CONF_CITY]
+        service = self.data[CONF_SERVICE]
+
+        region_data = self.api.get_region_by_name(city)
+        service_data = self.api.get_service_by_name(city, service)
+        groups = []
+        if region_data and service_data:
+            temp_api = YasnoOutagesApi(
+                region_id=region_data["id"],
+                service_id=service_data["id"],
+            )
+            await temp_api.fetch_outages_data()
+            groups = temp_api.get_groups()
+
         return self.async_show_form(
             step_id="group",
-            data_schema=build_group_schema(
-                api=self.api,
-                config_entry=None,
-                data=self.data,
-            ),
+            data_schema=build_group_schema(groups, None),
         )
