@@ -40,10 +40,10 @@ The quickest way to install this integration is via [HACS][hacs-url] by clicking
 If it doesn't work, adding this repository to HACS manually by adding this URL:
 
 1. Visit **HACS** → **Integrations** → **...** (in the top right) → **Custom repositories**
-1. Click **Add**
-1. Paste `https://github.com/denysdovhan/ha-yasno-outages` into the **URL** field
-1. Chose **Integration** as a **Category**
-1. **Yasno Outages** will appear in the list of available integrations. Install it normally.
+2. Click **Add**
+3. Paste `https://github.com/denysdovhan/ha-yasno-outages` into the **URL** field
+4. Chose **Integration** as a **Category**
+5. **Yasno Outages** will appear in the list of available integrations. Install it normally.
 
 ## Usage
 
