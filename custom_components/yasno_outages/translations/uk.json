@@ -95,7 +95,6 @@
     }
   },
   "common": {
-    "electricity_on": "Заживлено",
     "electricity_off": "Відключення",
     "electricity_maybe": "Можливе відключення"
   }

@@ -95,7 +95,6 @@
     }
   },
   "common": {
-    "electricity_on": "Connected",
     "electricity_off": "Outage",
     "electricity_maybe": "Possible Outage"
   }

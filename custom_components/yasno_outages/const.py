@@ -28,13 +28,8 @@ REGIONS_ENDPOINT: Final = (
 )
 PLANNED_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages"
 
-# Time constants
-MINUTES_PER_DAY: Final = 1440
-HOURS_PER_DAY_AND_ONE: Final = 25  # Special case for 24:00 handling
-
 # API Status values
 STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
-STATUS_WAITING_FOR_SCHEDULE: Final = "WaitingForSchedule"
 
 # Keys
 TRANSLATION_KEY_EVENT_OFF: Final = f"component.{DOMAIN}.common.electricity_off"
