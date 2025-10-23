@@ -248,6 +248,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         event = self.get_event_at(now)
         return self._event_to_state(event)
 
+    @property
+    def schedule_updated_on(self) -> datetime.datetime | None:
+        """Get the schedule last updated timestamp."""
+        return self.api.get_updated_on()
+
     def get_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
         """Get the current event."""
         event = self.api.get_current_event(at)

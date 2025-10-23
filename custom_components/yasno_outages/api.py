@@ -161,6 +161,21 @@ class YasnoOutagesApi:
             return None
         return self.outages_data[self.group]
 
+    def get_updated_on(self) -> datetime.datetime | None:
+        """Get the updated on timestamp for the configured group."""
+        group_data = self._get_group_data()
+        if not group_data or "updatedOn" not in group_data:
+            return None
+
+        try:
+            return datetime.datetime.fromisoformat(group_data["updatedOn"])
+        except (ValueError, TypeError):
+            LOGGER.warning(
+                "Failed to parse updatedOn timestamp: %s",
+                group_data["updatedOn"],
+            )
+            return None
+
     def get_current_event(self, at: datetime.datetime) -> dict | None:
         """Get the current event."""
         all_events = self.get_events(at, at + datetime.timedelta(days=1))

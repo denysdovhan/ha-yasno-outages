@@ -80,6 +80,9 @@
           "possible": "Possible Outage"
         }
       },
+      "schedule_updated_on": {
+        "name": "Schedule Updated On"
+      },
       "next_outage": {
         "name": "Next Outage"
       },
