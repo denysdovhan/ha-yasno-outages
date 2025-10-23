@@ -104,3 +104,31 @@ class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
     def native_value(self) -> str | None:
         """Return the state of the sensor."""
         return self.entity_description.val_func(self.coordinator)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return additional attributes for the electricity sensor."""
+        if self.entity_description.key != "electricity":
+            return None
+
+        # Get the current event to provide additional context
+        current_event = self.coordinator.get_current_event()
+
+        if not current_event:
+            return {
+                "event_type": "none",
+                "event_start": None,
+                "event_end": None,
+            }
+
+        # Get the event details from the coordinator
+        event_dict = current_event.as_dict()
+        event_type = event_dict.get("description", "unknown")  # Original summary
+        event_start = event_dict.get("start")
+        event_end = event_dict.get("end")
+
+        return {
+            "event_type": event_type,
+            "event_start": event_start,
+            "event_end": event_end,
+        }
