@@ -43,9 +43,9 @@ class YasnoWeeklyOutagesApi(YasnoOutagesApi):
     def _build_event_hour(
         self,
         date: datetime.datetime,
-        start_hour: int,
+        start_hour: float,
     ) -> datetime.datetime:
-        return date.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+        return date.replace(hour=int(start_hour), minute=0, second=0, microsecond=0)
 
     def fetch_schedule(self) -> None:
         """Fetch outages from the API."""

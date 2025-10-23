@@ -127,6 +127,53 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 return event
         return None
 
+    def _get_calendar_event(
+        self,
+        event: dict | None,
+        *,
+        translate: bool = True,
+    ) -> CalendarEvent | None:
+        if not event:
+            return None
+
+        """Transform an event into a CalendarEvent."""
+        event_summary = event.get("summary", None)
+        event_start = event.get("start", None)
+        event_end = event.get("end", None)
+        translated_summary = self.event_name_map.get(event_summary, None)
+
+        LOGGER.debug(
+            "Transforming event: %s (%s -> %s)",
+            event_summary,
+            event_start,
+            event_end,
+        )
+
+        return CalendarEvent(
+            summary=translated_summary if translate else event_summary,
+            start=event_start,
+            end=event_end,
+            description=event_summary,
+        )
+
+    def _event_to_state(self, event: CalendarEvent | None) -> str:
+        summary = event.as_dict().get("summary") if event else None
+        return {
+            None: STATE_ON,
+            EVENT_NAME_OFF: STATE_OFF,
+            EVENT_NAME_MAYBE: STATE_MAYBE,
+        }[summary]
+
+    @property
+    def group_name(self) -> str:
+        """Get the group key."""
+        return self.api.group_name.format(group=self.group)
+
+    @property
+    def list_of_groups(self) -> list[str]:
+        """Get city groups."""
+        return list(self.api.get_city_groups(self.city).keys())
+
     @property
     def next_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next outage time."""
@@ -178,40 +225,3 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return [
             self._get_calendar_event(event, translate=translate) for event in events
         ]  # type: ignore[return-type]
-
-    def _get_calendar_event(
-        self,
-        event: dict | None,
-        *,
-        translate: bool = True,
-    ) -> CalendarEvent | None:
-        if not event:
-            return None
-
-        """Transform an event into a CalendarEvent."""
-        event_summary = event.get("summary", None)
-        event_start = event.get("start", None)
-        event_end = event.get("end", None)
-        translated_summary = self.event_name_map.get(event_summary, None)
-
-        LOGGER.debug(
-            "Transforming event: %s (%s -> %s)",
-            event_summary,
-            event_start,
-            event_end,
-        )
-
-        return CalendarEvent(
-            summary=translated_summary if translate else event_summary,
-            start=event_start,
-            end=event_end,
-            description=event_summary,
-        )
-
-    def _event_to_state(self, event: CalendarEvent | None) -> str:
-        summary = event.as_dict().get("summary") if event else None
-        return {
-            None: STATE_ON,
-            EVENT_NAME_OFF: STATE_OFF,
-            EVENT_NAME_MAYBE: STATE_MAYBE,
-        }[summary]

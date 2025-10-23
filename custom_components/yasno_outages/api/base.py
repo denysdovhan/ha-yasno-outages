@@ -5,9 +5,14 @@ from abc import ABC, abstractmethod
 
 import requests
 
-from .const import API_ENDPOINT
+from .const import API_ENDPOINT, GROUP_PREFIX
 
 LOGGER = logging.getLogger(__name__)
+
+
+def extract_group_index(group: str) -> str:
+    """Extract the group index from the group name."""
+    return group[len(GROUP_PREFIX) :]
 
 
 class YasnoOutagesApi(ABC):

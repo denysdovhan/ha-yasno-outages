@@ -16,17 +16,10 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
 )
 
-from .api import YasnoOutagesApi, YasnoWeeklyOutagesApi
+from .api import YasnoOutagesApi, YasnoWeeklyOutagesApi, extract_group_index
 from .const import CONF_CITY, CONF_GROUP, DEFAULT_CITY, DEFAULT_GROUP, DOMAIN, NAME
 
 LOGGER = logging.getLogger(__name__)
-
-GROUP_PREFIX = "group_"
-
-
-def extract_group_index(group: str) -> str:
-    """Extract the group index from the group name."""
-    return group[len(GROUP_PREFIX) :]
 
 
 def get_config_value(

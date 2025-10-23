@@ -1,6 +1,6 @@
 """The Yasno Outages API module."""
 
-from .base import YasnoOutagesApi
+from .base import YasnoOutagesApi, extract_group_index
 from .weekly import YasnoWeeklyOutagesApi
 
-__all__ = ["YasnoOutagesApi", "YasnoWeeklyOutagesApi"]
+__all__ = ["YasnoOutagesApi", "YasnoWeeklyOutagesApi", "extract_group_index"]

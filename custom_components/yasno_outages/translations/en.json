@@ -102,6 +102,12 @@
       }
     }
   },
+  "issues": {
+    "group_not_found": {
+      "title": "Configured group {group} is unavailable",
+      "description": "The group {group} you have configured is no longer available. Please select a new group to continue using the Yasno Outages integration."
+    }
+  },
   "common": {
     "electricity_on": "Connected",
     "electricity_off": "Outage",
