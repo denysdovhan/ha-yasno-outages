@@ -6,8 +6,8 @@ import logging
 import aiohttp
 
 from .const import (
-    EVENT_NAME_MAYBE,
-    EVENT_NAME_OFF,
+    EVENT_NAME_NORMAL,
+    EVENT_NAME_OUTAGE,
     PLANNED_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
     STATUS_SCHEDULE_APPLIES,
@@ -139,7 +139,7 @@ class YasnoOutagesApi:
             end_minutes = slot["end"]
             slot_type = slot["type"]
 
-            if slot_type not in [EVENT_NAME_OFF, EVENT_NAME_MAYBE]:
+            if slot_type not in [EVENT_NAME_NORMAL, EVENT_NAME_OUTAGE]:
                 continue
 
             event_start = self._minutes_to_time(start_minutes, date)

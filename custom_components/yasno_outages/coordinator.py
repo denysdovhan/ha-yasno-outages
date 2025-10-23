@@ -16,8 +16,8 @@ from .const import (
     CONF_GROUP,
     CONF_SERVICE,
     DOMAIN,
-    EVENT_NAME_MAYBE,
-    EVENT_NAME_OFF,
+    EVENT_NAME_NORMAL,
+    EVENT_NAME_OUTAGE,
     OUTAGE_STATE_NORMAL,
     OUTAGE_STATE_OUTAGE,
     OUTAGE_STATE_POSSIBLE,
@@ -101,8 +101,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def event_name_map(self) -> dict:
         """Return a mapping of event names to translations."""
         return {
-            EVENT_NAME_OFF: self.translations.get(TRANSLATION_KEY_EVENT_OFF),
-            EVENT_NAME_MAYBE: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
+            EVENT_NAME_OUTAGE: self.translations.get(TRANSLATION_KEY_EVENT_OFF),
+            EVENT_NAME_NORMAL: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
         }
 
     async def _resolve_ids(self) -> None:
@@ -304,10 +304,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         summary = event.as_dict().get("summary") if event else None
 
         # Map event names to states
-        if summary == EVENT_NAME_OFF:
+        if summary == EVENT_NAME_OUTAGE:
             return OUTAGE_STATE_OUTAGE
-        if summary == EVENT_NAME_MAYBE:
-            return OUTAGE_STATE_POSSIBLE
+        if summary == EVENT_NAME_NORMAL:
+            return OUTAGE_STATE_NORMAL
         if summary is None:
             return OUTAGE_STATE_NORMAL
 

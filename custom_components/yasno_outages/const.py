@@ -19,8 +19,8 @@ OUTAGE_STATE_OUTAGE: Final = "outage"
 OUTAGE_STATE_POSSIBLE: Final = "possible"
 
 # Event names
-EVENT_NAME_OFF: Final = "Definite"
-EVENT_NAME_MAYBE: Final = "NotPlanned"
+EVENT_NAME_NORMAL: Final = "NotPlanned"
+EVENT_NAME_OUTAGE: Final = "Definite"
 
 # API Endpoints
 REGIONS_ENDPOINT: Final = (
