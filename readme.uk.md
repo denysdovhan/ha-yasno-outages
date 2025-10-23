@@ -46,25 +46,37 @@
 
 Ця інтеграція налаштовується через інтерфейс користувача. На сторінці **Пристрої та сервіси** натисніть **Додати інтеграцію** і знайдіть **Yasno Відключення**.
 
-Виберіть своє місто:
+Виберіть регіон:
 
-![image](https://github.com/user-attachments/assets/0d3492d8-54ee-49cc-a09d-40934fcdfc6d)
+![City Selection](/media/1_region.png)
 
-Знайдіть свою групу, відвідавши вебсайт [Yasno][yasno], і введіть свою адресу в пошуковий рядок. Виберіть свою групу в конфігурації.
+Виберіть систему розподілу:
 
-![Configuration flow](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/e8bfde50-fcbe-45c3-b448-b451b0ac3bcd)
+![Service Provider Selection](/media/2_provider.png)
 
-Потім ви можете додати інтеграцію на свою панель і бачити інформацію про наступні заплановані відключення.
+Виберіть групу:
 
-![Device page](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/df628647-fd2a-455d-9d08-0d1542b67e41)
+![Group Selection](/media/3_group.png)
 
-Інтеграція також надає календар запланованих відключень. Ви можете використати [Картку календаря][calendar-card], щоб додати його на свою інформаційну панель.
+Ось як виглядає пристрій:
 
-![Calendar view](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/b09c4db3-d0a0-4e06-8dd9-3f4a59f1d63e)
+![Devices page](/media/4_devices.png)
 
-Ось приклад інформаційної панелі з використанням цієї інтеграції:
+![Device page](/media/5_device.png)
 
-![Dashboard example](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/26c75595-8984-4a9f-893a-e4b6d838b7f2)
+Після цього ви можете додати інтеграцію до своєї панелі керування та переглянути інформацію про наступні заплановані відключення.
+Інтеграція також надає календарний вигляд запланованих відключень. Ви можете додати його до своєї панелі керування за допомогою [Calendar Card][calendar-card].
+
+![Перегляд календарів](/media/6_calendars.png)
+
+Приклади:
+
+- [Автоматизація](/examples/automation.yaml)
+- [Панель керування](/examples/dashboard.yaml)
+
+Приклад панелі керування з корисною інтеграцією:
+
+![Приклад панелі керування](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/26c75595-8984-4a9f-893a-e4b6d838b7f2)
 
 ## Розробка
 
