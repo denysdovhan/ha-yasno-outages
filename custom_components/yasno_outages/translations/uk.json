@@ -8,10 +8,10 @@
           "city": "Оберіть свій регіон:"
         }
       },
-      "service": {
+      "provider": {
         "title": "Налаштування Yasno Відключення",
         "data": {
-          "service": "Оберіть свою службу:"
+          "provider": "Оберіть свою систему розподілу (ОСР):"
         }
       },
       "group": {
@@ -33,10 +33,10 @@
           "city": "Оберіть свій регіон:"
         }
       },
-      "service": {
+      "provider": {
         "title": "Налаштування Yasno Відключення",
         "data": {
-          "service": "Оберіть свою систему розподілу (ОСР):"
+          "provider": "Оберіть свою систему розподілу (ОСР):"
         }
       },
       "group": {
@@ -53,7 +53,7 @@
 
   "device": {
     "yasno_outages": {
-      "name": "Yasno Група {group}"
+      "name": "Yasno {region} {provider} {group}"
     }
   },
   "entity": {

@@ -8,10 +8,10 @@
           "city": "Please select your region:"
         }
       },
-      "service": {
+      "provider": {
         "title": "Yasno Outages Settings",
         "data": {
-          "service": "Please select your service:"
+          "provider": "Please select your provider:"
         }
       },
       "group": {
@@ -33,10 +33,10 @@
           "city": "Please select your region:"
         }
       },
-      "service": {
+      "provider": {
         "title": "Yasno Outages Settings",
         "data": {
-          "service": "Please select your service:"
+          "provider": "Please select your provider:"
         }
       },
       "group": {
@@ -53,7 +53,7 @@
 
   "device": {
     "yasno_outages": {
-      "name": "Yasno Group {group}"
+      "name": "Yasno {region} {provider} {group}"
     }
   },
   "entity": {

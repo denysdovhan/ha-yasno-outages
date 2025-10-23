@@ -92,6 +92,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Initialize with names first, then we'll update with IDs when we fetch data
         self.region_id = None
         self.service_id = None
+        self._provider_name = ""  # Cache the provider name
 
         # Initialize API and resolve IDs
         self.api = YasnoOutagesApi()
@@ -118,6 +119,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                     service_data = self.api.get_service_by_name(self.city, self.service)
                     if service_data:
                         self.service_id = service_data["id"]
+                        # Cache the provider name for device naming
+                        self._provider_name = service_data["name"]
 
     async def update_config(
         self,
@@ -145,6 +148,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             self.city = new_city or self.city
             self.service = new_service or self.service
             self.group = new_group or self.group
+
+            # Clear cached provider name if service changed
+            if new_service and new_service != config_entry.options.get(CONF_SERVICE):
+                self._provider_name = ""
 
             # Resolve IDs and update API
             await self._resolve_ids()
@@ -249,6 +256,30 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def schedule_updated_on(self) -> datetime.datetime | None:
         """Get the schedule last updated timestamp."""
         return self.api.get_updated_on()
+
+    @property
+    def region_name(self) -> str:
+        """Get the configured region name."""
+        return self.city or ""
+
+    @property
+    def provider_name(self) -> str:
+        """Get the configured provider (service provider) name."""
+        # Return cached name if available
+        if self._provider_name:
+            return self._provider_name
+
+        # Fallback to lookup if not cached yet
+        if not self.api.regions_data:
+            return ""
+        region_data = self.api.get_region_by_name(self.city)
+        if not region_data:
+            return ""
+        services = region_data.get("dsos", [])
+        for service in services:
+            if service.get("name") == self.service:
+                return service.get("name", "")
+        return ""
 
     def get_current_event(self) -> CalendarEvent | None:
         """Get the event at the present time."""
