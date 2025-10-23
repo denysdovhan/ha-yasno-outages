@@ -15,11 +15,6 @@ from .const import (
 
 LOGGER = logging.getLogger(__name__)
 
-# Time constants
-START_OF_DAY = 0
-END_OF_DAY = 24
-HOURS_PER_DAY = 24
-
 
 class YasnoOutagesApi:
     """Class to interact with Yasno outages API."""
@@ -120,7 +115,7 @@ class YasnoOutagesApi:
         mins = minutes % 60
 
         # Handle end of day (24:00) - keep it as 23:59:59 to stay on same day
-        if hours == HOURS_PER_DAY:
+        if hours == 24:  # noqa: PLR2004
             return date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
         return date.replace(hour=hours, minute=mins, second=0, microsecond=0)
