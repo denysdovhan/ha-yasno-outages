@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from homeassistant.const import Platform
 
 from .coordinator import YasnoOutagesCoordinator
+from .repairs import async_check_and_create_repair
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -21,6 +22,9 @@ PLATFORMS = [Platform.CALENDAR, Platform.SENSOR]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a new entry."""
     LOGGER.info("Setup entry: %s", entry)
+
+    await async_check_and_create_repair(hass, entry)
+
     coordinator = YasnoOutagesCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
 
