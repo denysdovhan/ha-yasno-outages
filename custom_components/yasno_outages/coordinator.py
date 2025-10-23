@@ -265,9 +265,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def provider_name(self) -> str:
         """Get the configured provider (service provider) name."""
-        # Return cached name if available
+        # Return cached name if available (but apply simplification first)
         if self._provider_name:
-            return self._provider_name
+            return self._simplify_provider_name(self._provider_name)
 
         # Fallback to lookup if not cached yet
         if not self.api.regions_data:
@@ -278,7 +278,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         services = region_data.get("dsos", [])
         for service in services:
             if service.get("name") == self.service:
-                return service.get("name", "")
+                provider_name = service.get("name", "")
+                # Cache the simplified name
+                self._provider_name = provider_name
+                return self._simplify_provider_name(provider_name)
         return ""
 
     def get_current_event(self) -> CalendarEvent | None:
@@ -345,3 +348,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         LOGGER.warning("Unknown event summary: %s", summary)
         return OUTAGE_STATE_NORMAL
+
+    def _simplify_provider_name(self, provider_name: str) -> str:
+        """Simplify provider names for cleaner display in device names."""
+        # Replace long DTEK provider names with just "ДТЕК"
+        if "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ" in provider_name.upper():
+            return "ДТЕК"
+
+        # Add more provider simplifications here as needed
+        return provider_name
