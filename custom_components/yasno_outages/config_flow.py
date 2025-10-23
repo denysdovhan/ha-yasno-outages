@@ -109,9 +109,8 @@ def build_group_schema(
 class YasnoOutagesOptionsFlow(OptionsFlow):
     """Handle options flow for Yasno Outages."""
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
+    def __init__(self) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
         self.api = YasnoOutagesApi()
         self.data: dict[str, Any] = {}
 
