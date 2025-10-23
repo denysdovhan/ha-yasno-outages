@@ -1,4 +1,6 @@
-target-version = "py312"
+# https://github.com/ludeeus/integration_blueprint/blob/main/.ruff.toml
+
+target-version = "py313"
 
 [lint]
 select = [
@@ -6,10 +8,18 @@ select = [
 ]
 
 ignore = [
-    "ANN101", # Missing type annotation for `self` in method
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
     "D203", # no-blank-line-before-class (incompatible with formatter)
     "D212", # multi-line-summary-first-line (incompatible with formatter)
-    "FIX002", # Line contains TODO, consider resolving an issue
-    "TD003" # Missing issue link on the line following this TODO
+    "COM812", # incompatible with formatter
+    "ISC001", # incompatible with formatter
 ]
+
+[lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[lint.pyupgrade]
+keep-runtime-typing = true
+
+[lint.mccabe]
+max-complexity = 25

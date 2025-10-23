@@ -5,7 +5,13 @@
       "user": {
         "title": "Yasno Outages Settings",
         "data": {
-          "city": "Please select your city:"
+          "region": "Please select your region:"
+        }
+      },
+      "provider": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "provider": "Please select your provider:"
         }
       },
       "group": {
@@ -14,7 +20,7 @@
           "group": "Please select your group:"
         },
         "data_description": {
-          "group": "You can find your group at: https://yasno.com.ua"
+          "group": "You can find your group at: https://app.yasno.ua"
         }
       }
     }
@@ -24,7 +30,13 @@
       "init": {
         "title": "Yasno Outages Settings",
         "data": {
-          "city": "Please select your city:"
+          "region": "Please select your region:"
+        }
+      },
+      "provider": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "provider": "Please select your provider:"
         }
       },
       "group": {
@@ -33,38 +45,15 @@
           "group": "Please select your group:"
         },
         "data_description": {
-          "group": "You can find your group at: https://yasno.com.ua"
+          "group": "You can find your group at: https://app.yasno.ua"
         }
       }
     }
   },
-  "selector": {
-    "city": {
-      "options": {
-        "kiev": "Kyiv",
-        "dnipro": "Dnipro"
-      }
-    },
-    "group": {
-      "options": {
-        "1": "Group 1",
-        "2": "Group 2",
-        "3": "Group 3",
-        "4": "Group 4",
-        "5": "Group 5",
-        "6": "Group 6",
-        "7": "Group 7",
-        "8": "Group 8",
-        "9": "Group 9",
-        "10": "Group 10",
-        "11": "Group 11",
-        "12": "Group 12"
-      }
-    }
-  },
+
   "device": {
     "yasno_outages": {
-      "name": "Yasno Group {group}"
+      "name": "Yasno {region} {provider} {group}"
     }
   },
   "entity": {
@@ -75,8 +64,8 @@
           "message": {
             "name": "Connectivity",
             "state": {
-              "off": "Electricity Outage",
-              "maybe": "Possible Outage"
+              "outage": "Electricity Outage",
+              "possible": "Possible Outage"
             }
           }
         }
@@ -86,10 +75,13 @@
       "electricity": {
         "name": "Electricity",
         "state": {
-          "on": "Connected",
-          "off": "Outage",
-          "maybe": "Possible Outage"
+          "normal": "Connected",
+          "outage": "Outage",
+          "possible": "Possible Outage"
         }
+      },
+      "schedule_updated_on": {
+        "name": "Schedule Updated On"
       },
       "next_outage": {
         "name": "Next Outage"
@@ -103,8 +95,13 @@
     }
   },
   "common": {
-    "electricity_on": "Connected",
     "electricity_off": "Outage",
     "electricity_maybe": "Possible Outage"
+  },
+  "issues": {
+    "api_v1_to_v2": {
+      "title": "Configuration update required",
+      "description": "Your configuration uses an old format. Please remove this integration and add it again."
+    }
   }
 }

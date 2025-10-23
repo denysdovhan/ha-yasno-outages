@@ -6,24 +6,35 @@ DOMAIN: Final = "yasno_outages"
 NAME: Final = "Yasno Outages"
 
 # Configuration option
-CONF_CITY: Final = "city"
+CONF_REGION: Final = "region"
+CONF_SERVICE: Final = "service"
 CONF_GROUP: Final = "group"
+CONF_CITY: Final = "city"  # Deprecated, use CONF_REGION
 
-# Defaults
-DEFAULT_CITY: Final = "kiev"
-DEFAULT_GROUP: Final = "1"
+# Provider name simplification
+PROVIDER_DTEK_FULL: Final = "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ"
+PROVIDER_DTEK_SHORT: Final = "ДТЕК"
 
 # Consts
 UPDATE_INTERVAL: Final = 15
 
 # Values
-STATE_ON: Final = "on"
-STATE_OFF: Final = "off"
-STATE_MAYBE: Final = "maybe"
+OUTAGE_STATE_NORMAL: Final = "normal"
+OUTAGE_STATE_OUTAGE: Final = "outage"
+OUTAGE_STATE_POSSIBLE: Final = "possible"
 
 # Event names
-EVENT_NAME_OFF: Final = "DEFINITE_OUTAGE"
-EVENT_NAME_MAYBE: Final = "POSSIBLE_OUTAGE"
+EVENT_NAME_NORMAL: Final = "NotPlanned"
+EVENT_NAME_OUTAGE: Final = "Definite"
+
+# API Endpoints
+REGIONS_ENDPOINT: Final = (
+    "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/regions"
+)
+PLANNED_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages"
+
+# API Status values
+STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
 
 # Keys
 TRANSLATION_KEY_EVENT_OFF: Final = f"component.{DOMAIN}.common.electricity_off"

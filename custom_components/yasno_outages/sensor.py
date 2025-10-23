@@ -14,7 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import STATE_MAYBE, STATE_OFF, STATE_ON
+from .const import OUTAGE_STATE_NORMAL, OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE
 from .coordinator import YasnoOutagesCoordinator
 from .entity import YasnoOutagesEntity
 
@@ -34,8 +34,15 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         translation_key="electricity",
         icon="mdi:transmission-tower",
         device_class=SensorDeviceClass.ENUM,
-        options=[STATE_ON, STATE_OFF, STATE_MAYBE],
+        options=[OUTAGE_STATE_NORMAL, OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE],
         val_func=lambda coordinator: coordinator.current_state,
+    ),
+    YasnoOutagesSensorDescription(
+        key="schedule_updated_on",
+        translation_key="schedule_updated_on",
+        icon="mdi:update",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        val_func=lambda coordinator: coordinator.schedule_updated_on,
     ),
     YasnoOutagesSensorDescription(
         key="next_outage",
@@ -97,3 +104,31 @@ class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
     def native_value(self) -> str | None:
         """Return the state of the sensor."""
         return self.entity_description.val_func(self.coordinator)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return additional attributes for the electricity sensor."""
+        if self.entity_description.key != "electricity":
+            return None
+
+        # Get the current event to provide additional context
+        current_event = self.coordinator.get_current_event()
+
+        if not current_event:
+            return {
+                "event_type": "none",
+                "event_start": None,
+                "event_end": None,
+            }
+
+        # Get the event details from the coordinator
+        event_dict = current_event.as_dict()
+        event_type = event_dict.get("description", "unknown")  # Original summary
+        event_start = event_dict.get("start")
+        event_end = event_dict.get("end")
+
+        return {
+            "event_type": event_type,
+            "event_start": event_start,
+            "event_end": event_end,
+        }

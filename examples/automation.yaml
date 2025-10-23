@@ -1,0 +1,57 @@
+alias: Power Outage Starts in
+description: ""
+triggers:
+  - event: start
+    offset: "-2:0:00"
+    entity_id: calendar.yasno_group_3_1_outages_calendar
+    trigger: calendar
+    enabled: false
+  - event: start
+    offset: "-1:0:00"
+    entity_id: calendar.yasno_group_3_1_outages_calendar
+    trigger: calendar
+  - event: start
+    offset: "-0:30:00"
+    entity_id: calendar.yasno_group_3_1_outages_calendar
+    trigger: calendar
+  - event: start
+    offset: "-0:5:00"
+    entity_id: calendar.yasno_group_3_1_outages_calendar
+    trigger: calendar
+  - event: start
+    offset: "-0:0:00"
+    entity_id: calendar.yasno_group_3_1_outages_calendar
+    trigger: calendar
+conditions:
+  - condition: and
+    conditions:
+      - condition: template
+        value_template: "{{trigger.calendar_event.description == 'Definite'}}"
+actions:
+  - action: tts.speak
+    target:
+      entity_id: tts.google_uk_com_ua
+    data:
+      media_player_entity_id: media_player.my_speaker
+      language: ua
+      message: >-
+        {% set battery_level = states('sensor.delta_pro_battery_level') | default(-1) | float %}
+        {% set battery_target = states('number.delta_pro_max_charge_level') | default(100) | float %}
+        {% set start = trigger.calendar_event.start|as_datetime|as_local %}
+        {% set start_minutes = (start - now()).seconds // 60 %}
+        {% set end = trigger.calendar_event.end|as_datetime|as_local %}
+        {% set duration_hours = (end - start).seconds // 60 // 60 %}
+        {% set end_str = end|as_timestamp|timestamp_custom('%H:%M') %}
+
+        Відключення електроенергії може відбутися за {{ start_minutes }} хвилин
+        і продовжиться {{ duration_hours }} години до {{end_str}}.
+
+        {% if start_minutes <= 5 -%}
+          Не забудьте закип'ятити воду.
+        {%- endif %}
+
+        {% if battery_level >= 0 and battery_level < battery_target - 15 %}
+          Рівень заряду екофлоу - {{battery_level | round(0) | int }} відсотків.
+        {% endif %}
+    enabled: true
+mode: single

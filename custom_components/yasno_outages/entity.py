@@ -17,7 +17,11 @@ class YasnoOutagesEntity(CoordinatorEntity[YasnoOutagesCoordinator]):
         """Return device information about this entity."""
         return DeviceInfo(
             translation_key="yasno_outages",
-            translation_placeholders={"group": str(self.coordinator.group)},
+            translation_placeholders={
+                "region": self.coordinator.region_name,
+                "provider": self.coordinator.provider_name,
+                "group": str(self.coordinator.group),
+            },
             identifiers={(DOMAIN, self.coordinator.config_entry.entry_id)},
             manufacturer="Yasno",
             entry_type=DeviceEntryType.SERVICE,

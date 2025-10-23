@@ -40,30 +40,42 @@ The quickest way to install this integration is via [HACS][hacs-url] by clicking
 If it doesn't work, adding this repository to HACS manually by adding this URL:
 
 1. Visit **HACS** → **Integrations** → **...** (in the top right) → **Custom repositories**
-1. Click **Add**
-1. Paste `https://github.com/denysdovhan/ha-yasno-outages` into the **URL** field
-1. Chose **Integration** as a **Category**
-1. **Yasno Outages** will appear in the list of available integrations. Install it normally.
+2. Click **Add**
+3. Paste `https://github.com/denysdovhan/ha-yasno-outages` into the **URL** field
+4. Chose **Integration** as a **Category**
+5. **Yasno Outages** will appear in the list of available integrations. Install it normally.
 
 ## Usage
 
 This integration is configurable via UI. On **Devices and Services** page, click **Add Integration** and search for **Yasno Outages**.
 
-Select your city:
+Select your region:
 
-![City Selection](https://github.com/user-attachments/assets/0d3492d8-54ee-49cc-a09d-40934fcdfc6d)
+![Region Selection](/media/1_region.png)
 
-Find your group by visiting [Yasno][yasno] website and typing your address in the search bar. Select your group in the configuration.
+Select your Service Provider
 
-![Configuration flow](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/e8bfde50-fcbe-45c3-b448-b451b0ac3bcd)
+![Service Provider Selection](/media/2_provider.png)
+
+Select your Group
+
+![Group Selection](/media/3_group.png)
+
+Here's how the devices look
+
+![Devices page](/media/4_devices.png)
+
+![Device page](/media/5_device.png)
 
 Then you can add the integration to your dashboard and see the information about the next planned outages.
-
-![Device page](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/df628647-fd2a-455d-9d08-0d1542b67e41)
-
 Integration also provides a calendar view of planned outages. You can add it to your dashboard as well via [Calendar card][calendar-card].
 
-![Calendar view](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/b09c4db3-d0a0-4e06-8dd9-3f4a59f1d63e)
+![Calendars view](/media/6_calendars.png)
+
+Examples:
+
+- [Automation](/examples/automation.yaml)
+- [Dashboard](/examples/dashboard.yaml)
 
 Here's an example of a dashboard using this integration:
 
@@ -73,7 +85,7 @@ Here's an example of a dashboard using this integration:
 
 Want to contribute to the project?
 
-First, thanks! Check [contributing guideline](./contributing.md) for more information.
+First, thanks! Check [contributing guideline](/contributing.md) for more information.
 
 ## License
 
