@@ -126,49 +126,6 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                         # Cache the provider name for device naming
                         self._provider_name = service_data["name"]
 
-    async def update_config(
-        self,
-        hass: HomeAssistant,  # noqa: ARG002
-        config_entry: ConfigEntry,
-    ) -> None:
-        """Update configuration."""
-        new_region = config_entry.options.get(CONF_REGION)
-        new_service = config_entry.options.get(CONF_SERVICE)
-        new_group = config_entry.options.get(CONF_GROUP)
-
-        config_changed = (
-            (new_region and new_region != self.region)
-            or (new_service and new_service != self.service)
-            or (new_group and new_group != self.group)
-        )
-
-        if config_changed:
-            LOGGER.debug(
-                "Updating configuration: region=%s, service=%s, group=%s",
-                new_region,
-                new_service,
-                new_group,
-            )
-            self.region = new_region
-            self.service = new_service
-            self.group = new_group
-
-            # Clear resolved IDs so they get re-resolved with new values
-            self.region_id = None
-            self.service_id = None
-            self._provider_name = ""
-
-            # Resolve IDs and update API
-            await self._resolve_ids()
-            self.api = YasnoOutagesApi(
-                region_id=self.region_id,
-                service_id=self.service_id,
-                group=self.group,
-            )
-            await self.async_refresh()
-        else:
-            LOGGER.debug("No configuration update necessary.")
-
     async def _async_update_data(self) -> None:
         """Fetch data from new Yasno API."""
         await self.async_fetch_translations()
