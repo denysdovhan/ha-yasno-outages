@@ -212,8 +212,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def next_possible_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next possible outage time."""
-        now = dt_utils.now()
-        current_event = self.get_event_at(now)
+        current_event = self.get_current_event()
 
         # If currently in any outage state, return end time (when it ends)
         current_state = self._event_to_state(current_event)
@@ -228,8 +227,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def next_connectivity(self) -> datetime.date | datetime.datetime | None:
         """Get next connectivity time."""
-        now = dt_utils.now()
-        current_event = self.get_event_at(now)
+        current_event = self.get_current_event()
         current_state = self._event_to_state(current_event)
 
         # If currently in any outage state, return when it ends
@@ -244,8 +242,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def current_state(self) -> str:
         """Get the current state."""
-        now = dt_utils.now()
-        event = self.get_event_at(now)
+        event = self.get_current_event()
         return self._event_to_state(event)
 
     @property
@@ -253,8 +250,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the schedule last updated timestamp."""
         return self.api.get_updated_on()
 
+    def get_current_event(self) -> CalendarEvent | None:
+        """Get the event at the present time."""
+        return self.get_event_at(dt_utils.now())
+
     def get_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
-        """Get the current event."""
+        """Get the event at a given time."""
         event = self.api.get_current_event(at)
         return self._get_calendar_event(event, translate=False)
 

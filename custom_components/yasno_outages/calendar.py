@@ -8,7 +8,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.util import dt as dt_utils
 
 from .coordinator import YasnoOutagesCoordinator
 from .entity import YasnoOutagesEntity
@@ -50,9 +49,8 @@ class YasnoOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
     @property
     def event(self) -> CalendarEvent | None:
         """Return the current or next upcoming event or None."""
-        now = dt_utils.now()
-        LOGGER.debug("Getting current event for %s", now)
-        return self.coordinator.get_event_at(now)
+        LOGGER.debug("Getting current event")
+        return self.coordinator.get_current_event()
 
     async def async_get_events(
         self,
