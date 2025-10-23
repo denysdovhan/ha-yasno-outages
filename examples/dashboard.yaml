@@ -19,10 +19,3 @@ cards:
     type: calendar
     entities:
       - calendar.yasno_kiiv_dtek_3_1_outages_calendar
-visibility:
-  - condition: state
-    entity: calendar.yasno_kiiv_dtek_3_1_outages_calendar
-    state_not: unknown
-  - condition: state
-    entity: calendar.yasno_kiiv_dtek_3_1_outages_calendar
-    state_not: unavailable
