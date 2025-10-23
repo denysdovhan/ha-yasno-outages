@@ -8,7 +8,9 @@ from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
+    OptionsFlow,
 )
+from homeassistant.core import callback
 from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
@@ -104,6 +106,83 @@ def build_group_schema(
     )
 
 
+class YasnoOutagesOptionsFlow(OptionsFlow):
+    """Handle options flow for Yasno Outages."""
+
+    def __init__(self) -> None:
+        """Initialize options flow."""
+        self.api = YasnoOutagesApi()
+        self.data: dict[str, Any] = {}
+
+    async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
+        """Handle the region change."""
+        if user_input is not None:
+            LOGGER.debug("Updating options: %s", user_input)
+            self.data.update(user_input)
+            return await self.async_step_service()
+
+        await self.api.fetch_regions()
+
+        LOGGER.debug("Options: %s", self.config_entry.options)
+        LOGGER.debug("Data: %s", self.config_entry.data)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=build_region_schema(
+                api=self.api, config_entry=self.config_entry
+            ),
+        )
+
+    async def async_step_service(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle the service change."""
+        if user_input is not None:
+            LOGGER.debug("Service selected: %s", user_input)
+            self.data.update(user_input)
+            return await self.async_step_group()
+
+        return self.async_show_form(
+            step_id="service",
+            data_schema=build_service_schema(
+                api=self.api,
+                config_entry=self.config_entry,
+                data=self.data,
+            ),
+        )
+
+    async def async_step_group(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle the group change."""
+        if user_input is not None:
+            LOGGER.debug("Group selected: %s", user_input)
+            self.data.update(user_input)
+            return self.async_create_entry(title="", data=self.data)
+
+        # Fetch groups for the selected region/service
+        region = self.data[CONF_REGION]
+        service = self.data[CONF_SERVICE]
+
+        region_data = self.api.get_region_by_name(region)
+        service_data = self.api.get_service_by_name(region, service)
+        groups = []
+        if region_data and service_data:
+            temp_api = YasnoOutagesApi(
+                region_id=region_data["id"],
+                service_id=service_data["id"],
+            )
+            await temp_api.fetch_outages_data()
+            groups = temp_api.get_groups()
+
+        return self.async_show_form(
+            step_id="group",
+            data_schema=build_group_schema(groups, self.config_entry),
+        )
+
+
 class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Yasno Outages."""
 
@@ -113,6 +192,12 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize config flow."""
         self.api = YasnoOutagesApi()
         self.data: dict[str, Any] = {}
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> YasnoOutagesOptionsFlow:  # noqa: ARG004
+        """Get the options flow for this handler."""
+        return YasnoOutagesOptionsFlow()
 
     async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
