@@ -12,8 +12,8 @@ from homeassistant.util import dt as dt_utils
 
 from .api import YasnoOutagesApi
 from .const import (
-    CONF_CITY,
     CONF_GROUP,
+    CONF_REGION,
     CONF_SERVICE,
     DOMAIN,
     EVENT_NAME_NORMAL,
@@ -49,9 +49,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.translations = {}
 
         # Get configuration values
-        self.city = config_entry.options.get(
-            CONF_CITY,
-            config_entry.data.get(CONF_CITY),
+        self.region = config_entry.options.get(
+            CONF_REGION,
+            config_entry.data.get(CONF_REGION),
         )
         self.service = config_entry.options.get(
             CONF_SERVICE,
@@ -62,14 +62,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             config_entry.data.get(CONF_GROUP),
         )
 
-        if not self.city:
-            city_required_msg = (
-                "City not set in configuration - this should not happen "
+        if not self.region:
+            region_required_msg = (
+                "Region not set in configuration - this should not happen "
                 "with proper config flow"
             )
-            city_error = "City configuration is required"
-            LOGGER.error(city_required_msg)
-            raise ValueError(city_error)
+            region_error = "Region configuration is required"
+            LOGGER.error(region_required_msg)
+            raise ValueError(region_error)
 
         if not self.service:
             service_required_msg = (
@@ -111,12 +111,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         if not self.api.regions_data:
             await self.api.fetch_regions()
 
-        if self.city:
-            region_data = self.api.get_region_by_name(self.city)
+        if self.region:
+            region_data = self.api.get_region_by_name(self.region)
             if region_data:
                 self.region_id = region_data["id"]
                 if self.service:
-                    service_data = self.api.get_service_by_name(self.city, self.service)
+                    service_data = self.api.get_service_by_name(
+                        self.region, self.service
+                    )
                     if service_data:
                         self.service_id = service_data["id"]
                         # Cache the provider name for device naming
@@ -128,29 +130,29 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         config_entry: ConfigEntry,
     ) -> None:
         """Update configuration."""
-        new_city = config_entry.options.get(CONF_CITY)
+        new_region = config_entry.options.get(CONF_REGION)
         new_service = config_entry.options.get(CONF_SERVICE)
         new_group = config_entry.options.get(CONF_GROUP)
 
         config_changed = (
-            (new_city and new_city != self.city)
+            (new_region and new_region != self.region)
             or (new_service and new_service != self.service)
             or (new_group and new_group != self.group)
         )
 
         if config_changed:
             LOGGER.debug(
-                "Updating configuration: city=%s, service=%s, group=%s",
-                new_city,
+                "Updating configuration: region=%s, service=%s, group=%s",
+                new_region,
                 new_service,
                 new_group,
             )
-            self.city = new_city or self.city
+            self.region = new_region or self.region
             self.service = new_service or self.service
             self.group = new_group or self.group
 
             # Clear cached provider name if service changed
-            if new_service and new_service != config_entry.options.get(CONF_SERVICE):
+            if new_service and new_service != config_entry.options.get(CONF_REGION):
                 self._provider_name = ""
 
             # Resolve IDs and update API
@@ -260,7 +262,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def region_name(self) -> str:
         """Get the configured region name."""
-        return self.city or ""
+        return self.region or ""
 
     @property
     def provider_name(self) -> str:
@@ -272,7 +274,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Fallback to lookup if not cached yet
         if not self.api.regions_data:
             return ""
-        region_data = self.api.get_region_by_name(self.city)
+        region_data = self.api.get_region_by_name(self.region)
         if not region_data:
             return ""
         services = region_data.get("dsos", [])

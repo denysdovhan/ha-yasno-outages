@@ -51,7 +51,7 @@ This integration is configurable via UI. On **Devices and Services** page, click
 
 Select your region:
 
-![City Selection](/media/1_region.png)
+![Region Selection](/media/1_region.png)
 
 Select your Service Provider
 

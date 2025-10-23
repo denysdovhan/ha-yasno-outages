@@ -5,7 +5,7 @@
       "user": {
         "title": "Yasno Outages Settings",
         "data": {
-          "city": "Please select your region:"
+          "region": "Please select your region:"
         }
       },
       "provider": {
@@ -30,7 +30,7 @@
       "init": {
         "title": "Yasno Outages Settings",
         "data": {
-          "city": "Please select your region:"
+          "region": "Please select your region:"
         }
       },
       "provider": {

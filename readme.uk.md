@@ -48,7 +48,7 @@
 
 Виберіть регіон:
 
-![City Selection](/media/1_region.png)
+![Region Selection](/media/1_region.png)
 
 Виберіть систему розподілу:
 

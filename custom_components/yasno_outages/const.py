@@ -6,7 +6,7 @@ DOMAIN: Final = "yasno_outages"
 NAME: Final = "Yasno Outages"
 
 # Configuration option
-CONF_CITY: Final = "city"
+CONF_REGION: Final = "region"
 CONF_SERVICE: Final = "service"
 CONF_GROUP: Final = "group"
 

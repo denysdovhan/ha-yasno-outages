@@ -18,8 +18,8 @@ from homeassistant.helpers.selector import (
 
 from .api import YasnoOutagesApi
 from .const import (
-    CONF_CITY,
     CONF_GROUP,
+    CONF_REGION,
     CONF_SERVICE,
     DOMAIN,
     NAME,
@@ -39,22 +39,22 @@ def get_config_value(
     return default
 
 
-def build_city_schema(
+def build_region_schema(
     api: YasnoOutagesApi,
     config_entry: ConfigEntry | None,
 ) -> vol.Schema:
-    """Build the schema for the city (region) selection step."""
+    """Build the schema for the region selection step."""
     regions = api.get_regions()
-    city_options = [region["value"] for region in regions]
+    region_options = [region["value"] for region in regions]
     return vol.Schema(
         {
             vol.Required(
-                CONF_CITY,
-                default=get_config_value(config_entry, CONF_CITY),
+                CONF_REGION,
+                default=get_config_value(config_entry, CONF_REGION),
             ): SelectSelector(
                 SelectSelectorConfig(
-                    options=city_options,
-                    translation_key="city",
+                    options=region_options,
+                    translation_key="region",
                 ),
             ),
         },
@@ -67,8 +67,8 @@ def build_service_schema(
     data: dict,
 ) -> vol.Schema:
     """Build the schema for the service selection step."""
-    city = data[CONF_CITY]
-    services = api.get_services_for_region(city)
+    region = data[CONF_REGION]
+    services = api.get_services_for_region(region)
     service_options = [service["name"] for service in services]
 
     return vol.Schema(
@@ -115,7 +115,7 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
         self.data: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
-        """Handle the city (region) change."""
+        """Handle the region change."""
         if user_input is not None:
             LOGGER.debug("Updating options: %s", user_input)
             self.data.update(user_input)
@@ -128,7 +128,9 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=build_city_schema(api=self.api, config_entry=self.config_entry),
+            data_schema=build_region_schema(
+                api=self.api, config_entry=self.config_entry
+            ),
         )
 
     async def async_step_service(
@@ -160,12 +162,12 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
             self.data.update(user_input)
             return self.async_create_entry(title="", data=self.data)
 
-        # Fetch groups for the selected city/service
-        city = self.data[CONF_CITY]
+        # Fetch groups for the selected region/service
+        region = self.data[CONF_REGION]
         service = self.data[CONF_SERVICE]
 
-        region_data = self.api.get_region_by_name(city)
-        service_data = self.api.get_service_by_name(city, service)
+        region_data = self.api.get_region_by_name(region)
+        service_data = self.api.get_service_by_name(region, service)
         groups = []
         if region_data and service_data:
             temp_api = YasnoOutagesApi(
@@ -200,7 +202,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is not None:
-            LOGGER.debug("City selected: %s", user_input)
+            LOGGER.debug("Region selected: %s", user_input)
             self.data.update(user_input)
             return await self.async_step_service()
 
@@ -208,7 +210,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=build_city_schema(api=self.api, config_entry=None),
+            data_schema=build_region_schema(api=self.api, config_entry=None),
         )
 
     async def async_step_service(
@@ -221,8 +223,8 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             self.data.update(user_input)
             return await self.async_step_group()
 
-        city = self.data[CONF_CITY]
-        services = self.api.get_services_for_region(city)
+        region = self.data[CONF_REGION]
+        services = self.api.get_services_for_region(region)
 
         # If only one service available, auto-select it and proceed
         if len(services) == 1:
@@ -250,12 +252,12 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             self.data.update(user_input)
             return self.async_create_entry(title=NAME, data=self.data)
 
-        # Fetch groups for the selected city/service
-        city = self.data[CONF_CITY]
+        # Fetch groups for the selected region/service
+        region = self.data[CONF_REGION]
         service = self.data[CONF_SERVICE]
 
-        region_data = self.api.get_region_by_name(city)
-        service_data = self.api.get_service_by_name(city, service)
+        region_data = self.api.get_region_by_name(region)
+        service_data = self.api.get_service_by_name(region, service)
         groups = []
         if region_data and service_data:
             temp_api = YasnoOutagesApi(
