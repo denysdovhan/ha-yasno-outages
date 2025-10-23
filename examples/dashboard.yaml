@@ -2,27 +2,27 @@ type: grid
 cards:
   - type: entities
     entities:
-      - entity: calendar.yasno_group_3_1_outages_calendar
-      - entity: sensor.yasno_group_3_1_electricity
-      - entity: sensor.yasno_group_3_1_next_outage
-      - entity: sensor.yasno_group_3_1_next_possible_outage
-      - entity: sensor.yasno_group_3_1_next_connectivity
-      - entity: sensor.yasno_group_3_1_1_schedule_updated_on
+      - entity: calendar.yasno_kiiv_dtek_3_1_outages_calendar
+      - entity: sensor.yasno_kiiv_dtek_3_1_electricity
+      - entity: sensor.yasno_kiiv_dtek_3_1_next_outage
+      - entity: sensor.yasno_kiiv_dtek_3_1_next_possible_outage
+      - entity: sensor.yasno_kiiv_dtek_3_1_next_connectivity
+      - entity: sensor.yasno_kiiv_dtek_3_1_schedule_updated_on
   - type: history-graph
     entities:
       - entity: binary_sensor.power
         name: Reality
-      - entity: sensor.yasno_group_3_1_electricity
+      - entity: sensor.yasno_kiiv_dtek_3_1_electricity
         name: Theory
     hours_to_show: 18
-  - type: tile
-    entity: sensor.datetime_full
-    hide_state: false
-    name: Current DateTime
-    grid_options:
-      columns: 12
-      rows: 1
   - initial_view: listWeek
     type: calendar
     entities:
-      - calendar.yasno_group_3_1_outages_calendar
+      - calendar.yasno_kiiv_dtek_3_1_outages_calendar
+visibility:
+  - condition: state
+    entity: calendar.yasno_kiiv_dtek_3_1_outages_calendar
+    state_not: unknown
+  - condition: state
+    entity: calendar.yasno_kiiv_dtek_3_1_outages_calendar
+    state_not: unavailable
