@@ -17,6 +17,8 @@ async def async_check_and_create_repair(
     """Check if repair is needed and create issue."""
     if CONF_CITY in entry.data or CONF_CITY in entry.options:
         LOGGER.info("Old config detected for entry %s, creating repair", entry.entry_id)
+        LOGGER.debug("Old config: %s", entry.data)
+        LOGGER.debug("Old options: %s", entry.options)
         ir.async_create_issue(
             hass,
             DOMAIN,
