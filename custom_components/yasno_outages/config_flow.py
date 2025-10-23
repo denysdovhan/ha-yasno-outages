@@ -162,20 +162,8 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
             self.data.update(user_input)
             return self.async_create_entry(title="", data=self.data)
 
-        # Fetch groups for the selected region/service
-        region = self.data[CONF_REGION]
-        service = self.data[CONF_SERVICE]
-
-        region_data = self.api.get_region_by_name(region)
-        service_data = self.api.get_service_by_name(region, service)
-        groups = []
-        if region_data and service_data:
-            temp_api = YasnoOutagesApi(
-                region_id=region_data["id"],
-                service_id=service_data["id"],
-            )
-            await temp_api.fetch_outages_data()
-            groups = temp_api.get_groups()
+        await self.api.fetch_outages_data()
+        groups = self.api.get_groups()
 
         return self.async_show_form(
             step_id="group",
