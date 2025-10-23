@@ -18,9 +18,9 @@ from .const import (
     DOMAIN,
     EVENT_NAME_MAYBE,
     EVENT_NAME_OFF,
-    STATE_MAYBE,
-    STATE_OFF,
-    STATE_ON,
+    OUTAGE_STATE_NORMAL,
+    OUTAGE_STATE_OUTAGE,
+    OUTAGE_STATE_POSSIBLE,
     TRANSLATION_KEY_EVENT_MAYBE,
     TRANSLATION_KEY_EVENT_OFF,
     UPDATE_INTERVAL,
@@ -205,7 +205,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def next_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next outage time."""
-        event = self._get_next_event_of_type(STATE_OFF)
+        event = self._get_next_event_of_type(OUTAGE_STATE_OUTAGE)
         LOGGER.debug("Next outage: %s", event)
         return event.start if event else None
 
@@ -217,11 +217,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         # If currently in any outage state, return end time (when it ends)
         current_state = self._event_to_state(current_event)
-        if current_state in [STATE_OFF, STATE_MAYBE]:
+        if current_state in [OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE]:
             return current_event.end if current_event else None
 
         # Otherwise, return the start of the next outage
-        event = self._get_next_event_of_type(STATE_MAYBE)
+        event = self._get_next_event_of_type(OUTAGE_STATE_POSSIBLE)
         LOGGER.debug("Next possible outage: %s", event)
         return event.start if event else None
 
@@ -233,11 +233,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         current_state = self._event_to_state(current_event)
 
         # If currently in any outage state, return when it ends
-        if current_state in [STATE_OFF, STATE_MAYBE]:
+        if current_state in [OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE]:
             return current_event.end if current_event else None
 
         # Otherwise, return the end of the next possible outage
-        event = self._get_next_event_of_type(STATE_MAYBE)
+        event = self._get_next_event_of_type(OUTAGE_STATE_POSSIBLE)
         LOGGER.debug("Next connectivity: %s", event)
         return event.end if event else None
 
@@ -299,17 +299,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         summary = event.as_dict().get("summary") if event else None
 
         # Map event names to states
-        if summary == "Definite":
-            return STATE_OFF
-        if summary == "NotPlanned":
-            return STATE_MAYBE
         if summary == EVENT_NAME_OFF:
-            return STATE_OFF
+            return OUTAGE_STATE_OUTAGE
         if summary == EVENT_NAME_MAYBE:
-            return STATE_MAYBE
+            return OUTAGE_STATE_POSSIBLE
         if summary is None:
-            return STATE_ON
+            return OUTAGE_STATE_NORMAL
 
-        # Unknown states default to ON
         LOGGER.warning("Unknown event summary: %s", summary)
-        return STATE_ON
+        return OUTAGE_STATE_NORMAL

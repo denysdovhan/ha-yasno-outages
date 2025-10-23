@@ -64,8 +64,8 @@
           "message": {
             "name": "Connectivity",
             "state": {
-              "off": "Electricity Outage",
-              "maybe": "Possible Outage"
+              "outage": "Electricity Outage",
+              "possible": "Possible Outage"
             }
           }
         }
@@ -75,9 +75,9 @@
       "electricity": {
         "name": "Electricity",
         "state": {
-          "on": "Connected",
-          "off": "Outage",
-          "maybe": "Possible Outage"
+          "normal": "Connected",
+          "outage": "Outage",
+          "possible": "Possible Outage"
         }
       },
       "next_outage": {

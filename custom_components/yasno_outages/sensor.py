@@ -14,7 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import STATE_MAYBE, STATE_OFF, STATE_ON
+from .const import OUTAGE_STATE_NORMAL, OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE
 from .coordinator import YasnoOutagesCoordinator
 from .entity import YasnoOutagesEntity
 
@@ -34,7 +34,7 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         translation_key="electricity",
         icon="mdi:transmission-tower",
         device_class=SensorDeviceClass.ENUM,
-        options=[STATE_ON, STATE_OFF, STATE_MAYBE],
+        options=[OUTAGE_STATE_NORMAL, OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE],
         val_func=lambda coordinator: coordinator.current_state,
     ),
     YasnoOutagesSensorDescription(

@@ -14,9 +14,9 @@ CONF_GROUP: Final = "group"
 UPDATE_INTERVAL: Final = 15
 
 # Values
-STATE_ON: Final = "on"
-STATE_OFF: Final = "off"
-STATE_MAYBE: Final = "maybe"
+OUTAGE_STATE_NORMAL: Final = "normal"
+OUTAGE_STATE_OUTAGE: Final = "outage"
+OUTAGE_STATE_POSSIBLE: Final = "possible"
 
 # Event names
 EVENT_NAME_OFF: Final = "Definite"
