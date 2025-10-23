@@ -10,6 +10,10 @@ CONF_REGION: Final = "region"
 CONF_SERVICE: Final = "service"
 CONF_GROUP: Final = "group"
 
+# Provider name simplification
+PROVIDER_DTEK_FULL: Final = "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ"
+PROVIDER_DTEK_SHORT: Final = "ДТЕК"
+
 # Consts
 UPDATE_INTERVAL: Final = 15
 

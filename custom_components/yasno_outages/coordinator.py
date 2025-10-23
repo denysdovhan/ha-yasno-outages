@@ -21,6 +21,8 @@ from .const import (
     OUTAGE_STATE_NORMAL,
     OUTAGE_STATE_OUTAGE,
     OUTAGE_STATE_POSSIBLE,
+    PROVIDER_DTEK_FULL,
+    PROVIDER_DTEK_SHORT,
     TRANSLATION_KEY_EVENT_MAYBE,
     TRANSLATION_KEY_EVENT_OFF,
     UPDATE_INTERVAL,
@@ -354,8 +356,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def _simplify_provider_name(self, provider_name: str) -> str:
         """Simplify provider names for cleaner display in device names."""
         # Replace long DTEK provider names with just "ДТЕК"
-        if "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ" in provider_name.upper():
-            return "ДТЕК"
+        if PROVIDER_DTEK_FULL in provider_name.upper():
+            return PROVIDER_DTEK_SHORT
 
         # Add more provider simplifications here as needed
         return provider_name
