@@ -149,13 +149,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 new_service,
                 new_group,
             )
-            self.region = new_region or self.region
-            self.service = new_service or self.service
-            self.group = new_group or self.group
+            self.region = new_region
+            self.service = new_service
+            self.group = new_group
 
-            # Clear cached provider name if service changed
-            if new_service and new_service != config_entry.options.get(CONF_REGION):
-                self._provider_name = ""
+            # Clear resolved IDs so they get re-resolved with new values
+            self.region_id = None
+            self.service_id = None
+            self._provider_name = ""
 
             # Resolve IDs and update API
             await self._resolve_ids()
