@@ -11,3 +11,9 @@ updates:
     directory: /
     schedule:
       interval: monthly
+
+  # Update Dev Container definitions
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: monthly
