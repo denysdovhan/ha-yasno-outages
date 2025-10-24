@@ -49,7 +49,6 @@ class YasnoOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
     @property
     def event(self) -> CalendarEvent | None:
         """Return the current or next upcoming event or None."""
-        LOGGER.debug("Getting current event")
         return self.coordinator.get_current_event()
 
     async def async_get_events(
@@ -59,5 +58,4 @@ class YasnoOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
-        LOGGER.debug('Getting all events between "%s" -> "%s"', start_date, end_date)
         return self.coordinator.get_events_between(start_date, end_date)
