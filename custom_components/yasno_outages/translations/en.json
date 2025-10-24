@@ -81,8 +81,8 @@
     }
   },
   "common": {
-    "even_name_planned_outage": "Planned Outage",
-    "even_name_normal": "Connected"
+    "event_name_planned_outage": "Planned Outage",
+    "event_name_normal": "Connected"
   },
   "issues": {
     "api_v1_to_v2": {

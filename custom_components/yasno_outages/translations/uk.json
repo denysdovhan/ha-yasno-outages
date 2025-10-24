@@ -81,8 +81,8 @@
     }
   },
   "common": {
-    "even_name_planned_outage": "Планове відключення",
-    "even_name_normal": "Заживлено"
+    "event_name_planned_outage": "Планове відключення",
+    "event_name_normal": "Заживлено"
   },
   "issues": {
     "api_v1_to_v2": {
