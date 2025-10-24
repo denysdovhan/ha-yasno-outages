@@ -20,7 +20,7 @@
           "group": "Please select your group:"
         },
         "data_description": {
-          "group": "You can find your group at: https://app.yasno.ua"
+          "group": "You can find your group at: https://static.yasno.ua/kyiv/outages"
         }
       }
     }
@@ -45,7 +45,7 @@
           "group": "Please select your group:"
         },
         "data_description": {
-          "group": "You can find your group at: https://app.yasno.ua"
+          "group": "You can find your group at: https://static.yasno.ua/kyiv/outages"
         }
       }
     }
