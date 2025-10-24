@@ -19,6 +19,7 @@ PROVIDER_DTEK_SHORT: Final = "ДТЕК"
 UPDATE_INTERVAL: Final = 15
 
 # Values
+STATE_NORMAL: Final = "normal"
 STATE_OUTAGE: Final = "outage"
 
 # Event names
