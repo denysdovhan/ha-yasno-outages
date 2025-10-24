@@ -42,6 +42,6 @@ BLOCK_KEY_STATUS: Final = "status"
 
 # Keys
 TRANSLATION_KEY_EVENT_OUTAGE: Final = (
-    f"component.{DOMAIN}.common.event_names.planned_outage"
+    f"component.{DOMAIN}.common.event_name_planned_outage"
 )
-TRANSLATION_KEY_EVENT_NORMAL: Final = f"component.{DOMAIN}.common.event_names.normal"
+TRANSLATION_KEY_EVENT_NORMAL: Final = f"component.{DOMAIN}.common.event_name_normal"
