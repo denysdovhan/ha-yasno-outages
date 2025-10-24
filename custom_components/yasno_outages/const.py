@@ -9,7 +9,6 @@ NAME: Final = "Yasno Outages"
 CONF_REGION: Final = "region"
 CONF_PROVIDER: Final = "provider"
 CONF_GROUP: Final = "group"
-CONF_CITY: Final = "city"  # Deprecated, use CONF_REGION
 
 # Provider name simplification
 PROVIDER_DTEK_FULL: Final = "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ"

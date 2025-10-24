@@ -87,6 +87,11 @@
     "api_v1_to_v2": {
       "title": "Configuration update required",
       "description": "Your configuration uses an old format. Please remove this integration and add it again."
+    },
+    "possible_outages_removed": {
+      "title": "Breaking changes applied",
+      "description": "The integration has been updated with breaking changes. The 'next_possible_outage' sensor has been removed, 'next_outage' renamed to 'next_planned_outage', and 'possible' outage state eliminated. Update your automations and dashboards accordingly. See documentation for migration details.",
+      "fix": "Update entity references in automations and dashboards"
     }
   }
 }
