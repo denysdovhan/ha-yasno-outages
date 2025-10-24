@@ -19,11 +19,9 @@ PROVIDER_DTEK_SHORT: Final = "ДТЕК"
 UPDATE_INTERVAL: Final = 15
 
 # Values
-STATE_NORMAL: Final = "normal"
 STATE_OUTAGE: Final = "outage"
 
 # Event names
-EVENT_NAME_NORMAL: Final = "NotPlanned"
 EVENT_NAME_OUTAGE: Final = "Definite"
 
 # API Endpoints
@@ -44,4 +42,3 @@ BLOCK_KEY_STATUS: Final = "status"
 TRANSLATION_KEY_EVENT_OUTAGE: Final = (
     f"component.{DOMAIN}.common.event_name_planned_outage"
 )
-TRANSLATION_KEY_EVENT_NORMAL: Final = f"component.{DOMAIN}.common.event_name_normal"

@@ -16,13 +16,10 @@ from .const import (
     CONF_PROVIDER,
     CONF_REGION,
     DOMAIN,
-    EVENT_NAME_NORMAL,
     EVENT_NAME_OUTAGE,
     PROVIDER_DTEK_FULL,
     PROVIDER_DTEK_SHORT,
-    STATE_NORMAL,
     STATE_OUTAGE,
-    TRANSLATION_KEY_EVENT_NORMAL,
     TRANSLATION_KEY_EVENT_OUTAGE,
     UPDATE_INTERVAL,
 )
@@ -104,7 +101,6 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Return a mapping of event names to translations."""
         return {
             EVENT_NAME_OUTAGE: self.translations.get(TRANSLATION_KEY_EVENT_OUTAGE),
-            EVENT_NAME_NORMAL: self.translations.get(TRANSLATION_KEY_EVENT_NORMAL),
         }
 
     async def _resolve_ids(self) -> None:
@@ -270,18 +266,16 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         LOGGER.debug("Calendar Event: %s", output)
         return output
 
-    def _event_to_state(self, event: CalendarEvent | None) -> str:
+    def _event_to_state(self, event: CalendarEvent | None) -> str | None:
         if not event:
-            return STATE_NORMAL
+            return None
 
         # Map event types to states using uid field
         if event.uid == OutageEventType.DEFINITE.value:
             return STATE_OUTAGE
-        if event.uid == OutageEventType.NOT_PLANNED.value:
-            return STATE_NORMAL
 
         LOGGER.warning("Unknown event type: %s", event.uid)
-        return STATE_NORMAL
+        return None
 
     def _simplify_provider_name(self, provider_name: str) -> str:
         """Simplify provider names for cleaner display in device names."""

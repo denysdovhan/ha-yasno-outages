@@ -11,7 +11,6 @@ from .const import (
     BLOCK_KEY_STATUS,
     BLOCK_NAME_TODAY,
     BLOCK_NAME_TOMORROW,
-    EVENT_NAME_NORMAL,
     EVENT_NAME_OUTAGE,
     PLANNED_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
@@ -155,7 +154,8 @@ class YasnoOutagesApi:
             end_minutes = slot["end"]
             slot_type = slot["type"]
 
-            if slot_type not in [EVENT_NAME_NORMAL, EVENT_NAME_OUTAGE]:
+            # parse only outages
+            if slot_type not in [EVENT_NAME_OUTAGE]:
                 continue
 
             event_start = self._minutes_to_time(start_minutes, date)
