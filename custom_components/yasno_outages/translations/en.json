@@ -80,7 +80,7 @@
       }
     }
   },
-  "translations": {
+  "common": {
     "event_names": {
       "planned_outage": "Planned Outage",
       "normal": "Connected"

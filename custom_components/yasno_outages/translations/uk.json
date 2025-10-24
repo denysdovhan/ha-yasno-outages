@@ -80,9 +80,11 @@
       "name": "Наступне відновлення"
     }
   },
-  "event_names": {
-    "planned_outage": "Планове відключення",
-    "normal": "Заживлено"
+  "common": {
+    "event_names": {
+      "planned_outage": "Планове відключення",
+      "normal": "Заживлено"
+    }
   },
   "issues": {
     "api_v1_to_v2": {

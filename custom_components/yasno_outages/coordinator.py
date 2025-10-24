@@ -148,7 +148,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.translations = await async_get_translations(
             self.hass,
             self.hass.config.language,
-            "translations",
+            "common",
             [DOMAIN],
         )
         LOGGER.debug(
