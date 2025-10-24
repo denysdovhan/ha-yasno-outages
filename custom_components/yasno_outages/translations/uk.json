@@ -20,7 +20,7 @@
           "group": "Оберіть свою групу:"
         },
         "data_description": {
-          "group": "Знайдіть свою групу на: https://app.yasno.ua"
+          "group": "Знайдіть свою групу на: https://static.yasno.ua/kyiv/outages"
         }
       }
     }
@@ -45,12 +45,11 @@
           "group": "Оберіть свою групу:"
         },
         "data_description": {
-          "group": "Знайдіть свою групу на: https://app.yasno.ua"
+          "group": "Знайдіть свою групу на: https://static.yasno.ua/kyiv/outages"
         }
       }
     }
   },
-
   "device": {
     "yasno_outages": {
       "name": "Yasno {region} {provider} {group}"
@@ -59,44 +58,31 @@
   "entity": {
     "calendar": {
       "calendar": {
-        "name": "Графік відключень",
-        "state_attributes": {
-          "message": {
-            "name": "Підключення",
-            "state": {
-              "outage": "Відключення",
-              "possible": "Можливе відключення"
-            }
-          }
-        }
-      }
-    },
-    "sensor": {
-      "electricity": {
-        "name": "Електрика",
-        "state": {
-          "normal": "Заживлено",
-          "outage": "Відключення",
-          "possible": "Можливе відключення"
-        }
-      },
-      "schedule_updated_on": {
-        "name": "Графік оновлено"
-      },
-      "next_outage": {
-        "name": "Наступне відключення"
-      },
-      "next_possible_outage": {
-        "name": "Наступне можливе відключення"
-      },
-      "next_connectivity": {
-        "name": "Наступна заживленість"
+        "name": "Графік планових відключень"
       }
     }
   },
-  "common": {
-    "electricity_off": "Відключення",
-    "electricity_maybe": "Можливе відключення"
+  "sensor": {
+    "electricity": {
+      "name": "Електрика",
+      "state": {
+        "normal": "Заживлено",
+        "outage": "Планове відключення"
+      }
+    },
+    "schedule_updated_on": {
+      "name": "Графік оновлено"
+    },
+    "next_planned_outage": {
+      "name": "Наступне планове відключення"
+    },
+    "next_connectivity": {
+      "name": "Наступне відновлення"
+    }
+  },
+  "event_names": {
+    "planned_outage": "Планове відключення",
+    "normal": "Заживлено"
   },
   "issues": {
     "api_v1_to_v2": {

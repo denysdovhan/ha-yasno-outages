@@ -14,7 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import OUTAGE_STATE_NORMAL, OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE
+from .const import STATE_NORMAL, STATE_OUTAGE
 from .coordinator import YasnoOutagesCoordinator
 from .entity import YasnoOutagesEntity
 
@@ -34,7 +34,7 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         translation_key="electricity",
         icon="mdi:transmission-tower",
         device_class=SensorDeviceClass.ENUM,
-        options=[OUTAGE_STATE_NORMAL, OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE],
+        options=[STATE_NORMAL, STATE_OUTAGE],
         val_func=lambda coordinator: coordinator.current_state,
     ),
     YasnoOutagesSensorDescription(
@@ -45,18 +45,11 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         val_func=lambda coordinator: coordinator.schedule_updated_on,
     ),
     YasnoOutagesSensorDescription(
-        key="next_outage",
-        translation_key="next_outage",
+        key="next_planned_outage",
+        translation_key="next_planned_outage",
         icon="mdi:calendar-remove",
         device_class=SensorDeviceClass.TIMESTAMP,
-        val_func=lambda coordinator: coordinator.next_outage,
-    ),
-    YasnoOutagesSensorDescription(
-        key="next_possible_outage",
-        translation_key="next_possible_outage",
-        icon="mdi:calendar-question",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        val_func=lambda coordinator: coordinator.next_possible_outage,
+        val_func=lambda coordinator: coordinator.next_planned_outage,
     ),
     YasnoOutagesSensorDescription(
         key="next_connectivity",
