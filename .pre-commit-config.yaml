@@ -25,6 +25,15 @@ repos:
     hooks:
       - id: uv-lock
 
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        always_run: true
+
   - repo: https://codeberg.org/lig/todo-md.git
     rev: v2.0.3
     hooks:
