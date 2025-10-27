@@ -253,11 +253,14 @@ class TestYasnoApiScheduleParsing:
 
     def test_parse_emergency_shutdown(self, api):
         """Test parsing emergency shutdown."""
+        day_data = {"status": "EmergencyShutdowns", "slots": []}
         date = datetime.datetime(2025, 1, 27, 0, 0, 0)
-        event = api._parse_emergency_shutdown(date)
-        assert event.all_day is True
-        assert event.event_type == YasnoPlannedOutageEventType.EMERGENCY
-        assert event.start == datetime.date(2025, 1, 27)
+        api.planned_outage_data = {TEST_GROUP: {"today": day_data}}
+        events = api.get_events(date, date + datetime.timedelta(days=1))
+        assert len(events) == 1
+        assert events[0].all_day is True
+        assert events[0].event_type == YasnoPlannedOutageEventType.EMERGENCY
+        assert events[0].start == datetime.date(2025, 1, 27)
 
 
 class TestYasnoApiEvents:
