@@ -315,14 +315,12 @@ class YasnoApi:
 
         LOGGER.debug("Group data for %s: %s", self.group, group_data)
 
-        # Check today
         today_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         if (
             today_status := group_data.get(BLOCK_NAME_TODAY, {}).get(BLOCK_KEY_STATUS)
         ) == YasnoPlannedOutageDayStatus.STATUS_SCHEDULE_APPLIES.value:
             today_events = self._parse_day_schedule(
-                group_data[BLOCK_NAME_TODAY],
-                today_date,
+                group_data[BLOCK_NAME_TODAY], today_date
             )
             events.extend(today_events)
         elif (
@@ -330,24 +328,21 @@ class YasnoApi:
         ):
             events.append(self._parse_emergency_shutdown(today_date))
 
-        # Check tomorrow if within range
         tomorrow_date = today_date + datetime.timedelta(days=1)
-        if tomorrow_date <= end_date:
-            if (
-                tomorrow_status := group_data.get(BLOCK_NAME_TOMORROW, {}).get(
-                    BLOCK_KEY_STATUS
-                )
-            ) == YasnoPlannedOutageDayStatus.STATUS_SCHEDULE_APPLIES.value:
-                tomorrow_events = self._parse_day_schedule(
-                    group_data[BLOCK_NAME_TOMORROW],
-                    tomorrow_date,
-                )
-                events.extend(tomorrow_events)
-            elif (
-                tomorrow_status
-                == YasnoPlannedOutageDayStatus.STATUS_EMERGENCY_SHUTDOWNS.value
-            ):
-                events.append(self._parse_emergency_shutdown(tomorrow_date))
+        if (
+            tomorrow_status := group_data.get(BLOCK_NAME_TOMORROW, {}).get(
+                BLOCK_KEY_STATUS
+            )
+        ) == YasnoPlannedOutageDayStatus.STATUS_SCHEDULE_APPLIES.value:
+            tomorrow_events = self._parse_day_schedule(
+                group_data[BLOCK_NAME_TOMORROW], tomorrow_date
+            )
+            events.extend(tomorrow_events)
+        elif (
+            tomorrow_status
+            == YasnoPlannedOutageDayStatus.STATUS_EMERGENCY_SHUTDOWNS.value
+        ):
+            events.append(self._parse_emergency_shutdown(tomorrow_date))
 
         # Sort events by start time (convert date to datetime for comparison)
         events = sorted(
