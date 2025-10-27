@@ -4,7 +4,6 @@ import datetime
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from pprint import pformat
 
 import aiohttp
 
@@ -66,9 +65,7 @@ class YasnoApi:
                 timeout=aiohttp.ClientTimeout(total=timeout_secs),
             ) as response:
                 response.raise_for_status()
-                response_json = await response.json()
-                LOGGER.debug("Fetched data from %s:\n%s", url, pformat(response_json))
-                return response_json
+                return await response.json()
 
         except aiohttp.ClientError:
             LOGGER.exception("Error fetching data from %s", url)
