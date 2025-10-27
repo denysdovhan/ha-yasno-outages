@@ -1,4 +1,5 @@
 ci:
+  # tests are checked in a github runner
   skip: [uv-lock, pytest]
 
 repos:
