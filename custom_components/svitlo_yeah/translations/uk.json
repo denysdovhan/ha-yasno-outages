@@ -51,8 +51,8 @@
     }
   },
   "device": {
-    "svitlo_yeah": {
-      "name": "Світло Є {region} {provider} {group}"
+    "device_name": {
+      "name": "{region} {provider} {group}"
     }
   },
   "entity": {

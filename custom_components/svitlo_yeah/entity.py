@@ -3,7 +3,7 @@
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DEVICE_MANUFACTURER, DEVICE_TRANSLATION_KEY, DOMAIN
+from .const import DEVICE_MANUFACTURER, DEVICE_NAME_TRANSLATION_KEY, DOMAIN
 from .coordinator import IntegrationCoordinator
 
 
@@ -16,7 +16,7 @@ class IntegrationEntity(CoordinatorEntity[IntegrationCoordinator]):
     def device_info(self) -> DeviceInfo:
         """Return device information about this entity."""
         return DeviceInfo(
-            translation_key=DEVICE_TRANSLATION_KEY,
+            translation_key=DEVICE_NAME_TRANSLATION_KEY,
             translation_placeholders={
                 "region": self.coordinator.region_name,
                 "provider": self.coordinator.provider_name,
