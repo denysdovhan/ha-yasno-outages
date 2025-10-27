@@ -24,5 +24,5 @@ jobs:
       - name: Ruff lint
         run: uv run pre-commit run --all-files
 
-#      - name: Run tests
-#        run: uv run pytest tests
+      - name: Run tests
+        run: uv run pytest tests
