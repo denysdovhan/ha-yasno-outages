@@ -27,7 +27,7 @@ If it doesn't work, adding this repository to HACS manually by adding this URL:
 
 ## Usage
 
-This integration is configurable via UI. On **Devices and Services** page, click **Add Integration** and search for **Yasno Outages**.
+This integration is configurable via UI. On **Devices and Services** page, click **Add Integration** and search for **Svitlo Yeah**.
 
 Select your region:
 
@@ -57,10 +57,6 @@ Examples:
 - [Automation](/examples/automation.yaml)
 - [Dashboard](/examples/dashboard.yaml)
 
-Here's an example of a dashboard using this integration:
-
-![Dashboard example](https://github.com/denysdovhan/ha-yasno-outages/assets/3459374/26c75595-8984-4a9f-893a-e4b6d838b7f2)
-
 
 <!-- Badges -->
 
@@ -75,5 +71,4 @@ Here's an example of a dashboard using this integration:
 [home-assistant]: https://www.home-assistant.io/
 [hasc-install-url]: https://my.home-assistant.io/redirect/hacs_repository/?owner=ALERTua&repository=ha-svitlo-yeah&category=integration
 [hacs-install-image]: https://my.home-assistant.io/badges/hacs_repository.svg
-[add-translation]: https://github.com/denysdovhan/ha-yasno-outages/blob/master/contributing.md#how-to-add-translation
 [calendar-card]: https://www.home-assistant.io/dashboards/calendar/
