@@ -27,7 +27,7 @@ class OutageEventType(str, Enum):
     NOT_PLANNED = "NotPlanned"
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutageEvent:
     """Represents an outage event."""
 
