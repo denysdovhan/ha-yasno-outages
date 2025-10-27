@@ -50,7 +50,6 @@
       }
     }
   },
-
   "device": {
     "yasno_outages": {
       "name": "Yasno {region} {provider} {group}"
@@ -59,16 +58,7 @@
   "entity": {
     "calendar": {
       "calendar": {
-        "name": "Outages Calendar",
-        "state_attributes": {
-          "message": {
-            "name": "Connectivity",
-            "state": {
-              "outage": "Electricity Outage",
-              "possible": "Possible Outage"
-            }
-          }
-        }
+        "name": "Planned Outages Calendar"
       }
     },
     "sensor": {
@@ -76,18 +66,14 @@
         "name": "Electricity",
         "state": {
           "normal": "Connected",
-          "outage": "Outage",
-          "possible": "Possible Outage"
+          "outage": "Planned Outage"
         }
       },
       "schedule_updated_on": {
         "name": "Schedule Updated On"
       },
-      "next_outage": {
-        "name": "Next Outage"
-      },
-      "next_possible_outage": {
-        "name": "Next Possible Outage"
+      "next_planned_outage": {
+        "name": "Next Planned Outage"
       },
       "next_connectivity": {
         "name": "Next Connectivity"
@@ -95,13 +81,16 @@
     }
   },
   "common": {
-    "electricity_off": "Outage",
-    "electricity_maybe": "Possible Outage"
+    "event_name_planned_outage": "Planned Outage"
   },
   "issues": {
     "api_v1_to_v2": {
       "title": "Configuration update required",
       "description": "Your configuration uses an old format. Please remove this integration and add it again."
+    },
+    "possible_outages_removed": {
+      "title": "Breaking changes applied",
+      "description": "The integration has been updated with breaking changes. The 'next_possible_outage' sensor has been removed, 'next_outage' renamed to 'next_planned_outage', and 'possible' outage state eliminated. Update your automations and dashboards accordingly. See documentation for migration details."
     }
   }
 }

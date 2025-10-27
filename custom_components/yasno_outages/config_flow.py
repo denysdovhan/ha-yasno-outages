@@ -19,8 +19,8 @@ from homeassistant.helpers.selector import (
 from .api import YasnoOutagesApi
 from .const import (
     CONF_GROUP,
+    CONF_PROVIDER,
     CONF_REGION,
-    CONF_SERVICE,
     DOMAIN,
     NAME,
 )
@@ -61,25 +61,25 @@ def build_region_schema(
     )
 
 
-def build_service_schema(
+def build_provider_schema(
     api: YasnoOutagesApi,
     config_entry: ConfigEntry | None,
     data: dict,
 ) -> vol.Schema:
-    """Build the schema for the service selection step."""
+    """Build the schema for the provider selection step."""
     region = data[CONF_REGION]
-    services = api.get_services_for_region(region)
-    service_options = [service["name"] for service in services]
+    providers = api.get_providers_for_region(region)
+    provider_options = [_["name"] for _ in providers]
 
     return vol.Schema(
         {
             vol.Required(
-                CONF_SERVICE,
-                default=get_config_value(config_entry, CONF_SERVICE),
+                CONF_PROVIDER,
+                default=get_config_value(config_entry, CONF_PROVIDER),
             ): SelectSelector(
                 SelectSelectorConfig(
-                    options=service_options,
-                    translation_key="service",
+                    options=provider_options,
+                    translation_key="provider",
                 ),
             ),
         },
@@ -119,7 +119,7 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
         if user_input is not None:
             LOGGER.debug("Updating options: %s", user_input)
             self.data.update(user_input)
-            return await self.async_step_service()
+            return await self.async_step_provider()
 
         await self.api.fetch_regions()
 
@@ -133,19 +133,19 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
             ),
         )
 
-    async def async_step_service(
+    async def async_step_provider(
         self,
         user_input: dict | None = None,
     ) -> ConfigFlowResult:
-        """Handle the service change."""
+        """Handle the provider change."""
         if user_input is not None:
-            LOGGER.debug("Service selected: %s", user_input)
+            LOGGER.debug("Provider selected: %s", user_input)
             self.data.update(user_input)
             return await self.async_step_group()
 
         return self.async_show_form(
-            step_id="service",
-            data_schema=build_service_schema(
+            step_id="provider",
+            data_schema=build_provider_schema(
                 api=self.api,
                 config_entry=self.config_entry,
                 data=self.data,
@@ -162,19 +162,19 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
             self.data.update(user_input)
             return self.async_create_entry(title="", data=self.data)
 
-        # Fetch groups for the selected region/service
+        # Fetch groups for the selected region/provider
         region = self.data[CONF_REGION]
-        service = self.data[CONF_SERVICE]
+        provider = self.data[CONF_PROVIDER]
 
         region_data = self.api.get_region_by_name(region)
-        service_data = self.api.get_service_by_name(region, service)
+        provider_data = self.api.get_provider_by_name(region, provider)
         groups = []
-        if region_data and service_data:
+        if region_data and provider_data:
             temp_api = YasnoOutagesApi(
                 region_id=region_data["id"],
-                service_id=service_data["id"],
+                provider_id=provider_data["id"],
             )
-            await temp_api.fetch_outages_data()
+            await temp_api.fetch_planned_outages_data()
             groups = temp_api.get_groups()
 
         return self.async_show_form(
@@ -204,7 +204,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             LOGGER.debug("Region selected: %s", user_input)
             self.data.update(user_input)
-            return await self.async_step_service()
+            return await self.async_step_provider()
 
         await self.api.fetch_regions()
 
@@ -213,29 +213,29 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=build_region_schema(api=self.api, config_entry=None),
         )
 
-    async def async_step_service(
+    async def async_step_provider(
         self,
         user_input: dict | None = None,
     ) -> ConfigFlowResult:
-        """Handle the service step."""
+        """Handle the provider step."""
         if user_input is not None:
-            LOGGER.debug("Service selected: %s", user_input)
+            LOGGER.debug("Provider selected: %s", user_input)
             self.data.update(user_input)
             return await self.async_step_group()
 
         region = self.data[CONF_REGION]
-        services = self.api.get_services_for_region(region)
+        providers = self.api.get_providers_for_region(region)
 
-        # If only one service available, auto-select it and proceed
-        if len(services) == 1:
-            service_name = services[0]["name"]
-            LOGGER.debug("Auto-selecting only available service: %s", service_name)
-            self.data[CONF_SERVICE] = service_name
+        # If only one provider available, auto-select it and proceed
+        if len(providers) == 1:
+            provider_name = providers[0]["name"]
+            LOGGER.debug("Auto-selecting only available provider: %s", provider_name)
+            self.data[CONF_PROVIDER] = provider_name
             return await self.async_step_group()
 
         return self.async_show_form(
-            step_id="service",
-            data_schema=build_service_schema(
+            step_id="provider",
+            data_schema=build_provider_schema(
                 api=self.api,
                 config_entry=None,
                 data=self.data,
@@ -252,19 +252,19 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             self.data.update(user_input)
             return self.async_create_entry(title=NAME, data=self.data)
 
-        # Fetch groups for the selected region/service
+        # Fetch groups for the selected region/provider
         region = self.data[CONF_REGION]
-        service = self.data[CONF_SERVICE]
+        provider = self.data[CONF_PROVIDER]
 
         region_data = self.api.get_region_by_name(region)
-        service_data = self.api.get_service_by_name(region, service)
+        provider_data = self.api.get_provider_by_name(region, provider)
         groups = []
-        if region_data and service_data:
+        if region_data and provider_data:
             temp_api = YasnoOutagesApi(
                 region_id=region_data["id"],
-                service_id=service_data["id"],
+                provider_id=provider_data["id"],
             )
-            await temp_api.fetch_outages_data()
+            await temp_api.fetch_planned_outages_data()
             groups = temp_api.get_groups()
 
         return self.async_show_form(

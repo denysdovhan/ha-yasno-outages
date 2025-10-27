@@ -2,10 +2,9 @@ type: grid
 cards:
   - type: entities
     entities:
-      - entity: calendar.yasno_kiiv_dtek_3_1_outages_calendar
+      - entity: calendar.yasno_kiiv_dtek_3_1_planned_outages_calendar
       - entity: sensor.yasno_kiiv_dtek_3_1_electricity
-      - entity: sensor.yasno_kiiv_dtek_3_1_next_outage
-      - entity: sensor.yasno_kiiv_dtek_3_1_next_possible_outage
+      - entity: sensor.yasno_kiiv_dtek_3_1_next_planned_outage
       - entity: sensor.yasno_kiiv_dtek_3_1_next_connectivity
       - entity: sensor.yasno_kiiv_dtek_3_1_schedule_updated_on
   - type: history-graph
@@ -18,4 +17,4 @@ cards:
   - initial_view: listWeek
     type: calendar
     entities:
-      - calendar.yasno_kiiv_dtek_3_1_outages_calendar
+      - calendar.yasno_kiiv_dtek_3_1_planned_outages_calendar
