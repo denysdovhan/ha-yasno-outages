@@ -19,3 +19,4 @@ config/*
 !config/configuration.yaml
 .idea
 .cache
+.todo.md
