@@ -64,4 +64,5 @@ class PlannedOutagesCalendar(IntegrationEntity, CalendarEntity):
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
+        LOGGER.debug("Get events between %s and %s", start_date, end_date)
         return self.coordinator.get_events_between(start_date, end_date)
