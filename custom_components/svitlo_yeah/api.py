@@ -223,6 +223,8 @@ class YasnoApi:
         if not group_data:
             return events
 
+        LOGGER.debug("Group data for %s: %s", self.group, group_data)
+
         # Check today
         today_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         if (
