@@ -35,6 +35,12 @@ class PlannedOutagesCalendar(IntegrationEntity, CalendarEntity):
     ) -> None:
         """Initialize the Planned Outages Calendar entity."""
         super().__init__(coordinator)
+        self.entity_id = (
+            f"calendar.planned_outages"
+            f"_{coordinator.region}"
+            f"_{coordinator.provider_name}"
+            f"_{coordinator.group}"
+        )
         self.entity_description = EntityDescription(
             key="calendar",
             name="Calendar",
