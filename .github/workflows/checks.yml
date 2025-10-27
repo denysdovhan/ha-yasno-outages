@@ -1,0 +1,28 @@
+name: Checks
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.1.2
+        with:
+          enable-cache: true
+
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Ruff lint
+        run: uv run pre-commit run --all-files
+
+#      - name: Run tests
+#        run: uv run pytest tests
