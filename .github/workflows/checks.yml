@@ -21,7 +21,7 @@ jobs:
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
-      - name: Ruff lint
+      - name: Pre-commit on all files
         run: uv run pre-commit run --all-files
 
       - name: Run tests
