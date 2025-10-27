@@ -16,14 +16,18 @@ from .const import (
     CONF_REGION,
     CONF_SERVICE,
     DOMAIN,
+    EVENT_NAME_EMERGENCY,
     EVENT_NAME_NORMAL,
     EVENT_NAME_OUTAGE,
+    OUTAGE_STATE_EMERGENCY,
     OUTAGE_STATE_NORMAL,
     OUTAGE_STATE_OUTAGE,
     OUTAGE_STATE_POSSIBLE,
     PROVIDER_DTEK_FULL,
     PROVIDER_DTEK_SHORT,
+    TRANSLATION_KEY_EVENT_EMERGENCY,
     TRANSLATION_KEY_EVENT_MAYBE,
+    TRANSLATION_KEY_EVENT_NORMAL,
     TRANSLATION_KEY_EVENT_OFF,
     UPDATE_INTERVAL,
 )
@@ -105,7 +109,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Return a mapping of event names to translations."""
         return {
             EVENT_NAME_OUTAGE: self.translations.get(TRANSLATION_KEY_EVENT_OFF),
-            EVENT_NAME_NORMAL: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
+            EVENT_NAME_NORMAL: self.translations.get(TRANSLATION_KEY_EVENT_NORMAL),
+            EVENT_NAME_EMERGENCY: self.translations.get(TRANSLATION_KEY_EVENT_EMERGENCY),
         }
 
     async def _resolve_ids(self) -> None:
@@ -174,6 +179,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def next_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next outage time."""
+        current_event = self.get_current_event()
+        if current_event and self._event_to_state(current_event) == OUTAGE_STATE_EMERGENCY:
+            return None
+
         event = self._get_next_event_of_type(OUTAGE_STATE_OUTAGE)
         LOGGER.debug("Next outage: %s", event)
         return event.start if event else None
@@ -182,9 +191,13 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def next_possible_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next possible outage time."""
         current_event = self.get_current_event()
+        current_state = self._event_to_state(current_event)
+
+        # If in emergency state, return None
+        if current_state == OUTAGE_STATE_EMERGENCY:
+            return None
 
         # If currently in any outage state, return end time (when it ends)
-        current_state = self._event_to_state(current_event)
         if current_state in [OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE]:
             return current_event.end if current_event else None
 
@@ -198,6 +211,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get next connectivity time."""
         current_event = self.get_current_event()
         current_state = self._event_to_state(current_event)
+
+        # If in emergency state, return None
+        if current_state == OUTAGE_STATE_EMERGENCY:
+            return None
 
         # If currently in any outage state, return when it ends
         if current_state in [OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE]:
@@ -305,6 +322,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             return OUTAGE_STATE_OUTAGE
         if summary == EVENT_NAME_NORMAL:
             return OUTAGE_STATE_NORMAL
+        if summary == EVENT_NAME_EMERGENCY:
+            return OUTAGE_STATE_EMERGENCY
         if summary is None:
             return OUTAGE_STATE_NORMAL
 
