@@ -23,17 +23,17 @@ async def async_setup_entry(
     """Set up the Svitlo Yeah calendar platform."""
     LOGGER.debug("Setup new entry: %s", config_entry)
     coordinator: IntegrationCoordinator = config_entry.runtime_data
-    async_add_entities([YasnoOutagesCalendar(coordinator)])
+    async_add_entities([PlannedOutagesCalendar(coordinator)])
 
 
-class YasnoOutagesCalendar(IntegrationEntity, CalendarEntity):
-    """Implementation of calendar entity."""
+class PlannedOutagesCalendar(IntegrationEntity, CalendarEntity):
+    """Implementation of the Planned Outages Calendar entity."""
 
     def __init__(
         self,
         coordinator: IntegrationCoordinator,
     ) -> None:
-        """Initialize the YasnoOutagesCalendar entity."""
+        """Initialize the Planned Outages Calendar entity."""
         super().__init__(coordinator)
         self.entity_description = EntityDescription(
             key="calendar",
