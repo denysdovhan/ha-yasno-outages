@@ -67,7 +67,8 @@
       "name": "Електрика",
       "state": {
         "normal": "Заживлено",
-        "outage": "Планове відключення"
+        "planned_outage": "Планове відключення",
+        "emergency": "Екстрене відключення"
       }
     },
     "schedule_updated_on": {
@@ -81,7 +82,8 @@
     }
   },
   "common": {
-    "event_name_planned_outage": "Планове відключення"
+    "event_name_planned_outage": "Планове відключення",
+    "event_name_emergency_outage": "Екстрене відключення"
   },
   "issues": {
   }

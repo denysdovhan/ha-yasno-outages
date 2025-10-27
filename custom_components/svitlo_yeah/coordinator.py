@@ -10,19 +10,22 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
-from .api import YasnoApi, YasnoPlannedOutageEvent, YasnoPlannedOutageEventType
+from .api import YasnoApi
 from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
     CONF_REGION,
     DOMAIN,
-    EVENT_NAME_OUTAGE,
     PROVIDER_DTEK_FULL,
     PROVIDER_DTEK_SHORT,
-    STATE_NORMAL,
-    STATE_OUTAGE,
-    TRANSLATION_KEY_EVENT_OUTAGE,
+    TRANSLATION_KEY_EVENT_EMERGENCY_OUTAGE,
+    TRANSLATION_KEY_EVENT_PLANNED_OUTAGE,
     UPDATE_INTERVAL,
+)
+from .models import (
+    ConnectivityState,
+    YasnoPlannedOutageEvent,
+    YasnoPlannedOutageEventType,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -101,7 +104,12 @@ class IntegrationCoordinator(DataUpdateCoordinator):
     def event_name_map(self) -> dict:
         """Return a mapping of event names to translations."""
         return {
-            EVENT_NAME_OUTAGE: self.translations.get(TRANSLATION_KEY_EVENT_OUTAGE),
+            YasnoPlannedOutageEventType.DEFINITE: self.translations.get(
+                TRANSLATION_KEY_EVENT_PLANNED_OUTAGE
+            ),
+            YasnoPlannedOutageEventType.EMERGENCY: self.translations.get(
+                TRANSLATION_KEY_EVENT_EMERGENCY_OUTAGE
+            ),
         }
 
     async def _resolve_ids(self) -> None:
@@ -152,7 +160,9 @@ class IntegrationCoordinator(DataUpdateCoordinator):
             "Translations for %s:\n%s", self.hass.config.language, self.translations
         )
 
-    def _get_next_event_of_type(self, state_type: str) -> CalendarEvent | None:
+    def _get_next_event_of_type(
+        self, state_type: ConnectivityState
+    ) -> CalendarEvent | None:
         """Get the next event of a specific type."""
         now = dt_utils.now()
         # Sort events to handle multi-day spanning events correctly
@@ -172,7 +182,7 @@ class IntegrationCoordinator(DataUpdateCoordinator):
     @property
     def next_planned_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next planned outage time."""
-        event = self._get_next_event_of_type(STATE_OUTAGE)
+        event = self._get_next_event_of_type(ConnectivityState.STATE_PLANNED_OUTAGE)
         LOGGER.debug("Next planned outage: %s", event)
         return event.start if event else None
 
@@ -183,11 +193,11 @@ class IntegrationCoordinator(DataUpdateCoordinator):
         current_state = self._event_to_state(current_event)
 
         # If currently in outage state, return when it ends
-        if current_state == STATE_OUTAGE:
+        if current_state == ConnectivityState.STATE_PLANNED_OUTAGE:
             return current_event.end if current_event else None
 
         # Otherwise, return the end of the next outage
-        event = self._get_next_event_of_type(STATE_OUTAGE)
+        event = self._get_next_event_of_type(ConnectivityState.STATE_PLANNED_OUTAGE)
         LOGGER.debug("Next connectivity: %s", event)
         return event.end if event else None
 
@@ -256,29 +266,31 @@ class IntegrationCoordinator(DataUpdateCoordinator):
         if not event:
             return None
 
-        event_type = event.event_type.value
-        summary = self.event_name_map.get(event_type)
+        summary = self.event_name_map.get(event.event_type)
 
+        # noinspection PyTypeChecker
         output = CalendarEvent(
             summary=summary,
             start=event.start,
             end=event.end,
-            description=event_type,
-            uid=event_type,
+            description=event.event_type.value,
+            uid=event.event_type.value,
         )
         LOGGER.debug("Calendar Event: %s", output)
         return output
 
-    def _event_to_state(self, event: CalendarEvent | None) -> str | None:
+    def _event_to_state(self, event: CalendarEvent | None) -> ConnectivityState:
         if not event:
-            return STATE_NORMAL
+            return ConnectivityState.STATE_NORMAL
 
-        # Map event types to states using uid field
+        # Map event types to states using the uid field
         if event.uid == YasnoPlannedOutageEventType.DEFINITE.value:
-            return STATE_OUTAGE
+            return ConnectivityState.STATE_PLANNED_OUTAGE
+        if event.uid == YasnoPlannedOutageEventType.EMERGENCY.value:
+            return ConnectivityState.STATE_EMERGENCY
 
         LOGGER.warning("Unknown event type: %s", event.uid)
-        return STATE_NORMAL
+        return ConnectivityState.STATE_NORMAL
 
     def _simplify_provider_name(self, provider_name: str) -> str:
         """Simplify provider names for cleaner display in device names."""
