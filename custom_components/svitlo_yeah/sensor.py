@@ -1,4 +1,4 @@
-"""Calendar platform for Yasno outages integration."""
+"""Sensor platform for Svitlo Yeah integration."""
 
 import logging
 from collections.abc import Callable
@@ -15,21 +15,21 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import STATE_NORMAL, STATE_OUTAGE
-from .coordinator import YasnoOutagesCoordinator
-from .entity import YasnoOutagesEntity
+from .coordinator import IntegrationCoordinator
+from .entity import IntegrationEntity
 
 LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, kw_only=True)
-class YasnoOutagesSensorDescription(SensorEntityDescription):
+class IntegrationSensorDescription(SensorEntityDescription):
     """Yasno Outages entity description."""
 
-    val_func: Callable[[YasnoOutagesCoordinator], Any]
+    val_func: Callable[[IntegrationCoordinator], Any]
 
 
-SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
-    YasnoOutagesSensorDescription(
+SENSOR_TYPES: tuple[IntegrationSensorDescription, ...] = (
+    IntegrationSensorDescription(
         key="electricity",
         translation_key="electricity",
         icon="mdi:transmission-tower",
@@ -37,21 +37,21 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         options=[STATE_NORMAL, STATE_OUTAGE],
         val_func=lambda coordinator: coordinator.current_state,
     ),
-    YasnoOutagesSensorDescription(
+    IntegrationSensorDescription(
         key="schedule_updated_on",
         translation_key="schedule_updated_on",
         icon="mdi:update",
         device_class=SensorDeviceClass.TIMESTAMP,
         val_func=lambda coordinator: coordinator.schedule_updated_on,
     ),
-    YasnoOutagesSensorDescription(
+    IntegrationSensorDescription(
         key="next_planned_outage",
         translation_key="next_planned_outage",
         icon="mdi:calendar-remove",
         device_class=SensorDeviceClass.TIMESTAMP,
         val_func=lambda coordinator: coordinator.next_planned_outage,
     ),
-    YasnoOutagesSensorDescription(
+    IntegrationSensorDescription(
         key="next_connectivity",
         translation_key="next_connectivity",
         icon="mdi:calendar-check",
@@ -66,23 +66,23 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Yasno outages calendar platform."""
-    LOGGER.debug("Setup new entry: %s", config_entry)
-    coordinator: YasnoOutagesCoordinator = config_entry.runtime_data
+    """Set up the sensor platform."""
+    LOGGER.debug("Setup new sensor: %s", config_entry)
+    coordinator: IntegrationCoordinator = config_entry.runtime_data
     async_add_entities(
-        YasnoOutagesSensor(coordinator, description) for description in SENSOR_TYPES
+        IntegrationSensor(coordinator, description) for description in SENSOR_TYPES
     )
 
 
-class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
-    """Implementation of connection entity."""
+class IntegrationSensor(IntegrationEntity, SensorEntity):
+    """Implementation of sensor entity."""
 
-    entity_description: YasnoOutagesSensorDescription
+    entity_description: IntegrationSensorDescription
 
     def __init__(
         self,
-        coordinator: YasnoOutagesCoordinator,
-        entity_description: YasnoOutagesSensorDescription,
+        coordinator: IntegrationCoordinator,
+        entity_description: IntegrationSensorDescription,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)

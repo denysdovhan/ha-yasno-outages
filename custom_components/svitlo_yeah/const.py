@@ -1,9 +1,9 @@
-"""Constants for the Yasno Outages integration."""
+"""Constants for the Svitlo Yeah integration."""
 
 from typing import Final
 
-DOMAIN: Final = "yasno_outages"
-NAME: Final = "Yasno Outages"
+DOMAIN: Final = "svitlo_yeah"
+NAME: Final = "Svitlo Yeah | Світло Є"
 
 # Configuration option
 CONF_REGION: Final = "region"
@@ -40,5 +40,9 @@ BLOCK_KEY_STATUS: Final = "status"
 
 # Keys
 TRANSLATION_KEY_EVENT_OUTAGE: Final = (
-    f"component.{DOMAIN}.common.event_name_planned_outage"
+    "component.svitlo_yeah.common.event_name_planned_outage"
 )
+
+# Device
+DEVICE_TRANSLATION_KEY = DOMAIN
+DEVICE_MANUFACTURER = NAME

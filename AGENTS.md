@@ -1,0 +1,1 @@
+- `custom_components/ha_power_outage_ua/manifest.json` is based on https://developers.home-assistant.io/docs/creating_integration_manifest/

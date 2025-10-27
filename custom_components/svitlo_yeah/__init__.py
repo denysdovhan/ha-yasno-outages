@@ -1,4 +1,4 @@
-"""Init file for Yasno Outages integration."""
+"""Init file for Svitlo Yeah integration."""
 
 from __future__ import annotations
 
@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
 
-from .coordinator import YasnoOutagesCoordinator
-from .repairs import async_check_and_create_repair
+from .coordinator import IntegrationCoordinator
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -23,9 +22,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a new entry."""
     LOGGER.info("Setup entry: %s", entry)
 
-    await async_check_and_create_repair(hass, entry)
-
-    coordinator = YasnoOutagesCoordinator(hass, entry)
+    coordinator = IntegrationCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = coordinator

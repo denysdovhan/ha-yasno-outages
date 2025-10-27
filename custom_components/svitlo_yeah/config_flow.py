@@ -1,4 +1,4 @@
-"""Config flow for Yasno Outages integration."""
+"""Config flow for Svitlo Yeah integration."""
 
 import logging
 from typing import Any
@@ -16,7 +16,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
 )
 
-from .api import YasnoOutagesApi
+from .api import YasnoApi
 from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
@@ -40,7 +40,7 @@ def get_config_value(
 
 
 def build_region_schema(
-    api: YasnoOutagesApi,
+    api: YasnoApi,
     config_entry: ConfigEntry | None,
 ) -> vol.Schema:
     """Build the schema for the region selection step."""
@@ -62,7 +62,7 @@ def build_region_schema(
 
 
 def build_provider_schema(
-    api: YasnoOutagesApi,
+    api: YasnoApi,
     config_entry: ConfigEntry | None,
     data: dict,
 ) -> vol.Schema:
@@ -106,12 +106,12 @@ def build_group_schema(
     )
 
 
-class YasnoOutagesOptionsFlow(OptionsFlow):
-    """Handle options flow for Yasno Outages."""
+class IntegrationOptionsFlow(OptionsFlow):
+    """Handle options flow for Svitlo Yeah."""
 
     def __init__(self) -> None:
         """Initialize options flow."""
-        self.api = YasnoOutagesApi()
+        self.api = YasnoApi()
         self.data: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
@@ -170,11 +170,11 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
         provider_data = self.api.get_provider_by_name(region, provider)
         groups = []
         if region_data and provider_data:
-            temp_api = YasnoOutagesApi(
+            temp_api = YasnoApi(
                 region_id=region_data["id"],
                 provider_id=provider_data["id"],
             )
-            await temp_api.fetch_planned_outages_data()
+            await temp_api.fetch_planned_outage_data()
             groups = temp_api.get_groups()
 
         return self.async_show_form(
@@ -184,20 +184,20 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
 
 
 class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Yasno Outages."""
+    """Handle a config flow for Svitlo Yeah."""
 
     VERSION = 1
 
     def __init__(self) -> None:
         """Initialize config flow."""
-        self.api = YasnoOutagesApi()
+        self.api = YasnoApi()
         self.data: dict[str, Any] = {}
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> YasnoOutagesOptionsFlow:  # noqa: ARG004
+    def async_get_options_flow(config_entry: ConfigEntry) -> IntegrationOptionsFlow:  # noqa: ARG004
         """Get the options flow for this handler."""
-        return YasnoOutagesOptionsFlow()
+        return IntegrationOptionsFlow()
 
     async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
@@ -260,11 +260,11 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         provider_data = self.api.get_provider_by_name(region, provider)
         groups = []
         if region_data and provider_data:
-            temp_api = YasnoOutagesApi(
+            temp_api = YasnoApi(
                 region_id=region_data["id"],
                 provider_id=provider_data["id"],
             )
-            await temp_api.fetch_planned_outages_data()
+            await temp_api.fetch_planned_outage_data()
             groups = temp_api.get_groups()
 
         return self.async_show_form(

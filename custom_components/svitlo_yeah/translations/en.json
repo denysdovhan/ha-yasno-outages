@@ -1,21 +1,21 @@
 {
-  "title": "Yasno Outages",
+  "title": "Svitlo Yeah!",
   "config": {
     "step": {
       "user": {
-        "title": "Yasno Outages Settings",
+        "title": "Settings",
         "data": {
           "region": "Please select your region:"
         }
       },
       "provider": {
-        "title": "Yasno Outages Settings",
+        "title": "Settings",
         "data": {
           "provider": "Please select your provider:"
         }
       },
       "group": {
-        "title": "Yasno Outages Settings",
+        "title": "Settings",
         "data": {
           "group": "Please select your group:"
         },
@@ -28,19 +28,19 @@
   "options": {
     "step": {
       "init": {
-        "title": "Yasno Outages Settings",
+        "title": "Settings",
         "data": {
           "region": "Please select your region:"
         }
       },
       "provider": {
-        "title": "Yasno Outages Settings",
+        "title": "Settings",
         "data": {
           "provider": "Please select your provider:"
         }
       },
       "group": {
-        "title": "Yasno Outages Settings",
+        "title": "Settings",
         "data": {
           "group": "Please select your group:"
         },
@@ -51,8 +51,8 @@
     }
   },
   "device": {
-    "yasno_outages": {
-      "name": "Yasno {region} {provider} {group}"
+    "svitlo_yeah": {
+      "name": "Svitlo Yeah {region} {provider} {group}"
     }
   },
   "entity": {
@@ -84,13 +84,5 @@
     "event_name_planned_outage": "Planned Outage"
   },
   "issues": {
-    "api_v1_to_v2": {
-      "title": "Configuration update required",
-      "description": "Your configuration uses an old format. Please remove this integration and add it again."
-    },
-    "possible_outages_removed": {
-      "title": "Breaking changes applied",
-      "description": "The integration has been updated with breaking changes. The 'next_possible_outage' sensor has been removed, 'next_outage' renamed to 'next_planned_outage', and 'possible' outage state eliminated. Update your automations and dashboards accordingly. See documentation for migration details."
-    }
   }
 }

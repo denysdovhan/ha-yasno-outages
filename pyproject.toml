@@ -1,0 +1,21 @@
+[project]
+name = "ha-svitlo-yeah"
+version = "0.5"  # Remember to change this in the manifest.json
+description = "A Home Assistant integration that provides power outage schedules for Ukraine"
+readme = "README.md"
+requires-python = ">=3.13.2"  # Follows https://github.com/home-assistant/core/blob/dev/pyproject.toml
+dependencies = [  # Remember to change this in the manifest.json
+]
+
+[dependency-groups]
+dev = [
+    "homeassistant>=2025.10.4",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.3.5"
+addopts = "-ra -q"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"

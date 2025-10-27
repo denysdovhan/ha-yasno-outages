@@ -1,9 +1,10 @@
-"""API for Yasno outages."""
+"""API for Svitlo Yeah."""
 
 import datetime
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from pprint import pformat
 
 import aiohttp
 
@@ -20,7 +21,7 @@ from .const import (
 LOGGER = logging.getLogger(__name__)
 
 
-class OutageEventType(str, Enum):
+class YasnoPlannedOutageEventType(str, Enum):
     """Outage event types."""
 
     DEFINITE = "Definite"
@@ -28,16 +29,16 @@ class OutageEventType(str, Enum):
 
 
 @dataclass(frozen=True)
-class OutageEvent:
+class YasnoPlannedOutageEvent:
     """Represents an outage event."""
 
-    event_type: OutageEventType
+    event_type: YasnoPlannedOutageEventType
     start: datetime.datetime
     end: datetime.datetime
 
 
-class YasnoOutagesApi:
-    """Class to interact with Yasno outages API."""
+class YasnoApi:
+    """Class to interact with Yasno API."""
 
     def __init__(
         self,
@@ -45,12 +46,12 @@ class YasnoOutagesApi:
         provider_id: int | None = None,
         group: str | None = None,
     ) -> None:
-        """Initialize the YasnoOutagesApi."""
+        """Initialize the Yasno API."""
         self.region_id = region_id
         self.provider_id = provider_id
         self.group = group
         self.regions_data = None
-        self.planned_outages_data = None
+        self.planned_outage_data = None
 
     async def _get_route_data(
         self,
@@ -65,7 +66,10 @@ class YasnoOutagesApi:
                 timeout=aiohttp.ClientTimeout(total=timeout_secs),
             ) as response:
                 response.raise_for_status()
-                return await response.json()
+                response_json = await response.json()
+                LOGGER.debug("Fetched data from %s:\n%s", url, pformat(response_json))
+                return response_json
+
         except aiohttp.ClientError:
             LOGGER.exception("Error fetching data from %s", url)
             return None
@@ -75,8 +79,8 @@ class YasnoOutagesApi:
         async with aiohttp.ClientSession() as session:
             self.regions_data = await self._get_route_data(session, REGIONS_ENDPOINT)
 
-    async def fetch_planned_outages_data(self) -> None:
-        """Fetch outages data for the configured region and provider."""
+    async def fetch_planned_outage_data(self) -> None:
+        """Fetch outage data for the configured region and provider."""
         if not self.region_id or not self.provider_id:
             LOGGER.warning(
                 "Region ID and Provider ID must be set before fetching outages",
@@ -87,14 +91,14 @@ class YasnoOutagesApi:
             region_id=self.region_id,
             dso_id=self.provider_id,
         )
-
         async with aiohttp.ClientSession() as session:
-            self.planned_outages_data = await self._get_route_data(session, url)
+            self.planned_outage_data = await self._get_route_data(session, url)
 
     def get_regions(self) -> list[dict]:
         """Get a list of available regions."""
         if not self.regions_data:
             return []
+
         return self.regions_data
 
     def get_region_by_name(self, region_name: str) -> dict | None:
@@ -102,6 +106,7 @@ class YasnoOutagesApi:
         for region in self.get_regions():
             if region["value"] == region_name:
                 return region
+
         return None
 
     def get_providers_for_region(self, region_name: str) -> list[dict]:
@@ -109,6 +114,7 @@ class YasnoOutagesApi:
         region = self.get_region_by_name(region_name)
         if not region:
             return []
+
         return region.get("dsos", [])
 
     def get_provider_by_name(self, region_name: str, provider_name: str) -> dict | None:
@@ -117,13 +123,15 @@ class YasnoOutagesApi:
         for provider in providers:
             if provider["name"] == provider_name:
                 return provider
+
         return None
 
     def get_groups(self) -> list[str]:
-        """Get groups from outages data."""
-        if not self.planned_outages_data:
+        """Get groups from planned outage data."""
+        if not self.planned_outage_data:
             return []
-        return list(self.planned_outages_data.keys())
+
+        return list(self.planned_outage_data.keys())
 
     def _minutes_to_time(
         self,
@@ -144,7 +152,7 @@ class YasnoOutagesApi:
         self,
         day_data: dict,
         date: datetime.datetime,
-    ) -> list[OutageEvent]:
+    ) -> list[YasnoPlannedOutageEvent]:
         """Parse schedule for a single day."""
         events = []
         slots = day_data.get("slots", [])
@@ -162,10 +170,10 @@ class YasnoOutagesApi:
             event_end = self._minutes_to_time(end_minutes, date)
 
             events.append(
-                OutageEvent(
+                YasnoPlannedOutageEvent(
                     start=event_start,
                     end=event_end,
-                    event_type=OutageEventType(slot_type),
+                    event_type=YasnoPlannedOutageEventType(slot_type),
                 ),
             )
 
@@ -173,9 +181,10 @@ class YasnoOutagesApi:
 
     def _get_group_data(self) -> dict | None:
         """Get data for the configured group."""
-        if not self.planned_outages_data or self.group not in self.planned_outages_data:
+        if not self.planned_outage_data or self.group not in self.planned_outage_data:
             return None
-        return self.planned_outages_data[self.group]
+
+        return self.planned_outage_data[self.group]
 
     def get_updated_on(self) -> datetime.datetime | None:
         """Get the updated on timestamp for the configured group."""
@@ -192,21 +201,24 @@ class YasnoOutagesApi:
             )
             return None
 
-    def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
+    def get_current_event(
+        self, at: datetime.datetime
+    ) -> YasnoPlannedOutageEvent | None:
         """Get the current event."""
         all_events = self.get_events(at, at + datetime.timedelta(days=1))
         for event in all_events:
             if event.start <= at < event.end:
                 return event
+
         return None
 
     def get_events(
         self,
         start_date: datetime.datetime,
         end_date: datetime.datetime,
-    ) -> list[OutageEvent]:
+    ) -> list[YasnoPlannedOutageEvent]:
         """Get all events within the date range."""
-        if not self.planned_outages_data or self.group not in self.planned_outages_data:
+        if not self.planned_outage_data or self.group not in self.planned_outage_data:
             return []
 
         events = []
@@ -257,5 +269,4 @@ class YasnoOutagesApi:
 
     async def fetch_data(self) -> None:
         """Fetch all required data."""
-        # Regions are fetched by _resolve_ids, so only fetch outages
-        await self.fetch_planned_outages_data()
+        await self.fetch_planned_outage_data()

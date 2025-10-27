@@ -1,0 +1,10 @@
+{
+  "domain": "svitlo_yeah",
+  "name": "Svitlo Yeah | Світло Є",
+  "codeowners": ["@alertua"],
+  "config_flow": true,
+  "documentation": "https://github.com/ALERTua/ha-svitlo-yeah",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/ALERTua/ha-svitlo-yeah/issues",
+  "version": "0.5"
+}

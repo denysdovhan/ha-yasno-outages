@@ -1,4 +1,4 @@
-"""Coordinator for Yasno outages integration."""
+"""Coordinator for Svitlo Yeah integration."""
 
 import datetime
 import logging
@@ -10,7 +10,7 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
-from .api import OutageEvent, OutageEventType, YasnoOutagesApi
+from .api import YasnoApi, YasnoPlannedOutageEvent, YasnoPlannedOutageEventType
 from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
@@ -30,7 +30,7 @@ LOGGER = logging.getLogger(__name__)
 TIMEFRAME_TO_CHECK = datetime.timedelta(hours=24)
 
 
-class YasnoOutagesCoordinator(DataUpdateCoordinator):
+class IntegrationCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Yasno outages data."""
 
     config_entry: ConfigEntry
@@ -94,7 +94,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self._provider_name = ""  # Cache the provider name
 
         # Initialize API and resolve IDs
-        self.api = YasnoOutagesApi()
+        self.api = YasnoApi()
         # Note: We'll resolve IDs and update API during first data update
 
     @property
@@ -123,7 +123,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                         self._provider_name = provider_data["name"]
 
     async def _async_update_data(self) -> None:
-        """Fetch data from new Yasno API."""
+        """Fetch data from Svitlo Yeah API."""
         await self.async_fetch_translations()
 
         # Resolve IDs if not already resolved
@@ -131,7 +131,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             await self._resolve_ids()
 
             # Update API with resolved IDs
-            self.api = YasnoOutagesApi(
+            self.api = YasnoApi(
                 region_id=self.region_id,
                 provider_id=self.provider_id,
                 group=self.group,
@@ -249,7 +249,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         events = self.api.get_events(start_date, end_date)
         return [self._get_calendar_event(event) for event in events]
 
-    def _get_calendar_event(self, event: OutageEvent | None) -> CalendarEvent | None:
+    def _get_calendar_event(
+        self, event: YasnoPlannedOutageEvent | None
+    ) -> CalendarEvent | None:
         """Transform an event into a CalendarEvent."""
         if not event:
             return None
@@ -272,7 +274,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             return STATE_NORMAL
 
         # Map event types to states using uid field
-        if event.uid == OutageEventType.DEFINITE.value:
+        if event.uid == YasnoPlannedOutageEventType.DEFINITE.value:
             return STATE_OUTAGE
 
         LOGGER.warning("Unknown event type: %s", event.uid)

@@ -11,4 +11,4 @@ debugpy:
 logger:
   default: info
   logs:
-    custom_components.yasno_outages: debug
+    custom_components.svitlo_yeah: debug

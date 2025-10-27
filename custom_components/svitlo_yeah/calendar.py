@@ -1,4 +1,4 @@
-"""Calendar platform for Yasno outages integration."""
+"""Calendar platform for Svitlo Yeah integration."""
 
 import datetime
 import logging
@@ -9,8 +9,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .coordinator import YasnoOutagesCoordinator
-from .entity import YasnoOutagesEntity
+from .coordinator import IntegrationCoordinator
+from .entity import IntegrationEntity
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,18 +20,18 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Yasno outages calendar platform."""
+    """Set up the Svitlo Yeah calendar platform."""
     LOGGER.debug("Setup new entry: %s", config_entry)
-    coordinator: YasnoOutagesCoordinator = config_entry.runtime_data
+    coordinator: IntegrationCoordinator = config_entry.runtime_data
     async_add_entities([YasnoOutagesCalendar(coordinator)])
 
 
-class YasnoOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
+class YasnoOutagesCalendar(IntegrationEntity, CalendarEntity):
     """Implementation of calendar entity."""
 
     def __init__(
         self,
-        coordinator: YasnoOutagesCoordinator,
+        coordinator: IntegrationCoordinator,
     ) -> None:
         """Initialize the YasnoOutagesCalendar entity."""
         super().__init__(coordinator)
