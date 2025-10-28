@@ -27,8 +27,6 @@ REGIONS_ENDPOINT: Final = (
 PLANNED_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages"
 
 # API Block names
-BLOCK_NAME_TODAY: Final = "today"
-BLOCK_NAME_TOMORROW: Final = "tomorrow"
 BLOCK_KEY_STATUS: Final = "status"
 
 # Keys
