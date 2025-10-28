@@ -110,4 +110,5 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):
             "event_type": current_event.description if current_event else None,
             "event_start": current_event.start if current_event else None,
             "event_end": current_event.end if current_event else None,
+            "supported_states": self.options,
         }
