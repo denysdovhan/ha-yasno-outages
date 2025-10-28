@@ -66,7 +66,8 @@
         "name": "Electricity",
         "state": {
           "normal": "Connected",
-          "outage": "Planned Outage"
+          "planned_outage": "Planned Outage",
+          "emergency": "Emergency Outage"
         }
       },
       "schedule_updated_on": {
@@ -81,7 +82,8 @@
     }
   },
   "common": {
-    "event_name_planned_outage": "Planned Outage"
+    "event_name_planned_outage": "Planned Outage",
+    "event_name_emergency_outage": "Emergency Outage"
   },
   "issues": {
   }

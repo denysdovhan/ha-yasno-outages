@@ -25,3 +25,14 @@ keep-runtime-typing = true
 
 [lint.mccabe]
 max-complexity = 25
+
+[lint.per-file-ignores]
+"tests/**" = [
+    "ANN001",  # missing type annotation for function argument
+    "ANN201",  # missing return type annotation for public function
+    "ANN202",  # missing return type annotation for private function
+    "DTZ001",  # datetime-without-timezone
+    "S101",    # use of assert (expected in pytest)
+    "SLF001",  # private member access (testing internals)
+    "PLR2004", # magic values in comparisons
+]

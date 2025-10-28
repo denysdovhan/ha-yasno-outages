@@ -14,9 +14,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import STATE_NORMAL, STATE_OUTAGE
 from .coordinator import IntegrationCoordinator
 from .entity import IntegrationEntity
+from .models import ConnectivityState
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ SENSOR_TYPES: tuple[IntegrationSensorDescription, ...] = (
         translation_key="electricity",
         icon="mdi:transmission-tower",
         device_class=SensorDeviceClass.ENUM,
-        options=[STATE_NORMAL, STATE_OUTAGE],
+        options=[str(_.value) for _ in ConnectivityState],
         val_func=lambda coordinator: coordinator.current_state,
     ),
     IntegrationSensorDescription(
@@ -110,4 +110,5 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):
             "event_type": current_event.description if current_event else None,
             "event_start": current_event.start if current_event else None,
             "event_end": current_event.end if current_event else None,
+            "supported_states": self.options,
         }

@@ -1,3 +1,7 @@
+ci:
+  # tests are checked in a github runner
+  skip: [uv-lock, pytest]
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -24,6 +28,15 @@ repos:
     rev: 0.9.5
     hooks:
       - id: uv-lock
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        always_run: true
 
   - repo: https://codeberg.org/lig/todo-md.git
     rev: v2.0.3

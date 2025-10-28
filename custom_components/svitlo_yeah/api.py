@@ -2,8 +2,6 @@
 
 import datetime
 import logging
-from dataclasses import dataclass
-from enum import Enum
 
 import aiohttp
 
@@ -11,29 +9,16 @@ from .const import (
     BLOCK_KEY_STATUS,
     BLOCK_NAME_TODAY,
     BLOCK_NAME_TOMORROW,
-    EVENT_NAME_OUTAGE,
     PLANNED_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
-    STATUS_SCHEDULE_APPLIES,
+)
+from .models import (
+    YasnoPlannedOutageDayStatus,
+    YasnoPlannedOutageEvent,
+    YasnoPlannedOutageEventType,
 )
 
 LOGGER = logging.getLogger(__name__)
-
-
-class YasnoPlannedOutageEventType(str, Enum):
-    """Outage event types."""
-
-    DEFINITE = "Definite"
-    NOT_PLANNED = "NotPlanned"
-
-
-@dataclass(frozen=True)
-class YasnoPlannedOutageEvent:
-    """Represents an outage event."""
-
-    event_type: YasnoPlannedOutageEventType
-    start: datetime.datetime
-    end: datetime.datetime
 
 
 class YasnoApi:
@@ -90,6 +75,26 @@ class YasnoApi:
         )
         async with aiohttp.ClientSession() as session:
             self.planned_outage_data = await self._get_route_data(session, url)
+
+        # DEBUG. DO NOT COMMIT UNCOMMENTED!
+        """
+        self.planned_outage_data = {
+            "3.1": {
+                "today": {
+                    "slots": [],
+                    "date": "2025-10-27T00:00:00+02:00",
+                    "status": "EmergencyShutdowns"
+                },
+                "tomorrow": {
+                    "slots": [],
+                    "date": "2025-10-28T00:00:00+02:00",
+                    "status": "EmergencyShutdowns"
+                },
+                "updatedOn": "2025-10-27T07:04:31+00:00"
+            }
+        }
+        """
+        # DEBUG. DO NOT COMMIT UNCOMMENTED!
 
     def get_regions(self) -> list[dict]:
         """Get a list of available regions."""
@@ -150,7 +155,57 @@ class YasnoApi:
         day_data: dict,
         date: datetime.datetime,
     ) -> list[YasnoPlannedOutageEvent]:
-        """Parse schedule for a single day."""
+        """
+        Parse schedule for a single day.
+
+        {
+          "3.1": {
+            "today": {
+              "slots": [
+                {
+                  "start": 0,
+                  "end": 960,
+                  "type": "NotPlanned"
+                },
+                {
+                  "start": 960,
+                  "end": 1200,
+                  "type": "Definite"
+                },
+                {
+                  "start": 1200,
+                  "end": 1440,
+                  "type": "NotPlanned"
+                }
+              ],
+              "date": "2025-10-27T00:00:00+02:00",
+              "status": "ScheduleApplies"
+            },
+            "tomorrow": {
+              "slots": [
+                {
+                  "start": 0,
+                  "end": 900,
+                  "type": "NotPlanned"
+                },
+                {
+                  "start": 900,
+                  "end": 1080,
+                  "type": "Definite"
+                },
+                {
+                  "start": 1080,
+                  "end": 1440,
+                  "type": "NotPlanned"
+                }
+              ],
+              "date": "2025-10-28T00:00:00+02:00",
+              "status": "WaitingForSchedule"
+            },
+            "updatedOn": "2025-10-27T13:42:41+00:00"
+          },
+        }
+        """
         events = []
         slots = day_data.get("slots", [])
 
@@ -160,7 +215,7 @@ class YasnoApi:
             slot_type = slot["type"]
 
             # parse only outages
-            if slot_type not in [EVENT_NAME_OUTAGE]:
+            if slot_type not in [YasnoPlannedOutageEventType.DEFINITE.value]:
                 continue
 
             event_start = self._minutes_to_time(start_minutes, date)
@@ -204,7 +259,9 @@ class YasnoApi:
         """Get the current event."""
         all_events = self.get_events(at, at + datetime.timedelta(days=1))
         for event in all_events:
-            if event.start <= at < event.end:
+            if event.all_day and event.start == at.date():
+                return event
+            if not event.all_day and event.start <= at < event.end:
                 return event
 
         return None
@@ -215,56 +272,57 @@ class YasnoApi:
         end_date: datetime.datetime,
     ) -> list[YasnoPlannedOutageEvent]:
         """Get all events within the date range."""
-        if not self.planned_outage_data or self.group not in self.planned_outage_data:
-            return []
-
-        events = []
         group_data = self._get_group_data()
         if not group_data:
-            return events
+            return []
 
         LOGGER.debug("Group data for %s: %s", self.group, group_data)
 
-        # Check today
+        def _parse_day_events(
+            day_data: dict, date: datetime.datetime
+        ) -> list[YasnoPlannedOutageEvent]:
+            """Parse events for a single day based on status."""
+            status = day_data.get(BLOCK_KEY_STATUS)
+            if status == YasnoPlannedOutageDayStatus.STATUS_SCHEDULE_APPLIES.value:
+                return self._parse_day_schedule(day_data, date)
+            if status == YasnoPlannedOutageDayStatus.STATUS_EMERGENCY_SHUTDOWNS.value:
+                return [
+                    YasnoPlannedOutageEvent(
+                        start=date.date(),
+                        end=date.date(),
+                        all_day=True,
+                        event_type=YasnoPlannedOutageEventType.EMERGENCY,
+                    )
+                ]
+            return []
+
         today_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        if (
-            group_data.get(BLOCK_NAME_TODAY, {}).get(BLOCK_KEY_STATUS)
-            == STATUS_SCHEDULE_APPLIES
-        ):
-            today_events = self._parse_day_schedule(
-                group_data[BLOCK_NAME_TODAY],
-                today_date,
-            )
-            events.extend(today_events)
+        events = _parse_day_events(group_data.get(BLOCK_NAME_TODAY, {}), today_date)
 
-        # Check tomorrow if within range
         tomorrow_date = today_date + datetime.timedelta(days=1)
-        if (
-            tomorrow_date <= end_date
-            and BLOCK_NAME_TOMORROW in group_data
-            and group_data[BLOCK_NAME_TOMORROW].get(BLOCK_KEY_STATUS)
-            == STATUS_SCHEDULE_APPLIES
-        ):
-            tomorrow_events = self._parse_day_schedule(
-                group_data[BLOCK_NAME_TOMORROW],
-                tomorrow_date,
-            )
-            events.extend(tomorrow_events)
+        events.extend(
+            _parse_day_events(group_data.get(BLOCK_NAME_TOMORROW, {}), tomorrow_date)
+        )
 
-        # Sort events by start time and filter by date range
-        events = sorted(events, key=lambda event: event.start)
-
-        # Filter events that intersect with the requested range
-        return [
-            event
-            for event in events
-            if (
-                start_date <= event.start <= end_date
-                or start_date <= event.end <= end_date
-                or event.start <= start_date <= event.end
-                or event.start <= end_date <= event.end
+        events.sort(
+            key=lambda e: (
+                datetime.datetime.combine(e.start, datetime.time.min)
+                if isinstance(e.start, datetime.date)
+                else e.start
             )
-        ]
+        )
+
+        def _event_intersects_range(
+            event: YasnoPlannedOutageEvent,
+            start: datetime.datetime,
+            end: datetime.datetime,
+        ) -> bool:
+            """Check if event intersects with date range."""
+            if event.all_day:
+                return True
+            return not (event.end <= start or event.start >= end)
+
+        return [e for e in events if _event_intersects_range(e, start_date, end_date)]
 
     async def fetch_data(self) -> None:
         """Fetch all required data."""
