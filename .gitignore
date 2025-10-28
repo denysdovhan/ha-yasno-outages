@@ -20,3 +20,5 @@ config/*
 .idea
 .cache
 .todo.md
+
+*.psd
