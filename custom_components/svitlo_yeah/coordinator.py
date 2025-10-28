@@ -15,6 +15,7 @@ from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
     CONF_REGION,
+    DEBUG,
     DOMAIN,
     PROVIDER_DTEK_FULL,
     PROVIDER_DTEK_SHORT,
@@ -266,7 +267,14 @@ class IntegrationCoordinator(DataUpdateCoordinator):
         if not event:
             return None
 
-        summary = self.event_name_map.get(event.event_type)
+        summary: str = self.event_name_map.get(event.event_type)
+        if DEBUG:
+            summary += (
+                f" {event.start.date().day}.{event.start.date().month}"
+                f"@{event.start.time()}"
+                f"-{event.end.date().day}.{event.end.date().month}"
+                f"@{event.end.time()}"
+            )
 
         # noinspection PyTypeChecker
         output = CalendarEvent(

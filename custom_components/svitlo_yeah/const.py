@@ -2,6 +2,9 @@
 
 from typing import Final
 
+# Do not commit as True
+DEBUG: Final = False
+
 DOMAIN: Final = "svitlo_yeah"
 NAME: Final = "Svitlo Yeah | Світло Є"
 
