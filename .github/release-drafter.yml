@@ -1,0 +1,64 @@
+# https://github.com/release-drafter/release-drafter
+name-template: 'v$NEXT_PATCH_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
+
+autolabeler:
+  - label: 'chore'
+    files:
+      - '*.md'
+    branch:
+      - '/docs{0,1}\/.+/'
+  - label: 'bug'
+    branch:
+      - '/fix\/.+/'
+    title:
+      - '/fix/i'
+  - label: 'enhancement'
+    branch:
+      - '/feature\/.+/'
+    body:
+      - '/JIRA-[0-9]{1,4}/'
+
+exclude-labels:
+  - 'Meta: Exclude From Changelog'
+  - 'auto-changelog'
+
+categories:
+  - title: '🚀 Features'
+    label: 'feature'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+template: |
+  ![](/icons/logo.png)
+
+  ## What's changed
+  $CHANGES
+
+  ### New Features ⚡
+  - Feature 1: Description of feature 1.
+
+  ### Enhancements 🔥
+  - Enhancement 1: Description of Enhancement 1.
+
+  ### Fixes 🔧
+  - Fix 1: Description of bug fix 1.
+
+  ### Maintenance ⚙️
+  - This
+  - That
+
+  ### Other Changes
+  - Other change 1: Description of other change 1.
+
+  [![Add to HACS via My Home Assistant][hacs-install-image]][hasc-install-url]
+
+  ## Contributors to this release
+  $CONTRIBUTORS
+
+  [hasc-install-url]: https://my.home-assistant.io/redirect/hacs_repository/?owner=ALERTua&repository=ha-svitlo-yeah&category=integration
+  [hacs-install-image]: https://my.home-assistant.io/badges/hacs_repository.svg
