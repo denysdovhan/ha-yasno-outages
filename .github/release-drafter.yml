@@ -34,7 +34,7 @@ categories:
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 template: |
-  ![](/icons/logo.png)
+  <img height="128" src="https://raw.githubusercontent.com/ALERTua/ha-svitlo-yeah/main/icons/logo.png" width="256"/>
 
   ## What's changed
   $CHANGES
