@@ -4,11 +4,10 @@ import datetime
 import logging
 
 import aiohttp
+from homeassistant.util import dt as dt_utils
 
 from .const import (
     BLOCK_KEY_STATUS,
-    BLOCK_NAME_TODAY,
-    BLOCK_NAME_TOMORROW,
     PLANNED_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
 )
@@ -293,7 +292,9 @@ class YasnoApi:
             return None
 
         try:
-            return datetime.datetime.fromisoformat(group_data["updatedOn"])
+            updated_on = dt_utils.parse_datetime(group_data["updatedOn"])
+            if updated_on:
+                return dt_utils.as_local(updated_on)
         except (ValueError, TypeError):
             LOGGER.warning(
                 "Failed to parse updatedOn timestamp: %s",
@@ -315,9 +316,7 @@ class YasnoApi:
         return None
 
     def get_events(
-        self,
-        start_date: datetime.datetime,
-        end_date: datetime.datetime,
+        self, start_date: datetime.datetime, end_date: datetime.datetime
     ) -> list[YasnoPlannedOutageEvent]:
         """Get all events within the date range."""
         group_data = self._get_group_data()
@@ -326,31 +325,49 @@ class YasnoApi:
 
         LOGGER.debug("Group data for %s: %s", self.group, group_data)
 
-        def _parse_day_events(
-            day_data: dict, date: datetime.datetime
-        ) -> list[YasnoPlannedOutageEvent]:
-            """Parse events for a single day based on status."""
+        events = []
+        for key, day_data in group_data.items():
+            # parse only "today" and "tomorrow"
+            if key == "updatedOn" or not isinstance(day_data, dict):
+                continue
+
+            date_str = day_data.get("date")
+            if not date_str:
+                continue
+
+            day_dt = dt_utils.parse_datetime(date_str)
+            if not day_dt:
+                continue
+
             status = day_data.get(BLOCK_KEY_STATUS)
             if status == YasnoPlannedOutageDayStatus.STATUS_SCHEDULE_APPLIES.value:
-                return self._parse_day_schedule(day_data, date)
-            if status == YasnoPlannedOutageDayStatus.STATUS_EMERGENCY_SHUTDOWNS.value:
-                return [
+                events.extend(self._parse_day_schedule(day_data, day_dt))
+            elif status == YasnoPlannedOutageDayStatus.STATUS_EMERGENCY_SHUTDOWNS.value:
+                """
+                {
+                    "3.1": {
+                        "today": {
+                            "slots": [],
+                            "date": "2025-10-27T00:00:00+02:00",
+                            "status": "EmergencyShutdowns"
+                        },
+                        "tomorrow": {
+                            "slots": [],
+                            "date": "2025-10-28T00:00:00+02:00",
+                            "status": "EmergencyShutdowns"
+                        },
+                        "updatedOn": "2025-10-27T07:04:31+00:00"
+                    }
+                }
+                """
+                events.append(
                     YasnoPlannedOutageEvent(
-                        start=date.date(),
-                        end=date.date(),
+                        start=day_dt.date(),
+                        end=day_dt.date(),
                         all_day=True,
                         event_type=YasnoPlannedOutageEventType.EMERGENCY,
                     )
-                ]
-            return []
-
-        today_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        events = _parse_day_events(group_data.get(BLOCK_NAME_TODAY, {}), today_date)
-
-        tomorrow_date = today_date + datetime.timedelta(days=1)
-        events.extend(
-            _parse_day_events(group_data.get(BLOCK_NAME_TOMORROW, {}), tomorrow_date)
-        )
+                )
 
         events.sort(
             key=lambda e: (
@@ -360,17 +377,11 @@ class YasnoApi:
             )
         )
 
-        def _event_intersects_range(
-            event: YasnoPlannedOutageEvent,
-            start: datetime.datetime,
-            end: datetime.datetime,
-        ) -> bool:
-            """Check if event intersects with date range."""
-            if event.all_day:
-                return True
-            return not (event.end <= start or event.start >= end)
-
-        return [e for e in events if _event_intersects_range(e, start_date, end_date)]
+        return [
+            e
+            for e in events
+            if e.all_day or not (e.end <= start_date or e.start >= end_date)
+        ]
 
     async def fetch_data(self) -> None:
         """Fetch all required data."""

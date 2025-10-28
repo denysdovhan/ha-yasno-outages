@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
 import pytest
+from homeassistant.util import dt as dt_utils
 
 from custom_components.svitlo_yeah.api import YasnoApi
 from custom_components.svitlo_yeah.models import YasnoPlannedOutageEventType
@@ -219,14 +220,14 @@ class TestYasnoApiTimeConversion:
 
     def test_minutes_to_time(self, api):
         """Test converting minutes to time."""
-        date = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        date = dt_utils.now()
         result = api._minutes_to_time(960, date)
         assert result.hour == 16
         assert result.minute == 0
 
     def test_minutes_to_time_end_of_day(self, api):
         """Test converting 24:00 to time."""
-        date = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        date = dt_utils.now()
         result = api._minutes_to_time(1440, date)
         assert result.hour == 23
         assert result.minute == 59
@@ -245,7 +246,7 @@ class TestYasnoApiScheduleParsing:
             ],
             "date": "2025-01-27T00:00:00+02:00",
         }
-        date = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        date = dt_utils.parse_datetime("2025-01-27T00:00:00+02:00")
         events = api._parse_day_schedule(day_data, date)
         assert len(events) == 1
         assert events[0].event_type == YasnoPlannedOutageEventType.DEFINITE
@@ -253,8 +254,12 @@ class TestYasnoApiScheduleParsing:
 
     def test_parse_emergency_shutdown(self, api):
         """Test parsing emergency shutdown."""
-        day_data = {"status": "EmergencyShutdowns", "slots": []}
-        date = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        day_data = {
+            "status": "EmergencyShutdowns",
+            "slots": [],
+            "date": "2025-01-27T00:00:00+02:00",
+        }
+        date = dt_utils.parse_datetime("2025-01-27T00:00:00+02:00")
         api.planned_outage_data = {TEST_GROUP: {"today": day_data}}
         events = api.get_events(date, date + datetime.timedelta(days=1))
         assert len(events) == 1
@@ -280,16 +285,16 @@ class TestYasnoApiEvents:
     def test_get_events(self, api, planned_outage_data):
         """Test getting events."""
         api.planned_outage_data = planned_outage_data
-        start = datetime.datetime(2025, 10, 27, 0, 0, 0)
-        end = datetime.datetime(2025, 10, 28, 23, 59, 59)
+        start = dt_utils.parse_datetime("2025-10-27T00:00:00+02:00")
+        end = dt_utils.parse_datetime("2025-10-28T23:59:59+02:00")
         events = api.get_events(start, end)
         assert len(events) == 2
 
     def test_get_events_emergency(self, api, emergency_outage_data):
         """Test getting emergency events."""
         api.planned_outage_data = emergency_outage_data
-        start = datetime.datetime(2025, 10, 27, 0, 0, 0)
-        end = datetime.datetime(2025, 10, 28, 23, 59, 59)
+        start = dt_utils.parse_datetime("2025-10-27T00:00:00+02:00")
+        end = dt_utils.parse_datetime("2025-10-28T23:59:59+02:00")
         events = api.get_events(start, end)
         assert len(events) == 2
         assert all(
@@ -299,7 +304,7 @@ class TestYasnoApiEvents:
     def test_get_current_event(self, api, planned_outage_data):
         """Test getting current event."""
         api.planned_outage_data = planned_outage_data
-        at = datetime.datetime(2025, 10, 27, 17, 0, 0)
+        at = dt_utils.parse_datetime("2025-10-27T17:00:00+02:00")
         event = api.get_current_event(at)
         assert event is not None
         assert event.event_type == YasnoPlannedOutageEventType.DEFINITE
@@ -307,6 +312,6 @@ class TestYasnoApiEvents:
     def test_get_current_event_none(self, api, planned_outage_data):
         """Test getting current event when none active."""
         api.planned_outage_data = planned_outage_data
-        at = datetime.datetime(2025, 10, 27, 8, 0, 0)
+        at = dt_utils.parse_datetime("2025-10-27T08:00:00+02:00")
         event = api.get_current_event(at)
         assert event is None
