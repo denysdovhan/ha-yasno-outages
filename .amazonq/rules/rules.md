@@ -8,3 +8,5 @@
   so api.get_events datetime objects are also timezone-aware
 - the main code should not gain significant logic changes due to that the tests require them.
   it is better to work around the non-production environment differences inside the tests' code
+- for multiple stages of an implementation use a markdown list.
+  after implementing one of the steps mark it in the list and return the list
