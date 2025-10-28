@@ -1,6 +1,6 @@
 [project]
 name = "ha-svitlo-yeah"
-version = "0.5"  # Remember to change this in the manifest.json
+version = "0.5.0"  # Remember to change this in the manifest.json
 description = "A Home Assistant integration that provides power outage schedules for Ukraine"
 readme = "README.md"
 requires-python = ">=3.13.2"  # Follows https://github.com/home-assistant/core/blob/dev/pyproject.toml
