@@ -7,4 +7,4 @@
   so coordinator.get_events_between datetime objects are also timezone-aware,
   so api.get_events datetime objects are also timezone-aware
 - the main code should not gain significant logic changes due to that the tests require them.
-  it is better to work around the non-production enviornment differences inside the tests' code
+  it is better to work around the non-production environment differences inside the tests' code
