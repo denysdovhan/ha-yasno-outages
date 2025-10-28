@@ -138,7 +138,7 @@ class YasnoApi:
     def _minutes_to_time(
         self,
         minutes: int,
-        date: datetime.datetime,
+        dt: datetime.datetime,
     ) -> datetime.datetime:
         """Convert minutes from start of day to datetime."""
         hours = minutes // 60
@@ -146,14 +146,14 @@ class YasnoApi:
 
         # Handle end of day (24:00) - keep it as 23:59:59 to stay on same day
         if hours == 24:  # noqa: PLR2004
-            return date.replace(hour=23, minute=59, second=59, microsecond=999999)
+            return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-        return date.replace(hour=hours, minute=mins, second=0, microsecond=0)
+        return dt.replace(hour=hours, minute=mins, second=0, microsecond=0)
 
     def _parse_day_schedule(
         self,
         day_data: dict,
-        date: datetime.datetime,
+        dt: datetime.datetime,
     ) -> list[YasnoPlannedOutageEvent]:
         """
         Parse schedule for a single day.
@@ -218,8 +218,8 @@ class YasnoApi:
             if slot_type not in [YasnoPlannedOutageEventType.DEFINITE.value]:
                 continue
 
-            event_start = self._minutes_to_time(start_minutes, date)
-            event_end = self._minutes_to_time(end_minutes, date)
+            event_start = self._minutes_to_time(start_minutes, dt)
+            event_end = self._minutes_to_time(end_minutes, dt)
 
             events.append(
                 YasnoPlannedOutageEvent(
@@ -232,7 +232,55 @@ class YasnoApi:
         return events
 
     def _get_group_data(self) -> dict | None:
-        """Get data for the configured group."""
+        """
+        Get data for the configured group.
+
+        {
+          'today': {
+            'slots': [
+              {
+                'start': 0,
+                'end': 1140,
+                'type': 'NotPlanned'
+              },
+              {
+                'start': 1140,
+                'end': 1320,
+                'type': 'Definite'
+              },
+              {
+                'start': 1320,
+                'end': 1440,
+                'type': 'NotPlanned'
+              }
+            ],
+            'date': '2025-10-28T00:00:00+02:00',
+            'status': 'ScheduleApplies'
+          },
+          'tomorrow': {
+            'slots': [
+              {
+                'start': 0,
+                'end': 960,
+                'type': 'NotPlanned'
+              },
+              {
+                'start': 960,
+                'end': 1200,
+                'type': 'Definite'
+              },
+              {
+                'start': 1200,
+                'end': 1440,
+                'type': 'NotPlanned'
+              }
+            ],
+            'date': '2025-10-29T00:00:00+02:00',
+            'status': 'WaitingForSchedule'
+          },
+          'updatedOn': '2025-10-28T10:23:56+00:00'
+        }
+        """
         if not self.planned_outage_data or self.group not in self.planned_outage_data:
             return None
 
