@@ -197,12 +197,23 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         if current_state == OUTAGE_STATE_EMERGENCY:
             return None
 
-        # If currently in any outage state, return end time (when it ends)
-        if current_state in [OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE]:
-            return current_event.end if current_event else None
+        # If currently in outage state, look for the next one after current
+        if current_state == OUTAGE_STATE_OUTAGE:
+            next_events = sorted(
+                self.get_events_between(
+                    current_event.end if current_event else dt_utils.now(),
+                    dt_utils.now() + TIMEFRAME_TO_CHECK,
+                    translate=False,
+                ),
+                key=lambda event: event.start,
+            )
+            for event in next_events:
+                if self._event_to_state(event) == OUTAGE_STATE_OUTAGE:
+                    return event.start
+            return None
 
         # Otherwise, return the start of the next outage
-        event = self._get_next_event_of_type(OUTAGE_STATE_POSSIBLE)
+        event = self._get_next_event_of_type(OUTAGE_STATE_OUTAGE)
         LOGGER.debug("Next possible outage: %s", event)
         return event.start if event else None
 
@@ -217,11 +228,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             return None
 
         # If currently in any outage state, return when it ends
-        if current_state in [OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE]:
+        if current_state == OUTAGE_STATE_OUTAGE:
             return current_event.end if current_event else None
 
-        # Otherwise, return the end of the next possible outage
-        event = self._get_next_event_of_type(OUTAGE_STATE_POSSIBLE)
+        # Otherwise, return the end of the next outage
+        event = self._get_next_event_of_type(OUTAGE_STATE_OUTAGE)
         LOGGER.debug("Next connectivity: %s", event)
         return event.end if event else None
 
