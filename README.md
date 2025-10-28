@@ -6,6 +6,8 @@
 [![GitHub Release][gh-release-image]][gh-release-url]
 [![hacs][hacs-image]][hacs-url]
 
+![](/icons/logo.png)
+
 # 💡 Svitlo Yeah | Світло Є
 
 A [Home Assistant][home-assistant] integration that tracks electricity outage schedules from Ukrainian energy providers, providing outage calendars, countdown timers, and status updates.
