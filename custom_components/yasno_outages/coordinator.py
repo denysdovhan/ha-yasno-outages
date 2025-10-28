@@ -192,6 +192,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the next possible outage time."""
         current_event = self.get_current_event()
         current_state = self._event_to_state(current_event)
+        now = dt_utils.now()
 
         # If in emergency state, return None
         if current_state == OUTAGE_STATE_EMERGENCY:
@@ -201,21 +202,25 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         if current_state == OUTAGE_STATE_OUTAGE:
             next_events = sorted(
                 self.get_events_between(
-                    current_event.end if current_event else dt_utils.now(),
-                    dt_utils.now() + TIMEFRAME_TO_CHECK,
+                    current_event.end if current_event else now,
+                    now + TIMEFRAME_TO_CHECK,
                     translate=False,
                 ),
                 key=lambda event: event.start,
             )
             for event in next_events:
-                if self._event_to_state(event) == OUTAGE_STATE_OUTAGE:
+                # Make sure we don't return the current event and the event is in future
+                if (self._event_to_state(event) == OUTAGE_STATE_OUTAGE 
+                    and event.start > now
+                    and (not current_event or event.start > current_event.end)):
                     return event.start
             return None
 
         # Otherwise, return the start of the next outage
         event = self._get_next_event_of_type(OUTAGE_STATE_OUTAGE)
         LOGGER.debug("Next possible outage: %s", event)
-        return event.start if event else None
+        # Make sure the event is actually in the future
+        return event.start if (event and event.start > now) else None
 
     @property
     def next_connectivity(self) -> datetime.date | datetime.datetime | None:
