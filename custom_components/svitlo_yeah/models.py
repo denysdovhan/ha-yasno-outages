@@ -17,7 +17,7 @@ class YasnoPlannedOutageDayStatus(StrEnum):
     STATUS_EMERGENCY_SHUTDOWNS = "EmergencyShutdowns"
 
 
-class YasnoPlannedOutageEventType(StrEnum):
+class PlannedOutageEventType(StrEnum):
     """Outage event types."""
 
     DEFINITE = "Definite"
@@ -34,10 +34,10 @@ class ConnectivityState(StrEnum):
 
 
 @dataclass(frozen=True)
-class YasnoPlannedOutageEvent:
+class PlannedOutageEvent:
     """Represents an outage event."""
 
-    event_type: YasnoPlannedOutageEventType
+    event_type: PlannedOutageEventType
     start: datetime.datetime | datetime.date
     end: datetime.datetime | datetime.date
     all_day: bool = False

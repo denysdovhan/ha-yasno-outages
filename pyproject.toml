@@ -4,8 +4,7 @@ version = "0.5.1"  # Remember to change this in the manifest.json
 description = "A Home Assistant integration that provides power outage schedules for Ukraine"
 readme = "README.md"
 requires-python = ">=3.13.2"  # Follows https://github.com/home-assistant/core/blob/dev/pyproject.toml
-dependencies = [  # Remember to change this in the manifest.json
-]
+dependencies = []
 
 [dependency-groups]
 dev = [

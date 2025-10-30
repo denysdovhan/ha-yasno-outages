@@ -10,8 +10,8 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
-from .api import YasnoApi
-from .const import (
+from ..api.yasno import YasnoApi
+from ..const import (
     CONF_GROUP,
     CONF_PROVIDER,
     CONF_REGION,
@@ -23,10 +23,10 @@ from .const import (
     TRANSLATION_KEY_EVENT_PLANNED_OUTAGE,
     UPDATE_INTERVAL,
 )
-from .models import (
+from ..models import (
     ConnectivityState,
-    YasnoPlannedOutageEvent,
-    YasnoPlannedOutageEventType,
+    PlannedOutageEvent,
+    PlannedOutageEventType,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ LOGGER = logging.getLogger(__name__)
 TIMEFRAME_TO_CHECK = datetime.timedelta(hours=24)
 
 
-class IntegrationCoordinator(DataUpdateCoordinator):
+class YasnoCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Yasno outages data."""
 
     config_entry: ConfigEntry
@@ -105,10 +105,10 @@ class IntegrationCoordinator(DataUpdateCoordinator):
     def event_name_map(self) -> dict:
         """Return a mapping of event names to translations."""
         return {
-            YasnoPlannedOutageEventType.DEFINITE: self.translations.get(
+            PlannedOutageEventType.DEFINITE: self.translations.get(
                 TRANSLATION_KEY_EVENT_PLANNED_OUTAGE
             ),
-            YasnoPlannedOutageEventType.EMERGENCY: self.translations.get(
+            PlannedOutageEventType.EMERGENCY: self.translations.get(
                 TRANSLATION_KEY_EVENT_EMERGENCY_OUTAGE
             ),
         }
@@ -116,14 +116,14 @@ class IntegrationCoordinator(DataUpdateCoordinator):
     async def _resolve_ids(self) -> None:
         """Resolve region and provider IDs from names."""
         if not self.api.regions_data:
-            await self.api.fetch_regions()
+            await self.api.fetch_yasno_regions()
 
         if self.region:
             region_data = self.api.get_region_by_name(self.region)
             if region_data:
                 self.region_id = region_data["id"]
                 if self.provider:
-                    provider_data = self.api.get_provider_by_name(
+                    provider_data = self.api.get_yasno_provider_by_name(
                         self.region, self.provider
                     )
                     if provider_data:
@@ -261,7 +261,7 @@ class IntegrationCoordinator(DataUpdateCoordinator):
         return [self._get_calendar_event(event) for event in events]
 
     def _get_calendar_event(
-        self, event: YasnoPlannedOutageEvent | None
+        self, event: PlannedOutageEvent | None
     ) -> CalendarEvent | None:
         """Transform an event into a CalendarEvent."""
         if not event:
@@ -292,9 +292,9 @@ class IntegrationCoordinator(DataUpdateCoordinator):
             return ConnectivityState.STATE_NORMAL
 
         # Map event types to states using the uid field
-        if event.uid == YasnoPlannedOutageEventType.DEFINITE.value:
+        if event.uid == PlannedOutageEventType.DEFINITE.value:
             return ConnectivityState.STATE_PLANNED_OUTAGE
-        if event.uid == YasnoPlannedOutageEventType.EMERGENCY.value:
+        if event.uid == PlannedOutageEventType.EMERGENCY.value:
             return ConnectivityState.STATE_EMERGENCY
 
         LOGGER.warning("Unknown event type: %s", event.uid)

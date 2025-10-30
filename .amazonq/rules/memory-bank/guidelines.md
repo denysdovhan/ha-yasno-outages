@@ -158,6 +158,7 @@ def regions_data():
 ```
 
 ### Mocking Async HTTP
+
 ```python
 # Mock aiohttp responses with AsyncMock
 async def test_fetch_regions_success(self, api, regions_data):
@@ -167,7 +168,7 @@ async def test_fetch_regions_success(self, api, regions_data):
         mock_response.raise_for_status = MagicMock()
         mock_get.return_value.__aenter__.return_value = mock_response
 
-        await api.fetch_regions()
+        await api.fetch_yasno_regions()
         assert api.regions_data == regions_data
 ```
 

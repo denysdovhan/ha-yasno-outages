@@ -12,6 +12,14 @@ NAME: Final = "Svitlo Yeah | Світло Є"
 CONF_REGION: Final = "region"
 CONF_PROVIDER: Final = "provider"
 CONF_GROUP: Final = "group"
+CONF_PROVIDER_TYPE: Final = "provider_type"
+
+# Provider types
+PROVIDER_TYPE_YASNO: Final = "yasno"
+PROVIDER_TYPE_DTEK: Final = "dtek"
+
+# Special region identifier for Regions
+REGION_SELECTION_DTEK_KEY: Final = "region_dtek"
 
 # Provider name simplification
 PROVIDER_DTEK_FULL: Final = "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ"
@@ -38,5 +46,15 @@ TRANSLATION_KEY_EVENT_EMERGENCY_OUTAGE: Final = (
 )
 
 # Device
-DEVICE_NAME_TRANSLATION_KEY = "device_name"
+DEVICE_NAME_YASNO_TRANSLATION_KEY = "device_name_yasno"
+DEVICE_NAME_DTEK_TRANSLATION_KEY = "device_name_dtek"
 DEVICE_MANUFACTURER = NAME
+
+DTEK_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "uk,en-US;q=0.8,en;q=0.5,ru;q=0.3",
+    "Accept-Encoding": "gzip, deflate, br, zstd",
+    "Referer": "https://www.google.com/",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101"
+    " Firefox/144.0",
+}

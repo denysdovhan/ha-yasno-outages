@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
 
-from .coordinator import IntegrationCoordinator
+from .const import CONF_PROVIDER_TYPE, PROVIDER_TYPE_DTEK, PROVIDER_TYPE_YASNO
+from .coordinator.dtek import DtekCoordinator
+from .coordinator.yasno import YasnoCoordinator
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -22,7 +24,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a new entry."""
     LOGGER.info("Setup entry: %s", entry)
 
-    coordinator = IntegrationCoordinator(hass, entry)
+    provider_type = entry.options.get(
+        CONF_PROVIDER_TYPE,
+        entry.data.get(CONF_PROVIDER_TYPE, PROVIDER_TYPE_YASNO),
+    )
+
+    if provider_type == PROVIDER_TYPE_DTEK:
+        coordinator = DtekCoordinator(hass, entry)
+    else:
+        coordinator = YasnoCoordinator(hass, entry)
+
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = coordinator

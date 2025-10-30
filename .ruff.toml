@@ -15,6 +15,7 @@ ignore = [
     "D212", # multi-line-summary-first-line (incompatible with formatter)
     "COM812", # incompatible with formatter
     "ISC001", # incompatible with formatter
+    "TID252", # Prefer absolute imports over relative imports from parent modules
 ]
 
 [lint.flake8-pytest-style]
@@ -35,4 +36,5 @@ max-complexity = 25
     "S101",    # use of assert (expected in pytest)
     "SLF001",  # private member access (testing internals)
     "PLR2004", # magic values in comparisons
+    "E501",    # Line too long
 ]

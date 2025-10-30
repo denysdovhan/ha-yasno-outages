@@ -1,4 +1,6 @@
-"""API for Svitlo Yeah."""
+"""Yasno API client for Svitlo Yeah integration."""
+
+from __future__ import annotations
 
 import datetime
 import logging
@@ -6,22 +8,116 @@ import logging
 import aiohttp
 from homeassistant.util import dt as dt_utils
 
-from .const import (
+from ..const import (
     BLOCK_KEY_STATUS,
     PLANNED_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
 )
-from .models import (
+from ..models import (
+    PlannedOutageEvent,
+    PlannedOutageEventType,
     YasnoPlannedOutageDayStatus,
-    YasnoPlannedOutageEvent,
-    YasnoPlannedOutageEventType,
 )
 
 LOGGER = logging.getLogger(__name__)
 
 
+def _minutes_to_time(minutes: int, dt: datetime.datetime) -> datetime.datetime:
+    """Convert minutes from start of day to datetime."""
+    hours = minutes // 60
+    mins = minutes % 60
+
+    # Handle end of day (24:00) - keep it as 23:59:59 to stay on same day
+    if hours == 24:  # noqa: PLR2004
+        return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    return dt.replace(hour=hours, minute=mins, second=0, microsecond=0)
+
+
+def _parse_day_schedule(
+    day_data: dict, dt: datetime.datetime
+) -> list[PlannedOutageEvent]:
+    """
+    Parse schedule for a single day.
+
+    {
+      "3.1": {
+        "today": {
+          "slots": [
+            {
+              "start": 0,
+              "end": 960,
+              "type": "NotPlanned"
+            },
+            {
+              "start": 960,
+              "end": 1200,
+              "type": "Definite"
+            },
+            {
+              "start": 1200,
+              "end": 1440,
+              "type": "NotPlanned"
+            }
+          ],
+          "date": "2025-10-27T00:00:00+02:00",
+          "status": "ScheduleApplies"
+        },
+        "tomorrow": {
+          "slots": [
+            {
+              "start": 0,
+              "end": 900,
+              "type": "NotPlanned"
+            },
+            {
+              "start": 900,
+              "end": 1080,
+              "type": "Definite"
+            },
+            {
+              "start": 1080,
+              "end": 1440,
+              "type": "NotPlanned"
+            }
+          ],
+          "date": "2025-10-28T00:00:00+02:00",
+          "status": "WaitingForSchedule"
+        },
+        "updatedOn": "2025-10-27T13:42:41+00:00"
+      },
+    }
+    """
+    events = []
+    slots = day_data.get("slots", [])
+
+    for slot in slots:
+        start_minutes = slot["start"]
+        end_minutes = slot["end"]
+        slot_type = slot["type"]
+
+        # parse only outages
+        if slot_type not in [PlannedOutageEventType.DEFINITE.value]:
+            continue
+
+        event_start = _minutes_to_time(start_minutes, dt)
+        event_end = _minutes_to_time(end_minutes, dt)
+
+        events.append(
+            PlannedOutageEvent(
+                start=event_start,
+                end=event_end,
+                event_type=PlannedOutageEventType(slot_type),
+            ),
+        )
+
+    return events
+
+
 class YasnoApi:
     """Class to interact with Yasno API."""
+
+    _cached_regions_data: list[dict] | None = None
 
     def __init__(
         self,
@@ -41,7 +137,7 @@ class YasnoApi:
         session: aiohttp.ClientSession,
         url: str,
         timeout_secs: int = 60,
-    ) -> dict | None:
+    ) -> dict | list[dict] | None:
         """Fetch data from the given URL."""
         try:
             async with session.get(
@@ -55,10 +151,16 @@ class YasnoApi:
             LOGGER.exception("Error fetching data from %s", url)
             return None
 
-    async def fetch_regions(self) -> None:
+    async def fetch_yasno_regions(self) -> None:
         """Fetch regions and providers data."""
+        if YasnoApi._cached_regions_data:
+            self.regions_data = YasnoApi._cached_regions_data
+            return
+
         async with aiohttp.ClientSession() as session:
-            self.regions_data = await self._get_route_data(session, REGIONS_ENDPOINT)
+            self.regions_data = (
+                YasnoApi._cached_regions_data
+            ) = await self._get_route_data(session, REGIONS_ENDPOINT)
 
     async def fetch_planned_outage_data(self) -> None:
         """Fetch outage data for the configured region and provider."""
@@ -95,7 +197,7 @@ class YasnoApi:
         """
         # DEBUG. DO NOT COMMIT UNCOMMENTED!
 
-    def get_regions(self) -> list[dict]:
+    def get_yasno_regions(self) -> list[dict]:
         """Get a list of available regions."""
         if not self.regions_data:
             return []
@@ -104,13 +206,13 @@ class YasnoApi:
 
     def get_region_by_name(self, region_name: str) -> dict | None:
         """Get region data by name."""
-        for region in self.get_regions():
+        for region in self.get_yasno_regions():
             if region["value"] == region_name:
                 return region
 
         return None
 
-    def get_providers_for_region(self, region_name: str) -> list[dict]:
+    def get_yasno_providers_for_region(self, region_name: str) -> list[dict]:
         """Get providers for a specific region."""
         region = self.get_region_by_name(region_name)
         if not region:
@@ -118,117 +220,23 @@ class YasnoApi:
 
         return region.get("dsos", [])
 
-    def get_provider_by_name(self, region_name: str, provider_name: str) -> dict | None:
+    def get_yasno_provider_by_name(
+        self, region_name: str, provider_name: str
+    ) -> dict | None:
         """Get provider data by region and provider name."""
-        providers = self.get_providers_for_region(region_name)
+        providers = self.get_yasno_providers_for_region(region_name)
         for provider in providers:
             if provider["name"] == provider_name:
                 return provider
 
         return None
 
-    def get_groups(self) -> list[str]:
+    def get_yasno_groups(self) -> list[str]:
         """Get groups from planned outage data."""
         if not self.planned_outage_data:
             return []
 
         return list(self.planned_outage_data.keys())
-
-    def _minutes_to_time(
-        self,
-        minutes: int,
-        dt: datetime.datetime,
-    ) -> datetime.datetime:
-        """Convert minutes from start of day to datetime."""
-        hours = minutes // 60
-        mins = minutes % 60
-
-        # Handle end of day (24:00) - keep it as 23:59:59 to stay on same day
-        if hours == 24:  # noqa: PLR2004
-            return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-        return dt.replace(hour=hours, minute=mins, second=0, microsecond=0)
-
-    def _parse_day_schedule(
-        self,
-        day_data: dict,
-        dt: datetime.datetime,
-    ) -> list[YasnoPlannedOutageEvent]:
-        """
-        Parse schedule for a single day.
-
-        {
-          "3.1": {
-            "today": {
-              "slots": [
-                {
-                  "start": 0,
-                  "end": 960,
-                  "type": "NotPlanned"
-                },
-                {
-                  "start": 960,
-                  "end": 1200,
-                  "type": "Definite"
-                },
-                {
-                  "start": 1200,
-                  "end": 1440,
-                  "type": "NotPlanned"
-                }
-              ],
-              "date": "2025-10-27T00:00:00+02:00",
-              "status": "ScheduleApplies"
-            },
-            "tomorrow": {
-              "slots": [
-                {
-                  "start": 0,
-                  "end": 900,
-                  "type": "NotPlanned"
-                },
-                {
-                  "start": 900,
-                  "end": 1080,
-                  "type": "Definite"
-                },
-                {
-                  "start": 1080,
-                  "end": 1440,
-                  "type": "NotPlanned"
-                }
-              ],
-              "date": "2025-10-28T00:00:00+02:00",
-              "status": "WaitingForSchedule"
-            },
-            "updatedOn": "2025-10-27T13:42:41+00:00"
-          },
-        }
-        """
-        events = []
-        slots = day_data.get("slots", [])
-
-        for slot in slots:
-            start_minutes = slot["start"]
-            end_minutes = slot["end"]
-            slot_type = slot["type"]
-
-            # parse only outages
-            if slot_type not in [YasnoPlannedOutageEventType.DEFINITE.value]:
-                continue
-
-            event_start = self._minutes_to_time(start_minutes, dt)
-            event_end = self._minutes_to_time(end_minutes, dt)
-
-            events.append(
-                YasnoPlannedOutageEvent(
-                    start=event_start,
-                    end=event_end,
-                    event_type=YasnoPlannedOutageEventType(slot_type),
-                ),
-            )
-
-        return events
 
     def _get_group_data(self) -> dict | None:
         """
@@ -302,9 +310,7 @@ class YasnoApi:
             )
             return None
 
-    def get_current_event(
-        self, at: datetime.datetime
-    ) -> YasnoPlannedOutageEvent | None:
+    def get_current_event(self, at: datetime.datetime) -> PlannedOutageEvent | None:
         """Get the current event."""
         all_events = self.get_events(at, at + datetime.timedelta(days=1))
         for event in all_events:
@@ -317,7 +323,7 @@ class YasnoApi:
 
     def get_events(
         self, start_date: datetime.datetime, end_date: datetime.datetime
-    ) -> list[YasnoPlannedOutageEvent]:
+    ) -> list[PlannedOutageEvent]:
         """Get all events within the date range."""
         group_data = self._get_group_data()
         if not group_data:
@@ -341,7 +347,7 @@ class YasnoApi:
 
             status = day_data.get(BLOCK_KEY_STATUS)
             if status == YasnoPlannedOutageDayStatus.STATUS_SCHEDULE_APPLIES.value:
-                events.extend(self._parse_day_schedule(day_data, day_dt))
+                events.extend(_parse_day_schedule(day_data, day_dt))
             elif status == YasnoPlannedOutageDayStatus.STATUS_EMERGENCY_SHUTDOWNS.value:
                 """
                 {
@@ -361,11 +367,11 @@ class YasnoApi:
                 }
                 """
                 events.append(
-                    YasnoPlannedOutageEvent(
+                    PlannedOutageEvent(
                         start=day_dt.date(),
                         end=day_dt.date(),
                         all_day=True,
-                        event_type=YasnoPlannedOutageEventType.EMERGENCY,
+                        event_type=PlannedOutageEventType.EMERGENCY,
                     )
                 )
 

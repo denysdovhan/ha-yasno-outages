@@ -14,7 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .coordinator import IntegrationCoordinator
+from .coordinator.yasno import YasnoCoordinator
 from .entity import IntegrationEntity
 from .models import ConnectivityState
 
@@ -25,7 +25,7 @@ LOGGER = logging.getLogger(__name__)
 class IntegrationSensorDescription(SensorEntityDescription):
     """Yasno Outages entity description."""
 
-    val_func: Callable[[IntegrationCoordinator], Any]
+    val_func: Callable[[YasnoCoordinator], Any]
 
 
 SENSOR_TYPES: tuple[IntegrationSensorDescription, ...] = (
@@ -68,7 +68,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the sensor platform."""
     LOGGER.debug("Setup new sensor: %s", config_entry)
-    coordinator: IntegrationCoordinator = config_entry.runtime_data
+    coordinator: YasnoCoordinator = config_entry.runtime_data
     async_add_entities(
         IntegrationSensor(coordinator, description) for description in SENSOR_TYPES
     )
@@ -81,7 +81,7 @@ class IntegrationSensor(IntegrationEntity, SensorEntity):
 
     def __init__(
         self,
-        coordinator: IntegrationCoordinator,
+        coordinator: YasnoCoordinator,
         entity_description: IntegrationSensorDescription,
     ) -> None:
         """Initialize the sensor."""

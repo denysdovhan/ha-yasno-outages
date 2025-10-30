@@ -6,6 +6,8 @@
         "title": "Налаштування",
         "data": {
           "region": "Оберіть свій регіон:"
+        },
+        "data_description": {
         }
       },
       "provider": {
@@ -21,6 +23,15 @@
         },
         "data_description": {
           "group": "Знайдіть свою групу на: https://static.yasno.ua/kyiv/outages"
+        }
+      },
+      "dtek_group": {
+        "title": "Налаштування",
+        "data": {
+          "group": "Оберіть свою групу:"
+        },
+        "data_description": {
+          "group": "Знайдіть свою групу на: https://www.dtek-krem.com.ua/ua/shutdowns"
         }
       }
     }
@@ -51,8 +62,18 @@
     }
   },
   "device": {
-    "device_name": {
+    "device_name_yasno": {
       "name": "{region} {provider} {group}"
+    },
+    "device_name_dtek": {
+      "name": "Область {group}"
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "region_dtek": "Область"
+      }
     }
   },
   "entity": {

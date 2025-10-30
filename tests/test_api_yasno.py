@@ -8,7 +8,11 @@ import pytest
 from homeassistant.util import dt as dt_utils
 
 from custom_components.svitlo_yeah.api import YasnoApi
-from custom_components.svitlo_yeah.models import YasnoPlannedOutageEventType
+from custom_components.svitlo_yeah.api.yasno import (
+    _minutes_to_time,
+    _parse_day_schedule,
+)
+from custom_components.svitlo_yeah.models import PlannedOutageEventType
 
 TEST_REGION_ID = 25
 TEST_PROVIDER_ID = 902
@@ -125,14 +129,15 @@ class TestYasnoApiFetchData:
             mock_response.raise_for_status = MagicMock()
             mock_get.return_value.__aenter__.return_value = mock_response
 
-            await api.fetch_regions()
+            await api.fetch_yasno_regions()
             assert api.regions_data == regions_data
 
     async def test_fetch_regions_error(self, api):
         """Test regions fetch with error."""
+        YasnoApi._cached_regions_data = None
         with patch("aiohttp.ClientSession.get") as mock_get:
             mock_get.return_value.__aenter__.side_effect = aiohttp.ClientError()
-            await api.fetch_regions()
+            await api.fetch_yasno_regions()
             assert api.regions_data is None
 
     async def test_fetch_planned_outage_success(self, api, planned_outage_data):
@@ -159,11 +164,11 @@ class TestYasnoApiRegions:
     def test_get_regions(self, api, regions_data):
         """Test getting regions list."""
         api.regions_data = regions_data
-        assert api.get_regions() == regions_data
+        assert api.get_yasno_regions() == regions_data
 
     def test_get_regions_empty(self, api):
         """Test getting regions when none loaded."""
-        assert api.get_regions() == []
+        assert api.get_yasno_regions() == []
 
     def test_get_region_by_name(self, api, regions_data):
         """Test getting region by name."""
@@ -179,19 +184,19 @@ class TestYasnoApiRegions:
     def test_get_providers_for_region(self, api, regions_data):
         """Test getting providers for region."""
         api.regions_data = regions_data
-        providers = api.get_providers_for_region("Київ")
+        providers = api.get_yasno_providers_for_region("Київ")
         assert len(providers) == 1
         assert providers[0]["name"] == "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»"
 
     def test_get_providers_for_region_not_found(self, api, regions_data):
         """Test getting providers for non-existent region."""
         api.regions_data = regions_data
-        assert api.get_providers_for_region("Unknown") == []
+        assert api.get_yasno_providers_for_region("Unknown") == []
 
     def test_get_provider_by_name(self, api, regions_data):
         """Test getting provider by name."""
         api.regions_data = regions_data
-        provider = api.get_provider_by_name(
+        provider = api.get_yasno_provider_by_name(
             "Київ", "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»"
         )
         assert provider["id"] == TEST_PROVIDER_ID
@@ -199,7 +204,7 @@ class TestYasnoApiRegions:
     def test_get_provider_by_name_not_found(self, api, regions_data):
         """Test getting non-existent provider."""
         api.regions_data = regions_data
-        assert api.get_provider_by_name("Київ", "Unknown") is None
+        assert api.get_yasno_provider_by_name("Київ", "Unknown") is None
 
 
 class TestYasnoApiGroups:
@@ -208,27 +213,27 @@ class TestYasnoApiGroups:
     def test_get_groups(self, api, planned_outage_data):
         """Test getting groups list."""
         api.planned_outage_data = planned_outage_data
-        assert api.get_groups() == [TEST_GROUP]
+        assert api.get_yasno_groups() == [TEST_GROUP]
 
     def test_get_groups_empty(self, api):
         """Test getting groups when none loaded."""
-        assert api.get_groups() == []
+        assert api.get_yasno_groups() == []
 
 
 class TestYasnoApiTimeConversion:
     """Test time conversion methods."""
 
-    def test_minutes_to_time(self, api):
+    def test_minutes_to_time(self):
         """Test converting minutes to time."""
         date = dt_utils.now()
-        result = api._minutes_to_time(960, date)
+        result = _minutes_to_time(960, date)
         assert result.hour == 16
         assert result.minute == 0
 
-    def test_minutes_to_time_end_of_day(self, api):
+    def test_minutes_to_time_end_of_day(self):
         """Test converting 24:00 to time."""
         date = dt_utils.now()
-        result = api._minutes_to_time(1440, date)
+        result = _minutes_to_time(1440, date)
         assert result.hour == 23
         assert result.minute == 59
         assert result.second == 59
@@ -237,7 +242,7 @@ class TestYasnoApiTimeConversion:
 class TestYasnoApiScheduleParsing:
     """Test schedule parsing methods."""
 
-    def test_parse_day_schedule(self, api):
+    def test_parse_day_schedule(self):
         """Test parsing day schedule."""
         day_data = {
             "slots": [
@@ -247,9 +252,9 @@ class TestYasnoApiScheduleParsing:
             "date": "2025-01-27T00:00:00+02:00",
         }
         date = dt_utils.parse_datetime("2025-01-27T00:00:00+02:00")
-        events = api._parse_day_schedule(day_data, date)
+        events = _parse_day_schedule(day_data, date)
         assert len(events) == 1
-        assert events[0].event_type == YasnoPlannedOutageEventType.DEFINITE
+        assert events[0].event_type == PlannedOutageEventType.DEFINITE
         assert events[0].start.hour == 16
 
     def test_parse_emergency_shutdown(self, api):
@@ -264,7 +269,7 @@ class TestYasnoApiScheduleParsing:
         events = api.get_events(date, date + datetime.timedelta(days=1))
         assert len(events) == 1
         assert events[0].all_day is True
-        assert events[0].event_type == YasnoPlannedOutageEventType.EMERGENCY
+        assert events[0].event_type == PlannedOutageEventType.EMERGENCY
         assert events[0].start == datetime.date(2025, 1, 27)
 
 
@@ -297,9 +302,7 @@ class TestYasnoApiEvents:
         end = dt_utils.parse_datetime("2025-10-28T23:59:59+02:00")
         events = api.get_events(start, end)
         assert len(events) == 2
-        assert all(
-            e.event_type == YasnoPlannedOutageEventType.EMERGENCY for e in events
-        )
+        assert all(e.event_type == PlannedOutageEventType.EMERGENCY for e in events)
 
     def test_get_current_event(self, api, planned_outage_data):
         """Test getting current event."""
@@ -307,7 +310,7 @@ class TestYasnoApiEvents:
         at = dt_utils.parse_datetime("2025-10-27T17:00:00+02:00")
         event = api.get_current_event(at)
         assert event is not None
-        assert event.event_type == YasnoPlannedOutageEventType.DEFINITE
+        assert event.event_type == PlannedOutageEventType.DEFINITE
 
     def test_get_current_event_none(self, api, planned_outage_data):
         """Test getting current event when none active."""

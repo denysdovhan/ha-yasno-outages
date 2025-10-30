@@ -6,9 +6,9 @@ import pytest
 
 from custom_components.svitlo_yeah.models import (
     ConnectivityState,
+    PlannedOutageEvent,
+    PlannedOutageEventType,
     YasnoPlannedOutageDayStatus,
-    YasnoPlannedOutageEvent,
-    YasnoPlannedOutageEventType,
 )
 
 
@@ -17,15 +17,15 @@ class TestYasnoPlannedOutageEventType:
 
     def test_definite(self):
         """Test DEFINITE type."""
-        assert YasnoPlannedOutageEventType.DEFINITE == "Definite"
+        assert PlannedOutageEventType.DEFINITE == "Definite"
 
     def test_not_planned(self):
         """Test NOT_PLANNED type."""
-        assert YasnoPlannedOutageEventType.NOT_PLANNED == "NotPlanned"
+        assert PlannedOutageEventType.NOT_PLANNED == "NotPlanned"
 
     def test_emergency(self):
         """Test EMERGENCY type."""
-        assert YasnoPlannedOutageEventType.EMERGENCY == "Emergency"
+        assert PlannedOutageEventType.EMERGENCY == "Emergency"
 
 
 class TestYasnoPlannedOutageDayStatus:
@@ -66,22 +66,22 @@ class TestYasnoPlannedOutageEvent:
         """Test creating event with datetime."""
         start = datetime.datetime(2025, 1, 27, 10, 0, 0)
         end = datetime.datetime(2025, 1, 27, 12, 0, 0)
-        event = YasnoPlannedOutageEvent(
-            event_type=YasnoPlannedOutageEventType.DEFINITE,
+        event = PlannedOutageEvent(
+            event_type=PlannedOutageEventType.DEFINITE,
             start=start,
             end=end,
         )
         assert event.start == start
         assert event.end == end
-        assert event.event_type == YasnoPlannedOutageEventType.DEFINITE
+        assert event.event_type == PlannedOutageEventType.DEFINITE
         assert event.all_day is False
 
     def test_create_with_date(self):
         """Test creating event with date."""
         start = datetime.date(2025, 1, 27)
         end = datetime.date(2025, 1, 27)
-        event = YasnoPlannedOutageEvent(
-            event_type=YasnoPlannedOutageEventType.EMERGENCY,
+        event = PlannedOutageEvent(
+            event_type=PlannedOutageEventType.EMERGENCY,
             start=start,
             end=end,
             all_day=True,
@@ -92,8 +92,8 @@ class TestYasnoPlannedOutageEvent:
 
     def test_frozen(self):
         """Test that event is frozen."""
-        event = YasnoPlannedOutageEvent(
-            event_type=YasnoPlannedOutageEventType.DEFINITE,
+        event = PlannedOutageEvent(
+            event_type=PlannedOutageEventType.DEFINITE,
             start=datetime.datetime(2025, 1, 27, 10, 0, 0),
             end=datetime.datetime(2025, 1, 27, 12, 0, 0),
         )

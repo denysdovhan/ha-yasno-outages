@@ -9,7 +9,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .coordinator import IntegrationCoordinator
+from .coordinator.dtek import DtekCoordinator
+from .coordinator.yasno import YasnoCoordinator
 from .entity import IntegrationEntity
 
 LOGGER = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Svitlo Yeah calendar platform."""
     LOGGER.debug("Setup new entry: %s", config_entry)
-    coordinator: IntegrationCoordinator = config_entry.runtime_data
+    coordinator: YasnoCoordinator | DtekCoordinator = config_entry.runtime_data
     async_add_entities([PlannedOutagesCalendar(coordinator)])
 
 
@@ -31,13 +32,13 @@ class PlannedOutagesCalendar(IntegrationEntity, CalendarEntity):
 
     def __init__(
         self,
-        coordinator: IntegrationCoordinator,
+        coordinator: YasnoCoordinator | DtekCoordinator,
     ) -> None:
         """Initialize the Planned Outages Calendar entity."""
         super().__init__(coordinator)
         self.entity_id = (
             f"calendar.planned_outages"
-            f"_{coordinator.region}"
+            f"_{coordinator.region_name}"
             f"_{coordinator.provider_name}"
             f"_{coordinator.group}"
         )

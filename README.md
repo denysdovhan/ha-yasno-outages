@@ -35,7 +35,7 @@ Select your region:
 
 ![Region Selection](/media/1_region.png)
 
-Select your Service Provider
+Select your Service Provider (if applicable)
 
 ![Service Provider Selection](/media/2_provider.png)
 
