@@ -42,17 +42,186 @@ Documentation: https://developers.home-assistant.io/docs/integration_fetching_da
 
 Coordinator should not rely on API response structure. Instead, transform data into plain Python objects (e.g., dataclasses) on API class level, so coordinator only calls API methods and works with stable data structures.
 
-### API
+## API
 
 External API:
 
 - Regions: `https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/regions`
-- Planned Outages: `https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages`
-- Probable Outages: `https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages?regionId={region_id}&dsoId={dso_id}`
+- Planned Outages:
+  - Path: `https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages`
+  - Example: `https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/25/dsos/902/planned-outages`
+- Probable Outages (not implemented yet):
+  - Path: `https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages?regionId={region_id}&dsoId={dso_id}`
+  - Example: `https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages?regionId=25&dsoId=902`
 
 All HTTP requests use `aiohttp` (async, non-blocking). No authentication required.
 
 For now, only planned outages are implemented. Probable outages support is planned in the future.
+
+### Planned Outages
+
+Planned outages response have this scructure:
+
+```json
+{
+  "1.1": {
+    "today": {
+      "slots": [
+        {
+          "start": 0,
+          "end": 840,
+          "type": "NotPlanned"
+        },
+        {
+          "start": 840,
+          "end": 1080,
+          "type": "Definite"
+        },
+        {
+          "start": 1080,
+          "end": 1440,
+          "type": "NotPlanned"
+        }
+      ],
+      "date": "2025-11-05T00:00:00+02:00",
+      "status": "ScheduleApplies"
+    },
+    "tomorrow": {
+      "slots": [
+        {
+          "start": 0,
+          "end": 1020,
+          "type": "NotPlanned"
+        },
+        {
+          "start": 1020,
+          "end": 1200,
+          "type": "Definite"
+        },
+        {
+          "start": 1200,
+          "end": 1440,
+          "type": "NotPlanned"
+        }
+      ],
+      "date": "2025-11-06T00:00:00+02:00",
+      "status": "WaitingForSchedule"
+    },
+    "updatedOn": "2025-11-05T11:57:32+00:00"
+  },
+  "1.2": {}, // same structure
+  "2.1": {}, // same structure
+  "3.1": {}, // same structure
+  "3.2": {}, // same structure
+  "2.2": {}, // same structure
+  "4.1": {}, // same structure
+  "4.2": {}, // same structure
+  "5.1": {}, // same structure
+  "5.2": {}, // same structure
+  "6.1": {}, // same structure
+  "6.2": {} // same structure
+}
+```
+
+#### Groups
+
+Each group is coded as two digins `x.y`, `x` means group, `y` means subgroup. In planned outages each group have two properties `today` and `tomorrow`, describing tyime slots for outages.
+
+#### Slots
+
+Slots describe events. `start` and `end` are minutes in a day (from 0 to 1440). Slots can have these types:
+
+- `NotPlaned` - no outages planned. Do not create any events from this type of slot.
+- `Definite` - outage event. Event should be created for this time. This event should use date from `date` property.
+
+#### Updated on
+
+`updatedOn` property reflects when the schedule was updated by service provider (not the last time intergation fetched the data). There should be a sensor in `sensor.py` reflecting this value.
+
+#### Status
+
+Status property describes the type of the events and how to deal with them. There should be a sensor in `sensor.py` with corresponding status for `today`.
+
+Here are types of statuses:
+
+- `ScheduleApplies` - slots are applied. Events should be added to the calendar.
+- `WaitingForSchedule` - slots are up for a changes. Created events, but they may be changed.
+- `EmergencyShutdowns` - slots should be displayed in the calendar, but they are not active. Emmergency is happening.
+
+### Probable Outages (not implemented yet)
+
+Probable outages reflect the permanent schedule, that is active at all time. This integration should create recurring events for slots described in specificified group.
+
+Planned outages is a specific clarification of how schedule looks today and tomorrow. Planned outages are kind of subset of probable outages.
+
+Probable outages create a separate calendar entity describing only probable outages, skipping the days described in `today` and `tomorrow` properties of planned outages. Therefore, probable outages calendar should not contain any events for days described in planned outages.
+
+Here is an example of response:
+
+```json
+{
+  "25": {
+    "dsos": {
+      "902": {
+        "groups": {
+          "1.1": {
+            "slots": {
+              "0": [
+                {
+                  "start": 0,
+                  "end": 300,
+                  "type": "Definite"
+                },
+                {
+                  "start": 300,
+                  "end": 510,
+                  "type": "NotPlanned"
+                },
+                {
+                  "start": 510,
+                  "end": 930,
+                  "type": "Definite"
+                },
+                {
+                  "start": 930,
+                  "end": 1140,
+                  "type": "NotPlanned"
+                },
+                {
+                  "start": 1140,
+                  "end": 1440,
+                  "type": "Definite"
+                }
+              ],
+              "1": [], // similar structure
+              "2": [], // similar structure
+              "3": [], // similar structure
+              "4": [], // similar structure
+              "5": [], // similar structure
+              "6": [] // similar structure
+            }
+          },
+          "1.2": {}, // similar structures
+          "2.1": {}, // similar structures
+          "2.2": {}, // similar structures
+          "3.1": {}, // similar structures
+          "3.2": {}, // similar structures
+          "4.1": {}, // similar structures
+          "4.2": {}, // similar structures
+          "5.1": {}, // similar structures
+          "5.2": {}, // similar structures
+          "6.1": {}, // similar structures
+          "6.2": {} // similar structures
+        }
+      }
+    }
+  }
+}
+```
+
+Response contains region and service provider. `groups` property describes all available groups. Each group describes slots for each day of the week (from 0 to 6, meaning from monday to sunday). Each day has time slots for events with the same structure as planned outages.
+
+`Definite` status for probable outages should create and event for probable outages.
 
 ## Workflow
 
@@ -128,6 +297,20 @@ Fetch these links to get more information about specific Home Assistant APIs dir
 - Config Entries: https://developers.home-assistant.io/docs/config_entries_index
 - Data Entry Flow: https://developers.home-assistant.io/docs/data_entry_flow_index
 - Manifest: https://developers.home-assistant.io/docs/creating_integration_manifest
+
+## Commit messages
+
+When generating commit messages, always use this format:
+
+```
+<type>(<scope>): summary up to 40 characters
+
+Longer multiline description only for bigger changes that require additional explanations.
+```
+
+Summary should be concise and descriptive. Summary should not contain implicit or generic words like (enhance, improve, etc), instead it should clearly specify what is changed.
+
+Use longer descriptions ocasionally to describe complex changes, only when it's really necessary.
 
 ## Important directives
 
