@@ -48,7 +48,7 @@ External API:
 
 - Regions: `https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/regions`
 - Planned Outages: `https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages`
-- Probable Outages: `https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages?regionId={region_id}&dsoId={dso_id}`
+- Probable Outages (not implemented yet): `https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages?regionId={region_id}&dsoId={dso_id}`
 
 All HTTP requests use `aiohttp` (async, non-blocking). No authentication required.
 
@@ -128,6 +128,20 @@ Fetch these links to get more information about specific Home Assistant APIs dir
 - Config Entries: https://developers.home-assistant.io/docs/config_entries_index
 - Data Entry Flow: https://developers.home-assistant.io/docs/data_entry_flow_index
 - Manifest: https://developers.home-assistant.io/docs/creating_integration_manifest
+
+## Commit messages
+
+When generating commit messages, always use this format:
+
+```
+<type>(<scope>): summary up to 40 characters
+
+Longer multiline description only for bigger changes that require additional explanations.
+```
+
+Summary should be concise and descriptive. Summary should not contain implicit or generic words like (enhance, improve, etc), instead it should clearly specify what is changed.
+
+Use longer descriptions ocasionally to describe complex changes, only when it's really necessary.
 
 ## Important directives
 
