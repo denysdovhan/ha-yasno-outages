@@ -6,10 +6,12 @@ import logging
 import aiohttp
 
 from .const import (
+    EVENT_NAME_EMERGENCY,
     EVENT_NAME_NORMAL,
     EVENT_NAME_OUTAGE,
     PLANNED_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
+    STATUS_EMERGENCY_SHUTDOWNS,
     STATUS_SCHEDULE_APPLIES,
 )
 
@@ -134,7 +136,12 @@ class YasnoOutagesApi:
             end_minutes = slot["end"]
             slot_type = slot["type"]
 
-            if slot_type not in [EVENT_NAME_NORMAL, EVENT_NAME_OUTAGE]:
+            # Map NotPlanned to NORMAL event
+            if slot_type == "NotPlanned":
+                slot_type = EVENT_NAME_NORMAL
+            elif slot_type == "Definite":
+                slot_type = EVENT_NAME_OUTAGE
+            else:
                 continue
 
             event_start = self._minutes_to_time(start_minutes, date)
@@ -194,22 +201,59 @@ class YasnoOutagesApi:
             return events
 
         # Check today
-        today_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        if (
-            "today" in group_data
-            and group_data["today"].get("status") == STATUS_SCHEDULE_APPLIES
-        ):
-            today_events = self._parse_day_schedule(group_data["today"], today_date)
-            events.extend(today_events)
+        # Parse date with timezone from API
+        today_api_date = None
+        if "today" in group_data and "date" in group_data["today"]:
+            try:
+                today_api_date = datetime.datetime.fromisoformat(group_data["today"]["date"])
+            except (ValueError, TypeError):
+                LOGGER.warning("Failed to parse today's date from API")
+
+        # If we have API date, use its timezone, otherwise use start_date
+        today_date = (today_api_date or start_date).replace(hour=0, minute=0, second=0, microsecond=0)
+        if "today" in group_data:
+            today_status = group_data["today"].get("status")
+            
+            # Handle emergency shutdowns
+            if today_status == STATUS_EMERGENCY_SHUTDOWNS:
+                events.append({
+                    "summary": EVENT_NAME_EMERGENCY,
+                    "start": today_date,
+                    "end": today_date.replace(hour=23, minute=59, second=59, microsecond=999999),
+                })
+            # Handle normal schedule
+            elif today_status == STATUS_SCHEDULE_APPLIES:
+                today_events = self._parse_day_schedule(group_data["today"], today_date)
+                events.extend(today_events)
 
         # Check tomorrow if within range
-        tomorrow_date = today_date + datetime.timedelta(days=1)
+        # Parse tomorrow's date with timezone from API
+        tomorrow_api_date = None
+        if "tomorrow" in group_data and "date" in group_data["tomorrow"]:
+            try:
+                tomorrow_api_date = datetime.datetime.fromisoformat(group_data["tomorrow"]["date"])
+            except (ValueError, TypeError):
+                LOGGER.warning("Failed to parse tomorrow's date from API")
+
+        # If we have API date, use its timezone, otherwise add 1 day to today_date
+        tomorrow_date = tomorrow_api_date or (today_date + datetime.timedelta(days=1))
         if tomorrow_date <= end_date and "tomorrow" in group_data:
-            tomorrow_events = self._parse_day_schedule(
-                group_data["tomorrow"],
-                tomorrow_date,
-            )
-            events.extend(tomorrow_events)
+            tomorrow_status = group_data["tomorrow"].get("status")
+            
+            # Handle emergency shutdowns
+            if tomorrow_status == STATUS_EMERGENCY_SHUTDOWNS:
+                events.append({
+                    "summary": EVENT_NAME_EMERGENCY,
+                    "start": tomorrow_date,
+                    "end": tomorrow_date.replace(hour=23, minute=59, second=59, microsecond=999999),
+                })
+            # Handle normal schedule
+            elif tomorrow_status == STATUS_SCHEDULE_APPLIES:
+                tomorrow_events = self._parse_day_schedule(
+                    group_data["tomorrow"],
+                    tomorrow_date,
+                )
+                events.extend(tomorrow_events)
 
         # Sort events by start time and filter by date range
         events = sorted(events, key=lambda event: event["start"])

@@ -96,7 +96,9 @@
   },
   "common": {
     "electricity_off": "Відключення",
-    "electricity_maybe": "Можливе відключення"
+    "electricity_maybe": "Можливе відключення",
+    "electricity_normal": "Без відключень",
+    "electricity_emergency": "Аварійні відключення"
   },
   "issues": {
     "api_v1_to_v2": {

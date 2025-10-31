@@ -7,5 +7,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/denysdovhan/ha-yasno-outages",
   "requirements": [],
-  "version": "0.0.0-unreleased"
+  "version": "0.0.1"
 }
