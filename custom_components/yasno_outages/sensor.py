@@ -14,7 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import OUTAGE_STATE_NORMAL, OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE
+from .const import STATE_NORMAL, STATE_OUTAGE
 from .coordinator import YasnoOutagesCoordinator
 from .entity import YasnoOutagesEntity
 
@@ -34,7 +34,7 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         translation_key="electricity",
         icon="mdi:transmission-tower",
         device_class=SensorDeviceClass.ENUM,
-        options=[OUTAGE_STATE_NORMAL, OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE],
+        options=[STATE_NORMAL, STATE_OUTAGE],
         val_func=lambda coordinator: coordinator.current_state,
     ),
     YasnoOutagesSensorDescription(
@@ -45,18 +45,11 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         val_func=lambda coordinator: coordinator.schedule_updated_on,
     ),
     YasnoOutagesSensorDescription(
-        key="next_outage",
-        translation_key="next_outage",
+        key="next_planned_outage",
+        translation_key="next_planned_outage",
         icon="mdi:calendar-remove",
         device_class=SensorDeviceClass.TIMESTAMP,
-        val_func=lambda coordinator: coordinator.next_outage,
-    ),
-    YasnoOutagesSensorDescription(
-        key="next_possible_outage",
-        translation_key="next_possible_outage",
-        icon="mdi:calendar-question",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        val_func=lambda coordinator: coordinator.next_possible_outage,
+        val_func=lambda coordinator: coordinator.next_planned_outage,
     ),
     YasnoOutagesSensorDescription(
         key="next_connectivity",
@@ -113,22 +106,8 @@ class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
 
         # Get the current event to provide additional context
         current_event = self.coordinator.get_current_event()
-
-        if not current_event:
-            return {
-                "event_type": "none",
-                "event_start": None,
-                "event_end": None,
-            }
-
-        # Get the event details from the coordinator
-        event_dict = current_event.as_dict()
-        event_type = event_dict.get("description", "unknown")  # Original summary
-        event_start = event_dict.get("start")
-        event_end = event_dict.get("end")
-
         return {
-            "event_type": event_type,
-            "event_start": event_start,
-            "event_end": event_end,
+            "event_type": current_event.description if current_event else None,
+            "event_start": current_event.start if current_event else None,
+            "event_end": current_event.end if current_event else None,
         }
