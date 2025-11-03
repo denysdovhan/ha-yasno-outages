@@ -1,6 +1,15 @@
-# Default configuration
-# https://www.home-assistant.io/integrations/default_config/
-default_config:
+# Minimal configuration for testing
+homeassistant:
+  name: Test
+  latitude: 50.4501
+  longitude: 30.5234
+  elevation: 0
+  unit_system: metric
+  time_zone: Europe/Kiev
+
+# Enable API and basic features but not frontend
+api:
+http:
 
 # Remote Python Debugger
 # https://www.home-assistant.io/integrations/debugpy/

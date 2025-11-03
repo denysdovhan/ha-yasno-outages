@@ -35,6 +35,7 @@ PLANNED_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/pub
 
 # API Status values
 STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
+STATUS_WAITING_FOR_SCHEDULE: Final = "WaitingForSchedule"
 
 # Keys
 TRANSLATION_KEY_EVENT_OFF: Final = f"component.{DOMAIN}.common.electricity_off"

@@ -4,6 +4,7 @@ import datetime
 import logging
 
 import aiohttp
+from homeassistant.util import dt as dt_utils
 
 from .const import (
     EVENT_NAME_NORMAL,
@@ -11,6 +12,7 @@ from .const import (
     PLANNED_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
     STATUS_SCHEDULE_APPLIES,
+    STATUS_WAITING_FOR_SCHEDULE,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -116,9 +118,12 @@ class YasnoOutagesApi:
 
         # Handle end of day (24:00) - keep it as 23:59:59 to stay on same day
         if hours == 24:  # noqa: PLR2004
-            return date.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-        return date.replace(hour=hours, minute=mins, second=0, microsecond=0)
+            result = date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        else:
+            result = date.replace(hour=hours, minute=mins, second=0, microsecond=0)
+        
+        # Preserve the timezone from the original date
+        return result
 
     def _parse_day_schedule(
         self,
@@ -163,7 +168,9 @@ class YasnoOutagesApi:
             return None
 
         try:
-            return datetime.datetime.fromisoformat(group_data["updatedOn"])
+            # Parse timezone-aware datetime from API
+            result = datetime.datetime.fromisoformat(group_data["updatedOn"])
+            return result
         except (ValueError, TypeError):
             LOGGER.warning(
                 "Failed to parse updatedOn timestamp: %s",
@@ -193,23 +200,55 @@ class YasnoOutagesApi:
         if not group_data:
             return events
 
-        # Check today
-        today_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        if (
-            "today" in group_data
-            and group_data["today"].get("status") == STATUS_SCHEDULE_APPLIES
-        ):
-            today_events = self._parse_day_schedule(group_data["today"], today_date)
-            events.extend(today_events)
-
-        # Check tomorrow if within range
-        tomorrow_date = today_date + datetime.timedelta(days=1)
-        if tomorrow_date <= end_date and "tomorrow" in group_data:
-            tomorrow_events = self._parse_day_schedule(
-                group_data["tomorrow"],
-                tomorrow_date,
-            )
-            events.extend(tomorrow_events)
+        # Process all available days from the API
+        for day_key in ["today", "tomorrow"]:
+            if day_key in group_data:
+                day_data = group_data[day_key]
+                
+                # Parse the date from the API response
+                try:
+                    api_date_str = day_data.get("date")
+                    if not api_date_str:
+                        LOGGER.debug("No date found for %s", day_key)
+                        continue
+                        
+                    # Parse the timezone-aware date from API
+                    day_date = datetime.datetime.fromisoformat(api_date_str)
+                    status = day_data.get("status")
+                    
+                    LOGGER.debug(
+                        "Processing %s (date: %s, status: %s)",
+                        day_key,
+                        api_date_str,
+                        status,
+                    )
+                    
+                    # Only process days where schedule is confirmed and applies
+                    if status == STATUS_SCHEDULE_APPLIES:
+                        day_events = self._parse_day_schedule(day_data, day_date)
+                        events.extend(day_events)
+                        LOGGER.debug("Added %d events for %s", len(day_events), day_key)
+                    elif status == STATUS_WAITING_FOR_SCHEDULE:
+                        LOGGER.debug(
+                            "Skipping %s - waiting for schedule confirmation",
+                            day_key,
+                        )
+                    else:
+                        LOGGER.debug(
+                            "Skipping %s - unknown status '%s' (expected '%s')",
+                            day_key,
+                            status,
+                            STATUS_SCHEDULE_APPLIES,
+                        )
+                        
+                except (ValueError, TypeError) as err:
+                    LOGGER.warning(
+                        "Failed to parse date %s for %s: %s",
+                        day_data.get("date"),
+                        day_key,
+                        err,
+                    )
+                    continue
 
         # Sort events by start time and filter by date range
         events = sorted(events, key=lambda event: event["start"])
