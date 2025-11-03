@@ -19,5 +19,3 @@ config/*
 !config/configuration.yaml
 .idea
 .cache
-
-test_integration.py
