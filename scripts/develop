@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 # Create config dir if not present
 if [[ ! -d "${PWD}/config" ]]; then
     mkdir -p "${PWD}/config"
-    .venv/bin/hass --config "${PWD}/config" --script ensure_config
+    hass --config "${PWD}/config" --script ensure_config
 fi
 
 # Set the path to custom_components
@@ -17,4 +17,4 @@ fi
 export PYTHONPATH="${PYTHONPATH}:${PWD}/custom_components"
 
 # Start Home Assistant
-.venv/bin/hass --config "${PWD}/config" --debug
+hass --config "${PWD}/config" --debug
