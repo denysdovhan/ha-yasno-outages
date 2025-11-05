@@ -8,6 +8,9 @@ from enum import Enum
 import aiohttp
 
 from .const import (
+    API_KEY_STATUS,
+    API_KEY_TODAY,
+    API_KEY_TOMORROW,
     EVENT_NAME_OUTAGE,
     PLANNED_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
@@ -214,8 +217,8 @@ class YasnoOutagesApi:
         # Check today
         today_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         if (
-            "today" in group_data
-            and group_data["today"].get("status") == STATUS_SCHEDULE_APPLIES
+            API_KEY_TODAY in group_data
+            and group_data[API_KEY_TODAY].get(API_KEY_STATUS) == STATUS_SCHEDULE_APPLIES
         ):
             today_events = self._parse_day_schedule(group_data["today"], today_date)
             events.extend(today_events)
@@ -224,11 +227,12 @@ class YasnoOutagesApi:
         tomorrow_date = today_date + datetime.timedelta(days=1)
         if (
             tomorrow_date <= end_date
-            and "tomorrow" in group_data
-            and group_data["tomorrow"].get("status") == STATUS_SCHEDULE_APPLIES
+            and API_KEY_TOMORROW in group_data
+            and group_data[API_KEY_TOMORROW].get(API_KEY_STATUS)
+            == STATUS_SCHEDULE_APPLIES
         ):
             tomorrow_events = self._parse_day_schedule(
-                group_data["tomorrow"],
+                group_data[API_KEY_TOMORROW],
                 tomorrow_date,
             )
             events.extend(tomorrow_events)

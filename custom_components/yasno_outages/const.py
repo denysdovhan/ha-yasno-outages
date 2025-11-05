@@ -36,9 +36,9 @@ PLANNED_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/pub
 STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
 
 # API Block names
-BLOCK_NAME_TODAY: Final = "today"
-BLOCK_NAME_TOMORROW: Final = "tomorrow"
-BLOCK_KEY_STATUS: Final = "status"
+API_KEY_TODAY: Final = "today"
+API_KEY_TOMORROW: Final = "tomorrow"
+API_KEY_STATUS: Final = "status"
 
 # Keys
 TRANSLATION_KEY_EVENT_OUTAGE: Final = f"component.{DOMAIN}.common.electricity_outage"
