@@ -1,29 +1,55 @@
 """Repairs for Yasno Outages integration."""
 
-import logging
+from __future__ import annotations
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+import logging
+from typing import TYPE_CHECKING
+
 from homeassistant.helpers import issue_registry as ir
 
-from .const import CONF_CITY, DOMAIN
+from .const import CONF_PROVIDER, CONF_REGION, DOMAIN
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
 
 LOGGER = logging.getLogger(__name__)
 
 
 async def async_check_and_create_repair(
-    hass: HomeAssistant, entry: ConfigEntry
+    hass: HomeAssistant,
+    entry: ConfigEntry,
 ) -> None:
     """Check if repair is needed and create issue."""
-    if CONF_CITY in entry.data or CONF_CITY in entry.options:
-        LOGGER.info("Old config detected for entry %s, creating repair", entry.entry_id)
-        LOGGER.debug("Old config: %s", entry.data)
-        LOGGER.debug("Old options: %s", entry.options)
+    # Check for missing required configuration keys
+    region = entry.options.get(CONF_REGION, entry.data.get(CONF_REGION))
+    provider = entry.options.get(CONF_PROVIDER, entry.data.get(CONF_PROVIDER))
+
+    if not region or not provider:
+        LOGGER.info(
+            "Missing required keys for entry %s, creating repair",
+            entry.entry_id,
+        )
+        LOGGER.debug("region=%s, provider=%s", region, provider)
+        LOGGER.debug("data=%s, options=%s", entry.data, entry.options)
+
         ir.async_create_issue(
             hass,
             DOMAIN,
-            f"api_v1_to_v2_{entry.entry_id}",
+            f"missing_config_{entry.entry_id}",
             is_fixable=False,
-            severity=ir.IssueSeverity.WARNING,
-            translation_key="api_v1_to_v2",
+            is_persistent=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key="missing_config",
+            translation_placeholders={
+                "entry_id": entry.entry_id,
+                "entry_title": entry.title or "Yasno Outages",
+                "edit": (
+                    "/config/integrations/integration/yasno_outages"
+                    f"#config_entry={entry.entry_id}"
+                ),
+            },
         )
+    else:
+        # Delete the issue if it exists (config is now complete)
+        ir.async_delete_issue(hass, DOMAIN, f"missing_config_{entry.entry_id}")

@@ -10,21 +10,18 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
-from .api import YasnoOutagesApi
+from .api import OutageEvent, OutageEventType, YasnoOutagesApi
 from .const import (
     CONF_GROUP,
+    CONF_PROVIDER,
     CONF_REGION,
-    CONF_SERVICE,
     DOMAIN,
-    EVENT_NAME_NORMAL,
     EVENT_NAME_OUTAGE,
-    OUTAGE_STATE_NORMAL,
-    OUTAGE_STATE_OUTAGE,
-    OUTAGE_STATE_POSSIBLE,
     PROVIDER_DTEK_FULL,
     PROVIDER_DTEK_SHORT,
-    TRANSLATION_KEY_EVENT_MAYBE,
-    TRANSLATION_KEY_EVENT_OFF,
+    STATE_NORMAL,
+    STATE_OUTAGE,
+    TRANSLATION_KEY_EVENT_OUTAGE,
     UPDATE_INTERVAL,
 )
 
@@ -55,9 +52,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             CONF_REGION,
             config_entry.data.get(CONF_REGION),
         )
-        self.service = config_entry.options.get(
-            CONF_SERVICE,
-            config_entry.data.get(CONF_SERVICE),
+        self.provider = config_entry.options.get(
+            CONF_PROVIDER,
+            config_entry.data.get(CONF_PROVIDER),
         )
         self.group = config_entry.options.get(
             CONF_GROUP,
@@ -73,14 +70,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             LOGGER.error(region_required_msg)
             raise ValueError(region_error)
 
-        if not self.service:
-            service_required_msg = (
-                "Service not set in configuration - this should not happen "
+        if not self.provider:
+            provider_required_msg = (
+                "Provider not set in configuration - this should not happen "
                 "with proper config flow"
             )
-            service_error = "Service configuration is required"
-            LOGGER.error(service_required_msg)
-            raise ValueError(service_error)
+            provider_error = "Provider configuration is required"
+            LOGGER.error(provider_required_msg)
+            raise ValueError(provider_error)
 
         if not self.group:
             group_required_msg = (
@@ -93,7 +90,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         # Initialize with names first, then we'll update with IDs when we fetch data
         self.region_id = None
-        self.service_id = None
+        self.provider_id = None
         self._provider_name = ""  # Cache the provider name
 
         # Initialize API and resolve IDs
@@ -104,12 +101,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def event_name_map(self) -> dict:
         """Return a mapping of event names to translations."""
         return {
-            EVENT_NAME_OUTAGE: self.translations.get(TRANSLATION_KEY_EVENT_OFF),
-            EVENT_NAME_NORMAL: self.translations.get(TRANSLATION_KEY_EVENT_MAYBE),
+            EVENT_NAME_OUTAGE: self.translations.get(TRANSLATION_KEY_EVENT_OUTAGE),
         }
 
     async def _resolve_ids(self) -> None:
-        """Resolve region and service IDs from names."""
+        """Resolve region and provider IDs from names."""
         if not self.api.regions_data:
             await self.api.fetch_regions()
 
@@ -117,27 +113,27 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             region_data = self.api.get_region_by_name(self.region)
             if region_data:
                 self.region_id = region_data["id"]
-                if self.service:
-                    service_data = self.api.get_service_by_name(
-                        self.region, self.service
+                if self.provider:
+                    provider_data = self.api.get_provider_by_name(
+                        self.region, self.provider
                     )
-                    if service_data:
-                        self.service_id = service_data["id"]
+                    if provider_data:
+                        self.provider_id = provider_data["id"]
                         # Cache the provider name for device naming
-                        self._provider_name = service_data["name"]
+                        self._provider_name = provider_data["name"]
 
     async def _async_update_data(self) -> None:
         """Fetch data from new Yasno API."""
         await self.async_fetch_translations()
 
         # Resolve IDs if not already resolved
-        if self.region_id is None or self.service_id is None:
+        if self.region_id is None or self.provider_id is None:
             await self._resolve_ids()
 
             # Update API with resolved IDs
             self.api = YasnoOutagesApi(
                 region_id=self.region_id,
-                service_id=self.service_id,
+                provider_id=self.provider_id,
                 group=self.group,
             )
 
@@ -161,9 +157,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             self.get_events_between(
                 now,
                 now + TIMEFRAME_TO_CHECK,
-                translate=False,
             ),
-            key=lambda event: event.start,
+            key=lambda _: _.start,
         )
         LOGGER.debug("Next events: %s", next_events)
         for event in next_events:
@@ -172,25 +167,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return None
 
     @property
-    def next_outage(self) -> datetime.date | datetime.datetime | None:
-        """Get the next outage time."""
-        event = self._get_next_event_of_type(OUTAGE_STATE_OUTAGE)
-        LOGGER.debug("Next outage: %s", event)
-        return event.start if event else None
-
-    @property
-    def next_possible_outage(self) -> datetime.date | datetime.datetime | None:
-        """Get the next possible outage time."""
-        current_event = self.get_current_event()
-
-        # If currently in any outage state, return end time (when it ends)
-        current_state = self._event_to_state(current_event)
-        if current_state in [OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE]:
-            return current_event.end if current_event else None
-
-        # Otherwise, return the start of the next outage
-        event = self._get_next_event_of_type(OUTAGE_STATE_POSSIBLE)
-        LOGGER.debug("Next possible outage: %s", event)
+    def next_planned_outage(self) -> datetime.date | datetime.datetime | None:
+        """Get the next planned outage time."""
+        event = self._get_next_event_of_type(STATE_OUTAGE)
+        LOGGER.debug("Next planned outage: %s", event)
         return event.start if event else None
 
     @property
@@ -199,12 +179,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         current_event = self.get_current_event()
         current_state = self._event_to_state(current_event)
 
-        # If currently in any outage state, return when it ends
-        if current_state in [OUTAGE_STATE_OUTAGE, OUTAGE_STATE_POSSIBLE]:
+        # If currently in outage state, return when it ends
+        if current_state == STATE_OUTAGE:
             return current_event.end if current_event else None
 
-        # Otherwise, return the end of the next possible outage
-        event = self._get_next_event_of_type(OUTAGE_STATE_POSSIBLE)
+        # Otherwise, return the end of the next outage
+        event = self._get_next_event_of_type(STATE_OUTAGE)
         LOGGER.debug("Next connectivity: %s", event)
         return event.end if event else None
 
@@ -226,7 +206,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     @property
     def provider_name(self) -> str:
-        """Get the configured provider (service provider) name."""
+        """Get the configured provider name."""
         # Return cached name if available (but apply simplification first)
         if self._provider_name:
             return self._simplify_provider_name(self._provider_name)
@@ -234,16 +214,18 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Fallback to lookup if not cached yet
         if not self.api.regions_data:
             return ""
+
         region_data = self.api.get_region_by_name(self.region)
         if not region_data:
             return ""
-        services = region_data.get("dsos", [])
-        for service in services:
-            if service.get("name") == self.service:
-                provider_name = service.get("name", "")
+
+        providers = region_data.get("dsos", [])
+        for provider in providers:
+            if (provider_name := provider.get("name", "")) == self.provider:
                 # Cache the simplified name
                 self._provider_name = provider_name
                 return self._simplify_provider_name(provider_name)
+
         return ""
 
     def get_current_event(self) -> CalendarEvent | None:
@@ -253,63 +235,48 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def get_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
         """Get the event at a given time."""
         event = self.api.get_current_event(at)
-        return self._get_calendar_event(event, translate=False)
+        return self._get_calendar_event(event)
 
     def get_events_between(
         self,
         start_date: datetime.datetime,
         end_date: datetime.datetime,
-        *,
-        translate: bool = True,
     ) -> list[CalendarEvent]:
         """Get all events."""
         events = self.api.get_events(start_date, end_date)
-        return [
-            self._get_calendar_event(event, translate=translate) for event in events
-        ]  # type: ignore[return-type]
+        return [self._get_calendar_event(event) for event in events]
 
     def _get_calendar_event(
         self,
-        event: dict | None,
-        *,
-        translate: bool = True,
+        event: OutageEvent | None,
     ) -> CalendarEvent | None:
+        """Transform an event into a CalendarEvent."""
         if not event:
             return None
 
-        """Transform an event into a CalendarEvent."""
-        event_summary = event.get("summary", None)
-        event_start = event.get("start", None)
-        event_end = event.get("end", None)
-        translated_summary = self.event_name_map.get(event_summary, None)
+        event_type = event.event_type.value
+        summary = self.event_name_map.get(event_type)
 
-        LOGGER.debug(
-            "Transforming event: %s (%s -> %s)",
-            event_summary,
-            event_start,
-            event_end,
+        output = CalendarEvent(
+            summary=summary,
+            start=event.start,
+            end=event.end,
+            description=event_type,
+            uid=event_type,
         )
+        LOGGER.debug("Calendar Event: %s", output)
+        return output
 
-        return CalendarEvent(
-            summary=translated_summary if translate else event_summary,
-            start=event_start,
-            end=event_end,
-            description=event_summary,
-        )
+    def _event_to_state(self, event: CalendarEvent | None) -> str | None:
+        if not event:
+            return STATE_NORMAL
 
-    def _event_to_state(self, event: CalendarEvent | None) -> str:
-        summary = event.as_dict().get("summary") if event else None
+        # Map event types to states using uid field
+        if event.uid == OutageEventType.DEFINITE.value:
+            return STATE_OUTAGE
 
-        # Map event names to states
-        if summary == EVENT_NAME_OUTAGE:
-            return OUTAGE_STATE_OUTAGE
-        if summary == EVENT_NAME_NORMAL:
-            return OUTAGE_STATE_NORMAL
-        if summary is None:
-            return OUTAGE_STATE_NORMAL
-
-        LOGGER.warning("Unknown event summary: %s", summary)
-        return OUTAGE_STATE_NORMAL
+        LOGGER.warning("Unknown event type: %s", event.uid)
+        return STATE_NORMAL
 
     def _simplify_provider_name(self, provider_name: str) -> str:
         """Simplify provider names for cleaner display in device names."""

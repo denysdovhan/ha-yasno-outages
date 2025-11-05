@@ -59,16 +59,7 @@
   "entity": {
     "calendar": {
       "calendar": {
-        "name": "Outages Calendar",
-        "state_attributes": {
-          "message": {
-            "name": "Connectivity",
-            "state": {
-              "outage": "Electricity Outage",
-              "possible": "Possible Outage"
-            }
-          }
-        }
+        "name": "Outages Calendar"
       }
     },
     "sensor": {
@@ -76,18 +67,14 @@
         "name": "Electricity",
         "state": {
           "normal": "Connected",
-          "outage": "Outage",
-          "possible": "Possible Outage"
+          "outage": "Outage"
         }
       },
       "schedule_updated_on": {
         "name": "Schedule Updated On"
       },
-      "next_outage": {
-        "name": "Next Outage"
-      },
-      "next_possible_outage": {
-        "name": "Next Possible Outage"
+      "next_planned_outage": {
+        "name": "Next Planned Outage"
       },
       "next_connectivity": {
         "name": "Next Connectivity"
@@ -95,13 +82,12 @@
     }
   },
   "common": {
-    "electricity_off": "Outage",
-    "electricity_maybe": "Possible Outage"
+    "electricity_outage": "Outage"
   },
   "issues": {
-    "api_v1_to_v2": {
-      "title": "Configuration update required",
-      "description": "Your configuration uses an old format. Please remove this integration and add it again."
+    "missing_config": {
+      "title": "{entry_title}: Configuration incomplete",
+      "description": "This integration entry is missing required settings (region and/or provider).\n\nTo fix this error, [edit the configuration]({edit}) and update your settings with the correct region and provider."
     }
   }
 }
