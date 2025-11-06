@@ -12,6 +12,9 @@ from homeassistant.util import dt as dt_utils
 
 from .api import OutageEvent, OutageEventType, YasnoOutagesApi
 from .const import (
+    API_STATUS_EMERGENCY_SHUTDOWNS,
+    API_STATUS_SCHEDULE_APPLIES,
+    API_STATUS_WAITING_FOR_SCHEDULE,
     CONF_GROUP,
     CONF_PROVIDER,
     CONF_REGION,
@@ -21,6 +24,9 @@ from .const import (
     PROVIDER_DTEK_SHORT,
     STATE_NORMAL,
     STATE_OUTAGE,
+    STATE_STATUS_EMERGENCY_SHUTDOWNS,
+    STATE_STATUS_SCHEDULE_APPLIES,
+    STATE_STATUS_WAITING_FOR_SCHEDULE,
     TRANSLATION_KEY_EVENT_OUTAGE,
     UPDATE_INTERVAL,
 )
@@ -102,6 +108,15 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Return a mapping of event names to translations."""
         return {
             EVENT_NAME_OUTAGE: self.translations.get(TRANSLATION_KEY_EVENT_OUTAGE),
+        }
+
+    @property
+    def status_state_map(self) -> dict:
+        """Return a mapping of status names to translations."""
+        return {
+            API_STATUS_SCHEDULE_APPLIES: STATE_STATUS_SCHEDULE_APPLIES,
+            API_STATUS_WAITING_FOR_SCHEDULE: STATE_STATUS_WAITING_FOR_SCHEDULE,
+            API_STATUS_EMERGENCY_SHUTDOWNS: STATE_STATUS_EMERGENCY_SHUTDOWNS,
         }
 
     async def _resolve_ids(self) -> None:
@@ -198,6 +213,16 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def schedule_updated_on(self) -> datetime.datetime | None:
         """Get the schedule last updated timestamp."""
         return self.api.get_updated_on()
+
+    @property
+    def status_today(self) -> str | None:
+        """Get the status for today."""
+        return self.status_state_map.get(self.api.get_status_today())
+
+    @property
+    def status_tomorrow(self) -> str | None:
+        """Get the status for tomorrow."""
+        return self.status_state_map.get(self.api.get_status_tomorrow())
 
     @property
     def region_name(self) -> str:

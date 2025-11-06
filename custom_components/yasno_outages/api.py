@@ -4,11 +4,13 @@ import datetime
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from typing import Literal
 
 import aiohttp
 
 from .const import (
     API_KEY_DATE,
+    API_KEY_STATUS,
     API_KEY_TODAY,
     API_KEY_TOMORROW,
     EVENT_NAME_OUTAGE,
@@ -213,6 +215,22 @@ class YasnoOutagesApi:
                 group_data["updatedOn"],
             )
             return None
+
+    def get_status_by_day(self, day: Literal["today", "tomorrow"]) -> str | None:
+        """Get the status for a specific day."""
+        group_data = self.get_planned_outages_data()
+        if not group_data or day not in group_data:
+            return None
+
+        return group_data[day].get(API_KEY_STATUS)
+
+    def get_status_today(self) -> str | None:
+        """Get the status for today."""
+        return self.get_status_by_day(API_KEY_TODAY)
+
+    def get_status_tomorrow(self) -> str | None:
+        """Get the status for tomorrow."""
+        return self.get_status_by_day(API_KEY_TOMORROW)
 
     def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the current event."""
