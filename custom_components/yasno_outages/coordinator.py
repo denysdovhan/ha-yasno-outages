@@ -36,6 +36,16 @@ LOGGER = logging.getLogger(__name__)
 TIMEFRAME_TO_CHECK = datetime.timedelta(hours=24)
 
 
+def simplify_provider_name(provider_name: str) -> str:
+    """Simplify provider names for cleaner display in device names."""
+    # Replace long DTEK provider names with just "ДТЕК"
+    if PROVIDER_DTEK_FULL in provider_name.upper():
+        return PROVIDER_DTEK_SHORT
+
+    # Add more provider simplifications here as needed
+    return provider_name
+
+
 class YasnoOutagesCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Yasno outages data."""
 
@@ -234,7 +244,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the configured provider name."""
         # Return cached name if available (but apply simplification first)
         if self._provider_name:
-            return self._simplify_provider_name(self._provider_name)
+            return simplify_provider_name(self._provider_name)
 
         # Fallback to lookup if not cached yet
         if not self.api.regions_data:
@@ -249,7 +259,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             if (provider_name := provider.get("name", "")) == self.provider:
                 # Cache the simplified name
                 self._provider_name = provider_name
-                return self._simplify_provider_name(provider_name)
+                return simplify_provider_name(provider_name)
 
         return ""
 
@@ -302,12 +312,3 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         LOGGER.warning("Unknown event type: %s", event.uid)
         return STATE_NORMAL
-
-    def _simplify_provider_name(self, provider_name: str) -> str:
-        """Simplify provider names for cleaner display in device names."""
-        # Replace long DTEK provider names with just "ДТЕК"
-        if PROVIDER_DTEK_FULL in provider_name.upper():
-            return PROVIDER_DTEK_SHORT
-
-        # Add more provider simplifications here as needed
-        return provider_name
