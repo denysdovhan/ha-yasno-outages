@@ -39,6 +39,7 @@ STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
 API_KEY_TODAY: Final = "today"
 API_KEY_TOMORROW: Final = "tomorrow"
 API_KEY_STATUS: Final = "status"
+API_KEY_DATE: Final = "date"
 
 # Keys
 TRANSLATION_KEY_EVENT_OUTAGE: Final = f"component.{DOMAIN}.common.electricity_outage"

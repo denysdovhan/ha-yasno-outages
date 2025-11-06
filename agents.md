@@ -258,8 +258,8 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
 ### Develompent Scripts
 
 - `scripts/setup` - installs dependencies and installs pre-commit.
-- `scripts/develop` - starts a development Home Assistant instance on port 8123.
-- `scripts/lint` - runs linter/formatter.
+- `scripts/develop` - starts a development Home Assistant server instance on port 8123. Use this script for checking changes in the browser.
+- `scripts/lint` - runs linter/formatter. Always use this script for checking for errors and formatting.
 - `scripts/bump_version` - bumps version in manifest.json.
 
 ### Development Process
