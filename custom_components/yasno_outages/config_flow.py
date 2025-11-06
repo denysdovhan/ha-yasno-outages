@@ -22,7 +22,6 @@ from .const import (
     CONF_PROVIDER,
     CONF_REGION,
     DOMAIN,
-    NAME,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -37,6 +36,11 @@ def get_config_value(
     if entry is not None:
         return entry.options.get(key, entry.data.get(key, default))
     return default
+
+
+def build_entry_title(data: dict[str, Any]) -> str:
+    """Build a descriptive title from region, provider, and group."""
+    return f"Yasno {data[CONF_REGION]} {data[CONF_PROVIDER]} {data[CONF_GROUP]}"
 
 
 def build_region_schema(
@@ -160,6 +164,11 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
         if user_input is not None:
             LOGGER.debug("Group selected: %s", user_input)
             self.data.update(user_input)
+            # Update entry title along with options
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                title=build_entry_title(self.data),
+            )
             return self.async_create_entry(title="", data=self.data)
 
         # Fetch groups for the selected region/provider
@@ -187,6 +196,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Yasno Outages."""
 
     VERSION = 2
+    MINOR_VERSION = 0
 
     def __init__(self) -> None:
         """Initialize config flow."""
@@ -250,7 +260,8 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             LOGGER.debug("User input: %s", user_input)
             self.data.update(user_input)
-            return self.async_create_entry(title=NAME, data=self.data)
+            title = build_entry_title(self.data)
+            return self.async_create_entry(title=title, data=self.data)
 
         # Fetch groups for the selected region/provider
         region = self.data[CONF_REGION]
