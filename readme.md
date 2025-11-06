@@ -16,7 +16,8 @@
 
 This integration for [Home Assistant][home-assistant] provides information about electricity outages plans by [Yasno][yasno]: calendar of planned outages, time sensors for the next planned outages, and more.
 
-[**🇺🇦 Читати документацію українською 🇺🇦**](./readme.uk.md)
+> [!TIP]
+> Документація доступна [**українською мовою 🇺🇦**](./readme.uk.md)
 
 > [!NOTE]
 > This is not affiliated with [Yasno][yasno] in any way. This integration is developed by an individual. Information may vary from their official website.
