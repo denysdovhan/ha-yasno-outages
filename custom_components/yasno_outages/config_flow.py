@@ -196,6 +196,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Yasno Outages."""
 
     VERSION = 2
+    MINOR_VERSION = 0
 
     def __init__(self) -> None:
         """Initialize config flow."""

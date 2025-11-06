@@ -78,6 +78,22 @@
       },
       "next_connectivity": {
         "name": "Next Connectivity"
+      },
+      "status_today": {
+        "name": "Status Today",
+        "state": {
+          "schedule_applies": "Schedule Applies",
+          "waiting_for_schedule": "Waiting for Schedule",
+          "emergency_shutdowns": "Emergency Shutdowns"
+        }
+      },
+      "status_tomorrow": {
+        "name": "Status Tomorrow",
+        "state": {
+          "schedule_applies": "Schedule Applies",
+          "waiting_for_schedule": "Waiting for Schedule",
+          "emergency_shutdowns": "Emergency Shutdowns"
+        }
       }
     }
   },
@@ -87,7 +103,7 @@
   "issues": {
     "missing_config": {
       "title": "{entry_title}: Configuration incomplete",
-      "description": "This integration entry is missing required settings (region and/or provider).\n\nTo fix this error, [edit the configuration]({edit}) and update your settings with the correct region and provider."
+      "description": "This integration entry is missing required settings (region and/or provider).\n\nTo fix this error, [edit the integration entry]({edit}) and update your settings with the correct region and provider."
     }
   }
 }

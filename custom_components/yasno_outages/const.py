@@ -23,6 +23,11 @@ UPDATE_INTERVAL: Final = 15
 STATE_NORMAL: Final = "normal"
 STATE_OUTAGE: Final = "outage"
 
+# Status states
+STATE_STATUS_SCHEDULE_APPLIES: Final = "schedule_applies"
+STATE_STATUS_WAITING_FOR_SCHEDULE: Final = "waiting_for_schedule"
+STATE_STATUS_EMERGENCY_SHUTDOWNS: Final = "emergency_shutdowns"
+
 # Event names
 EVENT_NAME_OUTAGE: Final = "Definite"
 
@@ -33,12 +38,15 @@ REGIONS_ENDPOINT: Final = (
 PLANNED_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages"
 
 # API Status values
-STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
+API_STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
+API_STATUS_WAITING_FOR_SCHEDULE: Final = "WaitingForSchedule"
+API_STATUS_EMERGENCY_SHUTDOWNS: Final = "EmergencyShutdowns"
 
 # API Block names
-BLOCK_NAME_TODAY: Final = "today"
-BLOCK_NAME_TOMORROW: Final = "tomorrow"
-BLOCK_KEY_STATUS: Final = "status"
+API_KEY_TODAY: Final = "today"
+API_KEY_TOMORROW: Final = "tomorrow"
+API_KEY_STATUS: Final = "status"
+API_KEY_DATE: Final = "date"
 
 # Keys
 TRANSLATION_KEY_EVENT_OUTAGE: Final = f"component.{DOMAIN}.common.electricity_outage"

@@ -4,17 +4,40 @@ import datetime
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from typing import Literal
 
 import aiohttp
 
 from .const import (
+    API_KEY_DATE,
+    API_KEY_STATUS,
+    API_KEY_TODAY,
+    API_KEY_TOMORROW,
     EVENT_NAME_OUTAGE,
     PLANNED_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
-    STATUS_SCHEDULE_APPLIES,
 )
 
 LOGGER = logging.getLogger(__name__)
+
+
+def minutes_to_time(
+    minutes: int,
+    date: datetime.datetime,
+) -> datetime.datetime:
+    """Convert minutes from start of day to datetime."""
+    hours = minutes // 60
+    mins = minutes % 60
+    # Handle end of day (24:00) - use midnight of next day
+    if hours == 24:  # noqa: PLR2004
+        tomorrow = date + datetime.timedelta(days=1)
+        return tomorrow.replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+    return date.replace(hour=hours, minute=mins, second=0, microsecond=0)
 
 
 class OutageEventType(str, Enum):
@@ -122,20 +145,11 @@ class YasnoOutagesApi:
             return []
         return list(self.planned_outages_data.keys())
 
-    def _minutes_to_time(
-        self,
-        minutes: int,
-        date: datetime.datetime,
-    ) -> datetime.datetime:
-        """Convert minutes from start of day to datetime."""
-        hours = minutes // 60
-        mins = minutes % 60
-
-        # Handle end of day (24:00) - keep it as 23:59:59 to stay on same day
-        if hours == 24:  # noqa: PLR2004
-            return date.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-        return date.replace(hour=hours, minute=mins, second=0, microsecond=0)
+    def get_planned_outages_data(self) -> dict | None:
+        """Get data for the configured group."""
+        if not self.planned_outages_data or self.group not in self.planned_outages_data:
+            return None
+        return self.planned_outages_data[self.group]
 
     def _parse_day_schedule(
         self,
@@ -155,8 +169,8 @@ class YasnoOutagesApi:
             if slot_type != EVENT_NAME_OUTAGE:
                 continue
 
-            event_start = self._minutes_to_time(start_minutes, date)
-            event_end = self._minutes_to_time(end_minutes, date)
+            event_start = minutes_to_time(start_minutes, date)
+            event_end = minutes_to_time(end_minutes, date)
 
             events.append(
                 OutageEvent(
@@ -168,15 +182,28 @@ class YasnoOutagesApi:
 
         return events
 
-    def _get_group_data(self) -> dict | None:
-        """Get data for the configured group."""
-        if not self.planned_outages_data or self.group not in self.planned_outages_data:
-            return None
-        return self.planned_outages_data[self.group]
+    def _parse_day_events(
+        self,
+        group_data: dict,
+        day_key: str,
+    ) -> list[OutageEvent]:
+        """Parse events for a specific day (today or tomorrow) from group data."""
+        if day_key not in group_data:
+            return []
+
+        day_data = group_data[day_key]
+        if API_KEY_DATE not in day_data:
+            return []
+
+        try:
+            day_date = datetime.datetime.fromisoformat(day_data["date"])
+            return self._parse_day_schedule(day_data, day_date)
+        except (ValueError, TypeError) as err:
+            LOGGER.warning("Failed to parse %s date: %s", day_key, err)
 
     def get_updated_on(self) -> datetime.datetime | None:
         """Get the updated on timestamp for the configured group."""
-        group_data = self._get_group_data()
+        group_data = self.get_planned_outages_data()
         if not group_data or "updatedOn" not in group_data:
             return None
 
@@ -188,6 +215,22 @@ class YasnoOutagesApi:
                 group_data["updatedOn"],
             )
             return None
+
+    def get_status_by_day(self, day: Literal["today", "tomorrow"]) -> str | None:
+        """Get the status for a specific day."""
+        group_data = self.get_planned_outages_data()
+        if not group_data or day not in group_data:
+            return None
+
+        return group_data[day].get(API_KEY_STATUS)
+
+    def get_status_today(self) -> str | None:
+        """Get the status for today."""
+        return self.get_status_by_day(API_KEY_TODAY)
+
+    def get_status_tomorrow(self) -> str | None:
+        """Get the status for tomorrow."""
+        return self.get_status_by_day(API_KEY_TOMORROW)
 
     def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the current event."""
@@ -207,31 +250,13 @@ class YasnoOutagesApi:
             return []
 
         events = []
-        group_data = self._get_group_data()
+        group_data = self.get_planned_outages_data()
         if not group_data:
             return events
 
-        # Check today
-        today_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        if (
-            "today" in group_data
-            and group_data["today"].get("status") == STATUS_SCHEDULE_APPLIES
-        ):
-            today_events = self._parse_day_schedule(group_data["today"], today_date)
-            events.extend(today_events)
-
-        # Check tomorrow if within range
-        tomorrow_date = today_date + datetime.timedelta(days=1)
-        if (
-            tomorrow_date <= end_date
-            and "tomorrow" in group_data
-            and group_data["tomorrow"].get("status") == STATUS_SCHEDULE_APPLIES
-        ):
-            tomorrow_events = self._parse_day_schedule(
-                group_data["tomorrow"],
-                tomorrow_date,
-            )
-            events.extend(tomorrow_events)
+        # Parse today and tomorrow events using the helper function
+        events.extend(self._parse_day_events(group_data, API_KEY_TODAY))
+        events.extend(self._parse_day_events(group_data, API_KEY_TOMORROW))
 
         # Sort events by start time and filter by date range
         events = sorted(events, key=lambda event: event.start)

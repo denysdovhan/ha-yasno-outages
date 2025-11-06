@@ -11,10 +11,17 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.components.sensor.const import SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import STATE_NORMAL, STATE_OUTAGE
+from .const import (
+    STATE_NORMAL,
+    STATE_OUTAGE,
+    STATE_STATUS_EMERGENCY_SHUTDOWNS,
+    STATE_STATUS_SCHEDULE_APPLIES,
+    STATE_STATUS_WAITING_FOR_SCHEDULE,
+)
 from .coordinator import YasnoOutagesCoordinator
 from .entity import YasnoOutagesEntity
 
@@ -38,13 +45,6 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         val_func=lambda coordinator: coordinator.current_state,
     ),
     YasnoOutagesSensorDescription(
-        key="schedule_updated_on",
-        translation_key="schedule_updated_on",
-        icon="mdi:update",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        val_func=lambda coordinator: coordinator.schedule_updated_on,
-    ),
-    YasnoOutagesSensorDescription(
         key="next_planned_outage",
         translation_key="next_planned_outage",
         icon="mdi:calendar-remove",
@@ -57,6 +57,40 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         icon="mdi:calendar-check",
         device_class=SensorDeviceClass.TIMESTAMP,
         val_func=lambda coordinator: coordinator.next_connectivity,
+    ),
+    YasnoOutagesSensorDescription(
+        key="schedule_updated_on",
+        translation_key="schedule_updated_on",
+        icon="mdi:update",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.schedule_updated_on,
+    ),
+    YasnoOutagesSensorDescription(
+        key="status_today",
+        translation_key="status_today",
+        icon="mdi:calendar-today",
+        device_class=SensorDeviceClass.ENUM,
+        options=[
+            STATE_STATUS_SCHEDULE_APPLIES,
+            STATE_STATUS_WAITING_FOR_SCHEDULE,
+            STATE_STATUS_EMERGENCY_SHUTDOWNS,
+        ],
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.status_today,
+    ),
+    YasnoOutagesSensorDescription(
+        key="status_tomorrow",
+        translation_key="status_tomorrow",
+        icon="mdi:calendar",
+        device_class=SensorDeviceClass.ENUM,
+        options=[
+            STATE_STATUS_SCHEDULE_APPLIES,
+            STATE_STATUS_WAITING_FOR_SCHEDULE,
+            STATE_STATUS_EMERGENCY_SHUTDOWNS,
+        ],
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.status_tomorrow,
     ),
 )
 
