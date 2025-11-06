@@ -8,15 +8,14 @@
 [![GitHub Downloads][gh-downloads-image]][gh-downloads-url]
 [![hacs][hacs-image]][hacs-url]
 [![GitHub Sponsors][gh-sponsors-image]][gh-sponsors-url]
-[![Patreon][patreon-image]][patreon-url]
 [![Buy Me A Coffee][buymeacoffee-image]][buymeacoffee-url]
 [![Twitter][twitter-image]][twitter-url]
-
-> Інтеграція для графіків відключень електроенергії від [Yasno][yasno].
 
 Ця інтеграція надає інформацію про графіки відключень електроенергії від [Yasno][yasno]: календар запланованих відключень, датчики часу для наступних запланованих відключень тощо.
 
 > [!NOTE]
+> Інтеграція для графіків відключень електроенергії від [Yasno][yasno].
+>
 > Цей проєкт не має жодного відношення до [Yasno][yasno]. Ця інтеграція розроблена ентузіастом. Інформація може відрізнятися від інфомації на офіційному сайті.
 
 ## Спонсорство
@@ -96,11 +95,9 @@ MIT © [Денис Довгань][denysdovhan]
 [gh-downloads-url]: https://github.com/denysdovhan/ha-yasno-outages/releases
 [gh-downloads-image]: https://img.shields.io/github/downloads/denysdovhan/ha-yasno-outages/total?style=flat-square
 [hacs-url]: https://github.com/hacs/integration
-[hacs-image]: https://img.shields.io/badge/hacs-default-orange.svg?style=flat-square
+[hacs-image]: https://img.shields.io/badge/hacs-custom-orange.svg?style=flat-square
 [gh-sponsors-url]: https://github.com/sponsors/denysdovhan
 [gh-sponsors-image]: https://img.shields.io/github/sponsors/denysdovhan?style=flat-square
-[patreon-url]: https://patreon.com/denysdovhan
-[patreon-image]: https://img.shields.io/badge/support-patreon-F96854.svg?style=flat-square
 [buymeacoffee-url]: https://buymeacoffee.com/denysdovhan
 [buymeacoffee-image]: https://img.shields.io/badge/support-buymeacoffee-222222.svg?style=flat-square
 [twitter-url]: https://twitter.com/denysdovhan

@@ -12,29 +12,38 @@ This repository is a Home Assistant custom integration providing electricity out
 ### Code structure
 
 - `translations/` - folder containing translations (en.json, uk.json).
-- `__init__.py` - init file of the integration, creates entries, sets up platforms, handles entry reload/unload. Stores coordinator in `entry.runtime_data`.
+- `__init__.py` - init file of the integration, creates entries, sets up platforms, handles entry reload/unload. Stores runtime data (API, coordinator, integration) in `entry.runtime_data` as a `YasnoOutagesData` dataclass.
 - `api.py` - a file containing an API class for fetching data. Should be Home Assistant agnostic, since in the future it's planned to move it to the separate package. Uses `aiohttp` for async HTTP requests.
 - `config_flow.py` - a file describing a flow to create new entries and options flow for reconfiguration. Multi-step flow: region → service (DSO) → group.
 - `const.py` - a file containing constants used throughout the project. Use `homeassistant.const` for commonly used constants.
-- `coordinator.py` - a data fetching coordinator (`DataUpdateCoordinator`). Fetches data from the API, transforms it to the proper format, and passes them to sensors and calendar entities. Polls API every 15 minutes.
+- `coordinator.py` - a data fetching coordinator (`DataUpdateCoordinator`). Fetches data from the API, transforms it to the proper format, and passes them to sensors and calendar entities. Polls API every 15 minutes. Takes API instance as a parameter.
+- `data.py` - defines runtime data types: `YasnoOutagesData` dataclass holding API, coordinator, and integration instances, and `YasnoOutagesConfigEntry` type alias for typed config entries.
 - `entity.py` - a base entity class (`YasnoOutagesEntity`) that is used as a template when creating sensors and calendar. Contains important `DeviceInfo` joining different entities into a single device.
 - `repairs.py` - repair flow for detecting and notifying users about deprecated configuration (API v1 → v2 migration).
 - `manifest.json` - a file declaring an integration manifest.
-- `sensor.py` - declares sensors using entity descriptors. Implements five sensors: electricity state (enum), schedule updated timestamp, next outage, next possible outage, next connectivity.
-- `calendar.py` - implements calendar entity showing outage events in a timeline format.
+- `sensor.py` - declares sensors using entity descriptors. Implements five sensors: electricity state (enum), schedule updated timestamp, next outage, next possible outage, next connectivity. Retrieves coordinator from `entry.runtime_data.coordinator`.
+- `calendar.py` - implements calendar entity showing outage events in a timeline format. Retrieves coordinator from `entry.runtime_data.coordinator`.
 
 <instruction>Fill in by LLM assistant memory</instruction>
 
 ### Using Coordinator to Fetch Data
 
-We use a single `DataUpdateCoordinator` per config entry that polls the Yasno API every 15 minutes. The coordinator is created in `__init__.py` during setup and stored directly in `entry.runtime_data`. Platforms (sensors, calendar) retrieve the coordinator from `config_entry.runtime_data`.
+We use a single `DataUpdateCoordinator` per config entry that polls the Yasno API every 15 minutes. The coordinator is created in `__init__.py` during setup and stored in `entry.runtime_data` as part of the `YasnoOutagesData` dataclass. Platforms (sensors, calendar) retrieve the coordinator from `config_entry.runtime_data.coordinator`.
 
 The coordinator:
 
+- Receives the API instance as a parameter (dependency injection)
 - Resolves region/service names to IDs on first refresh
 - Fetches outage schedules for the configured region, service (DSO), and group
 - Transforms API data into `CalendarEvent` objects
 - Computes derived values (current state, next outage times, etc.)
+
+The runtime data pattern follows Home Assistant best practices:
+
+- `data.py` defines `YasnoOutagesData` dataclass with API, coordinator, and integration
+- `YasnoOutagesConfigEntry` type alias provides type safety for config entries
+- API instance is created in `__init__.py` and passed to coordinator (decoupled initialization)
+- Platforms access coordinator via `entry.runtime_data.coordinator`
 
 Documentation: https://developers.home-assistant.io/docs/integration_fetching_data
 
