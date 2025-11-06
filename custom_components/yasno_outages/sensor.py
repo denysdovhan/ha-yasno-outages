@@ -10,7 +10,6 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
 )
 from homeassistant.components.sensor.const import SensorDeviceClass
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -23,6 +22,7 @@ from .const import (
     STATE_STATUS_WAITING_FOR_SCHEDULE,
 )
 from .coordinator import YasnoOutagesCoordinator
+from .data import YasnoOutagesConfigEntry
 from .entity import YasnoOutagesEntity
 
 LOGGER = logging.getLogger(__name__)
@@ -97,12 +97,12 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
 
 async def async_setup_entry(
     hass: HomeAssistant,  # noqa: ARG001
-    config_entry: ConfigEntry,
+    config_entry: YasnoOutagesConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Yasno outages calendar platform."""
     LOGGER.debug("Setup new entry: %s", config_entry)
-    coordinator: YasnoOutagesCoordinator = config_entry.runtime_data
+    coordinator = config_entry.runtime_data.coordinator
     async_add_entities(
         YasnoOutagesSensor(coordinator, description) for description in SENSOR_TYPES
     )

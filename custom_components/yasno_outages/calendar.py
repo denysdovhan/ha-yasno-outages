@@ -4,12 +4,12 @@ import datetime
 import logging
 
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import YasnoOutagesCoordinator
+from .data import YasnoOutagesConfigEntry
 from .entity import YasnoOutagesEntity
 
 LOGGER = logging.getLogger(__name__)
@@ -17,12 +17,12 @@ LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,  # noqa: ARG001
-    config_entry: ConfigEntry,
+    config_entry: YasnoOutagesConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Yasno outages calendar platform."""
     LOGGER.debug("Setup new entry: %s", config_entry)
-    coordinator: YasnoOutagesCoordinator = config_entry.runtime_data
+    coordinator = config_entry.runtime_data.coordinator
     async_add_entities([YasnoOutagesCalendar(coordinator)])
 
 
