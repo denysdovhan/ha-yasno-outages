@@ -41,7 +41,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     config_entry: ConfigEntry
 
-    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        api: YasnoOutagesApi,
+    ) -> None:
         """Initialize the coordinator."""
         super().__init__(
             hass,
@@ -99,8 +104,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.provider_id = None
         self._provider_name = ""  # Cache the provider name
 
-        # Initialize API and resolve IDs
-        self.api = YasnoOutagesApi()
+        # Use the provided API instance
+        self.api = api
         # Note: We'll resolve IDs and update API during first data update
 
     @property
