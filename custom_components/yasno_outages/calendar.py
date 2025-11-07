@@ -97,10 +97,16 @@ class YasnoOutagesProbableCalendar(YasnoOutagesEntity, CalendarEntity):
     def event(self) -> CalendarEvent | None:
         """Return the current or next upcoming probable event or None."""
         LOGGER.debug("Getting current probable event")
-        # Get current probable events
+        # Get current probable events - use a small time window to check current time
         now = dt_utils.now()
-        events = self.coordinator.get_probable_events_between(now, now)
-        return events[0] if events else None
+        events = self.coordinator.get_probable_events_between(
+            now, now + datetime.timedelta(minutes=1)
+        )
+        # Return first event that contains the current time
+        for event in events:
+            if event.start <= now < event.end:
+                return event
+        return None
 
     async def async_get_events(
         self,
