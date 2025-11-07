@@ -327,12 +327,20 @@ class YasnoOutagesApi:
         probable_slots = []
 
         for day_of_week_str, day_slots in slots_data.items():
-            day_of_week = int(day_of_week_str)  # 0=Monday, 6=Sunday
+            try:
+                day_of_week = int(day_of_week_str)  # 0=Monday, 6=Sunday
+            except (ValueError, TypeError):
+                LOGGER.warning("Invalid day of week: %s", day_of_week_str)
+                continue
 
             for slot in day_slots:
-                start_minutes = slot["start"]
-                end_minutes = slot["end"]
-                slot_type = slot["type"]
+                try:
+                    start_minutes = slot["start"]
+                    end_minutes = slot["end"]
+                    slot_type = slot["type"]
+                except KeyError as e:
+                    LOGGER.warning("Missing key in slot data: %s", e)
+                    continue
 
                 # Only parse Definite outages
                 if slot_type != EVENT_NAME_OUTAGE:
