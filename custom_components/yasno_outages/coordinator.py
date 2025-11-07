@@ -10,8 +10,16 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
-from .api import OutageEvent, OutageEventType, YasnoOutagesApi
+from .api import (
+    OutageEvent,
+    OutageEventType,
+    YasnoOutagesApi,
+    minutes_to_time,
+)
 from .const import (
+    API_KEY_DATE,
+    API_KEY_TODAY,
+    API_KEY_TOMORROW,
     API_STATUS_EMERGENCY_SHUTDOWNS,
     API_STATUS_SCHEDULE_APPLIES,
     API_STATUS_WAITING_FOR_SCHEDULE,
@@ -219,6 +227,21 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return event.end if event else None
 
     @property
+    def next_probable_outage(self) -> datetime.date | datetime.datetime | None:
+        """Get the next probable outage time."""
+        now = dt_utils.now()
+        # Get probable events for the next week
+        probable_events = self.get_probable_events_between(
+            now,
+            now + datetime.timedelta(days=7),
+        )
+        # Find the first event that starts after now
+        for event in sorted(probable_events, key=lambda e: e.start):
+            if event.start > now:
+                return event.start
+        return None
+
+    @property
     def current_state(self) -> str:
         """Get the current state."""
         event = self.get_current_event()
@@ -306,6 +329,76 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         )
         LOGGER.debug("Calendar Event: %s", output)
         return output
+
+    def get_probable_events_between(
+        self,
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
+    ) -> list[CalendarEvent]:
+        """Get probable outage events within the date range as recurring events."""
+        probable_slots = self.api.get_probable_outages_slots()
+        if not probable_slots:
+            return []
+
+        events = []
+
+        # Get the dates covered by planned outages (today and tomorrow)
+        planned_dates = set()
+        group_data = self.api.get_planned_outages_data()
+        if group_data:
+            for day_key in [API_KEY_TODAY, API_KEY_TOMORROW]:
+                if day_key in group_data and API_KEY_DATE in group_data[day_key]:
+                    try:
+                        day_date = datetime.datetime.fromisoformat(
+                            group_data[day_key]["date"]
+                        )
+                        planned_dates.add(day_date.date())
+                    except (ValueError, TypeError):
+                        pass
+
+        # Generate events for each slot
+        for slot in probable_slots:
+            # Find all occurrences of this weekday in the date range
+            current = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            # Adjust to the first occurrence of the target weekday
+            days_ahead = slot.day_of_week - current.weekday()
+            if days_ahead < 0:
+                days_ahead += 7
+            current = current + datetime.timedelta(days=days_ahead)
+
+            # Generate events for each week that falls in the range
+            while current <= end_date:
+                # Skip dates that have planned outages
+                if current.date() not in planned_dates:
+                    event_start = minutes_to_time(slot.start_minutes, current)
+                    event_end = minutes_to_time(slot.end_minutes, current)
+
+                    # Only include if it intersects with the requested range
+                    if (
+                        start_date <= event_start <= end_date
+                        or start_date <= event_end <= end_date
+                        or event_start <= start_date <= event_end
+                    ):
+                        event_type = slot.event_type.value
+                        summary = self.event_name_map.get(event_type)
+
+                        # Create a recurring event with RRULE
+                        events.append(
+                            CalendarEvent(
+                                summary=f"{summary} (Probable)",
+                                start=event_start,
+                                end=event_end,
+                                description=f"{event_type}_Probable",
+                                uid=f"{event_type}_Probable_{slot.day_of_week}_{slot.start_minutes}",
+                                rrule="FREQ=WEEKLY",
+                            ),
+                        )
+
+                # Move to next week
+                current = current + datetime.timedelta(days=7)
+
+        return sorted(events, key=lambda e: e.start)
 
     def _event_to_state(self, event: CalendarEvent | None) -> str | None:
         if not event:

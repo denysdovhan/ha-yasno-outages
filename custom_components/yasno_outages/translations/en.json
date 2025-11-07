@@ -58,8 +58,11 @@
   },
   "entity": {
     "calendar": {
-      "calendar": {
-        "name": "Outages Calendar"
+      "planned_calendar": {
+        "name": "Planned Outages Calendar"
+      },
+      "probable_calendar": {
+        "name": "Probable Outages Calendar"
       }
     },
     "sensor": {
@@ -78,6 +81,9 @@
       },
       "next_connectivity": {
         "name": "Next Connectivity"
+      },
+      "next_probable_outage": {
+        "name": "Next Probable Outage"
       },
       "status_today": {
         "name": "Status Today",
@@ -98,7 +104,8 @@
     }
   },
   "common": {
-    "electricity_outage": "Outage"
+    "electricity_outage": "Outage",
+    "probable_electricity_outage": "Probable Outage"
   },
   "issues": {
     "missing_config": {

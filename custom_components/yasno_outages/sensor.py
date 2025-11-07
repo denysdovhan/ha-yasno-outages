@@ -59,6 +59,13 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         val_func=lambda coordinator: coordinator.next_connectivity,
     ),
     YasnoOutagesSensorDescription(
+        key="next_probable_outage",
+        translation_key="next_probable_outage",
+        icon="mdi:calendar-question",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        val_func=lambda coordinator: coordinator.next_probable_outage,
+    ),
+    YasnoOutagesSensorDescription(
         key="schedule_updated_on",
         translation_key="schedule_updated_on",
         icon="mdi:update",

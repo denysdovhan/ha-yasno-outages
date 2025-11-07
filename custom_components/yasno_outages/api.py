@@ -15,6 +15,7 @@ from .const import (
     API_KEY_TOMORROW,
     EVENT_NAME_OUTAGE,
     PLANNED_OUTAGES_ENDPOINT,
+    PROBABLE_OUTAGES_ENDPOINT,
     REGIONS_ENDPOINT,
 )
 
@@ -56,6 +57,16 @@ class OutageEvent:
     end: datetime.datetime
 
 
+@dataclass(frozen=True)
+class ProbableOutageSlot:
+    """Represents a probable outage slot for a specific day of week."""
+
+    day_of_week: int  # 0=Monday, 6=Sunday
+    start_minutes: int  # Minutes from midnight
+    end_minutes: int  # Minutes from midnight
+    event_type: OutageEventType
+
+
 class YasnoOutagesApi:
     """Class to interact with Yasno outages API."""
 
@@ -71,6 +82,7 @@ class YasnoOutagesApi:
         self.group = group
         self.regions_data = None
         self.planned_outages_data = None
+        self.probable_outages_data = None
 
     async def _get_route_data(
         self,
@@ -110,6 +122,23 @@ class YasnoOutagesApi:
 
         async with aiohttp.ClientSession() as session:
             self.planned_outages_data = await self._get_route_data(session, url)
+
+    async def fetch_probable_outages_data(self) -> None:
+        """Fetch probable outages data for the configured region and provider."""
+        if not self.region_id or not self.provider_id:
+            LOGGER.warning(
+                "Region ID and Provider ID must be set before fetching "
+                "probable outages",
+            )
+            return
+
+        url = PROBABLE_OUTAGES_ENDPOINT.format(
+            region_id=self.region_id,
+            dso_id=self.provider_id,
+        )
+
+        async with aiohttp.ClientSession() as session:
+            self.probable_outages_data = await self._get_route_data(session, url)
 
     def get_regions(self) -> list[dict]:
         """Get a list of available regions."""
@@ -273,7 +302,55 @@ class YasnoOutagesApi:
             )
         ]
 
+    def get_probable_outages_slots(self) -> list[ProbableOutageSlot]:
+        """Get probable outage slots for the configured group."""
+        if not self.probable_outages_data or not self.group:
+            return []
+
+        # Navigate the nested structure: region -> dsos -> provider -> groups -> group
+        region_data = self.probable_outages_data.get(str(self.region_id))
+        if not region_data:
+            return []
+
+        dsos_data = region_data.get("dsos", {})
+        provider_data = dsos_data.get(str(self.provider_id))
+        if not provider_data:
+            return []
+
+        groups_data = provider_data.get("groups", {})
+        group_data = groups_data.get(self.group)
+        if not group_data:
+            return []
+
+        # Parse slots for each day of the week
+        slots_data = group_data.get("slots", {})
+        probable_slots = []
+
+        for day_of_week_str, day_slots in slots_data.items():
+            day_of_week = int(day_of_week_str)  # 0=Monday, 6=Sunday
+
+            for slot in day_slots:
+                start_minutes = slot["start"]
+                end_minutes = slot["end"]
+                slot_type = slot["type"]
+
+                # Only parse Definite outages
+                if slot_type != EVENT_NAME_OUTAGE:
+                    continue
+
+                probable_slots.append(
+                    ProbableOutageSlot(
+                        day_of_week=day_of_week,
+                        start_minutes=start_minutes,
+                        end_minutes=end_minutes,
+                        event_type=OutageEventType(slot_type),
+                    ),
+                )
+
+        return probable_slots
+
     async def fetch_data(self) -> None:
         """Fetch all required data."""
         # Regions are fetched by _resolve_ids, so only fetch outages
         await self.fetch_planned_outages_data()
+        await self.fetch_probable_outages_data()
