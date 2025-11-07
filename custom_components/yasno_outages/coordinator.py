@@ -335,7 +335,25 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         start_date: datetime.datetime,
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
-        """Get probable outage events within the date range as recurring events."""
+        """
+        Get probable outage events within the date range as recurring events.
+
+        This method generates recurring calendar events from probable outage slots
+        while excluding dates that have planned outages. The logic:
+        1. Fetch probable outage slots (weekly recurring patterns)
+        2. Identify dates with planned outages (today/tomorrow)
+        3. For each slot, generate events for matching weekdays in the range
+        4. Skip dates with planned outages (they take precedence)
+        5. Create CalendarEvent objects with RRULE for weekly recurrence
+
+        Args:
+            start_date: Start of the date range (inclusive)
+            end_date: End of the date range (inclusive)
+
+        Returns:
+            List of CalendarEvent objects sorted by start time
+
+        """
         probable_slots = self.api.get_probable_outages_slots()
         if not probable_slots:
             return []
@@ -347,14 +365,15 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         group_data = self.api.get_planned_outages_data()
         if group_data:
             for day_key in [API_KEY_TODAY, API_KEY_TOMORROW]:
-                if day_key in group_data and API_KEY_DATE in group_data[day_key]:
+                day_data = group_data.get(day_key)
+                if day_data and API_KEY_DATE in day_data:
                     try:
                         day_date = datetime.datetime.fromisoformat(
-                            group_data[day_key]["date"]
+                            day_data[API_KEY_DATE]
                         )
                         planned_dates.add(day_date.date())
                     except (ValueError, TypeError):
-                        pass
+                        LOGGER.warning("Failed to parse date for %s", day_key)
 
         # Generate events for each slot
         for slot in probable_slots:
@@ -385,13 +404,23 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                         summary = self.event_name_map.get(event_type)
 
                         # Create a recurring event with RRULE
+                        # Use hash to ensure unique UID even with special characters
+                        uid_parts = (
+                            event_type,
+                            "Probable",
+                            str(slot.day_of_week),
+                            str(slot.start_minutes),
+                            str(occurrence),
+                        )
+                        event_uid = "-".join(uid_parts)
+
                         events.append(
                             CalendarEvent(
                                 summary=f"{summary} (Probable)",
                                 start=event_start,
                                 end=event_end,
                                 description=f"{event_type}_Probable",
-                                uid=f"{event_type}_Probable_{slot.day_of_week}_{slot.start_minutes}_{occurrence}",
+                                uid=event_uid,
                                 rrule="FREQ=WEEKLY",
                             ),
                         )

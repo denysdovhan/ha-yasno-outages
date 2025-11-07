@@ -15,6 +15,9 @@ from .entity import YasnoOutagesEntity
 
 LOGGER = logging.getLogger(__name__)
 
+# Time window in minutes to check for current probable events
+CURRENT_EVENT_WINDOW_MINUTES = 1
+
 
 async def async_setup_entry(
     hass: HomeAssistant,  # noqa: ARG001
@@ -100,7 +103,7 @@ class YasnoOutagesProbableCalendar(YasnoOutagesEntity, CalendarEntity):
         # Get current probable events - use a small time window to check current time
         now = dt_utils.now()
         events = self.coordinator.get_probable_events_between(
-            now, now + datetime.timedelta(minutes=1)
+            now, now + datetime.timedelta(minutes=CURRENT_EVENT_WINDOW_MINUTES)
         )
         # Return first event that contains the current time
         for event in events:
