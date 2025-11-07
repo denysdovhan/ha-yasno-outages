@@ -368,6 +368,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             current = current + datetime.timedelta(days=days_ahead)
 
             # Generate events for each week that falls in the range
+            occurrence = 0
             while current <= end_date:
                 # Skip dates that have planned outages
                 if current.date() not in planned_dates:
@@ -390,10 +391,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                                 start=event_start,
                                 end=event_end,
                                 description=f"{event_type}_Probable",
-                                uid=f"{event_type}_Probable_{slot.day_of_week}_{slot.start_minutes}",
+                                uid=f"{event_type}_Probable_{slot.day_of_week}_{slot.start_minutes}_{occurrence}",
                                 rrule="FREQ=WEEKLY",
                             ),
                         )
+                        occurrence += 1
 
                 # Move to next week
                 current = current + datetime.timedelta(days=7)

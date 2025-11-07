@@ -7,6 +7,7 @@ from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_utils
 
 from .coordinator import YasnoOutagesCoordinator
 from .data import YasnoOutagesConfigEntry
@@ -97,7 +98,7 @@ class YasnoOutagesProbableCalendar(YasnoOutagesEntity, CalendarEntity):
         """Return the current or next upcoming probable event or None."""
         LOGGER.debug("Getting current probable event")
         # Get current probable events
-        now = datetime.datetime.now(datetime.UTC)
+        now = dt_utils.now()
         events = self.coordinator.get_probable_events_between(now, now)
         return events[0] if events else None
 
