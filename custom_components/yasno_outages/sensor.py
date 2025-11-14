@@ -146,7 +146,7 @@ class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
             return None
 
         # Get the current event to provide additional context
-        current_event = self.coordinator.get_current_event()
+        current_event = self.coordinator.get_planned_current_event()
 
         if not current_event:
             return {

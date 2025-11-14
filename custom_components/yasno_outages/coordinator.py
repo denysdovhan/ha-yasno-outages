@@ -213,7 +213,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         now = dt_utils.now()
         # Sort events to handle multi-day spanning events correctly
         next_events = sorted(
-            self.get_events_between(
+            self.get_planned_events_between(
                 now,
                 now + TIMEFRAME_TO_CHECK,
             ),
@@ -235,7 +235,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def next_connectivity(self) -> datetime.date | datetime.datetime | None:
         """Get next connectivity time."""
-        current_event = self.get_current_event()
+        current_event = self.get_planned_current_event()
         current_state = self._event_to_state(current_event)
 
         # If currently in outage state, return when it ends
@@ -250,7 +250,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def current_state(self) -> str:
         """Get the current state."""
-        event = self.get_current_event()
+        event = self.get_planned_current_event()
         return self._event_to_state(event)
 
     @property
@@ -297,8 +297,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         return ""
 
-    def get_current_event(self) -> CalendarEvent | None:
-        """Get the event at the present time."""
+    def get_planned_current_event(self) -> CalendarEvent | None:
+        """Get the planned event at the present time."""
         return self.get_event_at(dt_utils.now())
 
     def get_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
@@ -309,7 +309,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             return None
         return self._get_calendar_event(event)
 
-    def get_events_between(
+    def get_planned_events_between(
         self,
         start_date: datetime.datetime,
         end_date: datetime.datetime,
@@ -355,7 +355,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         LOGGER.warning("Unknown event type: %s", event.uid)
         return STATE_NORMAL
 
-    def get_probable_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
+    def get_probable_current_event_at(
+        self, at: datetime.datetime
+    ) -> CalendarEvent | None:
         """Get the probable outage event at a given time."""
         weekday = at.weekday()  # 0=Monday, 6=Sunday
         slots = self.api.probable.get_probable_slots_for_weekday(weekday)
