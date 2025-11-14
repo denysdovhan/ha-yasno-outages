@@ -13,6 +13,7 @@ from homeassistant.components.sensor.const import SensorDeviceClass
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .const import (
     STATE_NORMAL,
@@ -144,9 +145,8 @@ class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
         """Return additional attributes for the electricity sensor."""
         if self.entity_description.key != "electricity":
             return None
-
         # Get the current event to provide additional context
-        current_event = self.coordinator.get_planned_current_event()
+        current_event = self.coordinator.get_planned_event_at(dt_util.now())
 
         if not current_event:
             return {
