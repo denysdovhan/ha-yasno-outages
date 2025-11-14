@@ -1,25 +1,28 @@
-"""Coordinator for Yasno outages integration."""
+"""Data coordinator for Yasno Outages integration."""
+
+from __future__ import annotations
 
 import datetime
 import logging
+from typing import TYPE_CHECKING
 
+from dateutil.rrule import WEEKLY, rrule
 from homeassistant.components.calendar import CalendarEvent
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
-from .api import OutageEvent, OutageEventType, YasnoOutagesApi
-from .const import (
+from .api import OutageEvent, OutageEventType, YasnoApi
+from .api.const import (
     API_STATUS_EMERGENCY_SHUTDOWNS,
     API_STATUS_SCHEDULE_APPLIES,
     API_STATUS_WAITING_FOR_SCHEDULE,
+)
+from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
     CONF_REGION,
     DOMAIN,
-    EVENT_NAME_OUTAGE,
     PROVIDER_DTEK_FULL,
     PROVIDER_DTEK_SHORT,
     STATE_NORMAL,
@@ -28,8 +31,13 @@ from .const import (
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
     TRANSLATION_KEY_EVENT_OUTAGE,
+    TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE,
     UPDATE_INTERVAL,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
 
 LOGGER = logging.getLogger(__name__)
 
@@ -55,7 +63,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self,
         hass: HomeAssistant,
         config_entry: ConfigEntry,
-        api: YasnoOutagesApi,
+        api: YasnoApi,
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -122,7 +130,18 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def event_name_map(self) -> dict:
         """Return a mapping of event names to translations."""
         return {
-            EVENT_NAME_OUTAGE: self.translations.get(TRANSLATION_KEY_EVENT_OUTAGE),
+            OutageEventType.DEFINITE.value: self.translations.get(
+                TRANSLATION_KEY_EVENT_OUTAGE
+            ),
+        }
+
+    @property
+    def probable_event_name_map(self) -> dict:
+        """Return a mapping of probable event names to translations."""
+        return {
+            OutageEventType.DEFINITE.value: self.translations.get(
+                TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE
+            ),
         }
 
     @property
@@ -145,7 +164,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 self.region_id = region_data["id"]
                 if self.provider:
                     provider_data = self.api.get_provider_by_name(
-                        self.region, self.provider
+                        self.region,
+                        self.provider,
                     )
                     if provider_data:
                         self.provider_id = provider_data["id"]
@@ -161,14 +181,23 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             await self._resolve_ids()
 
             # Update API with resolved IDs
-            self.api = YasnoOutagesApi(
+            self.api = YasnoApi(
                 region_id=self.region_id,
                 provider_id=self.provider_id,
                 group=self.group,
             )
 
-        # Fetch outages data (now async with aiohttp, not blocking)
-        await self.api.fetch_data()
+        # Fetch planned outages data
+        try:
+            await self.api.planned.fetch_data()
+        except Exception:
+            LOGGER.exception("Failed to fetch planned outages data")
+
+        # Fetch probable outages data
+        try:
+            await self.api.probable.fetch_data()
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Failed to fetch probable outages data", exc_info=True)
 
     async def async_fetch_translations(self) -> None:
         """Fetch translations."""
@@ -227,17 +256,17 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def schedule_updated_on(self) -> datetime.datetime | None:
         """Get the schedule last updated timestamp."""
-        return self.api.get_updated_on()
+        return self.api.planned.get_updated_on()
 
     @property
     def status_today(self) -> str | None:
         """Get the status for today."""
-        return self.status_state_map.get(self.api.get_status_today())
+        return self.status_state_map.get(self.api.planned.get_status_today())
 
     @property
     def status_tomorrow(self) -> str | None:
         """Get the status for tomorrow."""
-        return self.status_state_map.get(self.api.get_status_tomorrow())
+        return self.status_state_map.get(self.api.planned.get_status_tomorrow())
 
     @property
     def region_name(self) -> str:
@@ -274,7 +303,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     def get_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
         """Get the event at a given time."""
-        event = self.api.get_current_event(at)
+        event = self.api.planned.get_current_event(at)
+        # Filter out NOT_PLANNED events
+        if event and event.event_type == OutageEventType.NOT_PLANNED:
+            return None
         return self._get_calendar_event(event)
 
     def get_events_between(
@@ -282,9 +314,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         start_date: datetime.datetime,
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
-        """Get all events."""
-        events = self.api.get_events(start_date, end_date)
-        return [self._get_calendar_event(event) for event in events]
+        """Get all planned events (filtering out NOT_PLANNED)."""
+        events = self.api.planned.get_events(start_date, end_date)
+        # Filter out NOT_PLANNED events
+        filtered_events = [
+            event for event in events if event.event_type != OutageEventType.NOT_PLANNED
+        ]
+        calendar_events = [self._get_calendar_event(event) for event in filtered_events]
+        return [e for e in calendar_events if e is not None]
 
     def _get_calendar_event(
         self,
@@ -317,3 +354,107 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         LOGGER.warning("Unknown event type: %s", event.uid)
         return STATE_NORMAL
+
+    def get_probable_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
+        """Get the probable outage event at a given time."""
+        weekday = at.weekday()  # 0=Monday, 6=Sunday
+        slots = self.api.probable.get_probable_slots_for_weekday(weekday)
+
+        # Find slot that contains the current time
+        minutes_since_midnight = at.hour * 60 + at.minute
+
+        for slot in slots:
+            # Only consider DEFINITE slots
+            if slot.event_type != OutageEventType.DEFINITE:
+                continue
+
+            if slot.start <= minutes_since_midnight < slot.end:
+                # Found matching slot, create event for today
+                date = at.replace(hour=0, minute=0, second=0, microsecond=0)
+                event_start = self.api.probable.minutes_to_time(slot.start, date)
+                event_end = self.api.probable.minutes_to_time(slot.end, date)
+
+                return CalendarEvent(
+                    summary=self.probable_event_name_map.get(
+                        OutageEventType.DEFINITE.value
+                    ),
+                    start=event_start,
+                    end=event_end,
+                    description=OutageEventType.DEFINITE.value,
+                    uid=f"probable-{event_start.isoformat()}",
+                )
+
+        return None
+
+    def get_probable_events_between(
+        self,
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
+    ) -> list[CalendarEvent]:
+        """Get all probable outage events within the date range using rrule."""
+        calendar_events = []
+
+        # Iterate through each day of the week (0=Monday, 6=Sunday)
+        for weekday in range(7):
+            slots = self.api.probable.get_probable_slots_for_weekday(weekday)
+
+            # Process only DEFINITE slots
+            for slot in slots:
+                if slot.event_type != OutageEventType.DEFINITE:
+                    continue
+
+                # Find the first occurrence of this weekday >= start_date
+                days_ahead = weekday - start_date.weekday()
+                if days_ahead < 0:
+                    days_ahead += 7
+                first_occurrence = start_date + datetime.timedelta(days=days_ahead)
+                first_occurrence = first_occurrence.replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+
+                # Generate recurring events for this slot using rrule
+                # WEEKLY recurrence for this specific weekday
+                for dt in rrule(
+                    freq=WEEKLY,
+                    dtstart=first_occurrence,
+                    until=end_date,
+                    byweekday=weekday,
+                ):
+                    event_start = self.api.probable.minutes_to_time(slot.start, dt)
+                    event_end = self.api.probable.minutes_to_time(slot.end, dt)
+
+                    # Skip if event is completely outside the requested range
+                    if event_end < start_date or event_start > end_date:
+                        continue
+
+                    calendar_events.append(
+                        CalendarEvent(
+                            summary=self.probable_event_name_map.get(
+                                OutageEventType.DEFINITE.value
+                            ),
+                            start=event_start,
+                            end=event_end,
+                            description=OutageEventType.DEFINITE.value,
+                            uid=f"probable-{event_start.isoformat()}",
+                        )
+                    )
+
+        # Sort by start time
+        return sorted(calendar_events, key=lambda e: e.start)
+
+    @property
+    def next_probable_outage(self) -> datetime.date | datetime.datetime | None:
+        """Get the next probable outage time."""
+        now = dt_utils.now()
+        # Check events for the next week
+        probable_events = self.get_probable_events_between(
+            now,
+            now + datetime.timedelta(days=7),
+        )
+
+        # Find first event that starts after now
+        for event in probable_events:
+            if event.start > now:
+                return event.start
+
+        return None

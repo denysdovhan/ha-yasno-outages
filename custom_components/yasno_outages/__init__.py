@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from homeassistant.const import Platform
 from homeassistant.loader import async_get_loaded_integration
 
-from .api import YasnoOutagesApi
+from .api import YasnoApi
 from .const import CONF_PROVIDER, CONF_REGION, CONF_SERVICE
 from .coordinator import YasnoOutagesCoordinator
 from .data import YasnoOutagesData
@@ -85,7 +85,7 @@ async def async_setup_entry(
         )
         return False
 
-    api = YasnoOutagesApi()
+    api = YasnoApi()
     coordinator = YasnoOutagesCoordinator(hass, entry, api)
     entry.runtime_data = YasnoOutagesData(
         api=api,
