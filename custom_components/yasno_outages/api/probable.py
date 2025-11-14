@@ -8,7 +8,7 @@ from dateutil.rrule import WEEKLY, rrule
 
 from .base import BaseYasnoApi
 from .const import PROBABLE_OUTAGES_ENDPOINT
-from .models import OutageEvent, OutageEventType, OutageSlot, OutageSource
+from .models import OutageEvent, OutageSlot, OutageSource
 
 LOGGER = logging.getLogger(__name__)
 
@@ -60,6 +60,30 @@ class ProbableOutagesApi(BaseYasnoApi):
 
         return self._parse_raw_slots(weekday_slots)
 
+    def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
+        """Get the probable outage event at a given time."""
+        weekday = at.weekday()  # 0=Monday, 6=Sunday
+        slots = self.get_probable_slots_for_weekday(weekday)
+
+        # Find slot that contains the current time
+        minutes_since_midnight = at.hour * 60 + at.minute
+
+        for slot in slots:
+            if slot.start <= minutes_since_midnight < slot.end:
+                # Found matching slot, create event for today
+                date = at.replace(hour=0, minute=0, second=0, microsecond=0)
+                event_start = self.minutes_to_time(slot.start, date)
+                event_end = self.minutes_to_time(slot.end, date)
+
+                return OutageEvent(
+                    start=event_start,
+                    end=event_end,
+                    event_type=slot.event_type,
+                    source=OutageSource.PROBABLE,
+                )
+
+        return None
+
     def get_events_between(
         self,
         start_date: datetime.datetime,
@@ -72,11 +96,7 @@ class ProbableOutagesApi(BaseYasnoApi):
         for weekday in range(7):
             slots = self.get_probable_slots_for_weekday(weekday)
 
-            # Process only DEFINITE slots
             for slot in slots:
-                if slot.event_type != OutageEventType.DEFINITE:
-                    continue
-
                 # Find the first occurrence of this weekday >= start_date
                 days_ahead = weekday - start_date.weekday()
                 if days_ahead < 0:
@@ -105,7 +125,7 @@ class ProbableOutagesApi(BaseYasnoApi):
                         OutageEvent(
                             start=event_start,
                             end=event_end,
-                            event_type=OutageEventType.DEFINITE,
+                            event_type=slot.event_type,
                             source=OutageSource.PROBABLE,
                         )
                     )

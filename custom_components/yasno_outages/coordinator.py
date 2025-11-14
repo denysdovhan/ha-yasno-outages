@@ -331,32 +331,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     def get_probable_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
         """Get the probable outage event at a given time."""
-        weekday = at.weekday()  # 0=Monday, 6=Sunday
-        slots = self.api.probable.get_probable_slots_for_weekday(weekday)
-
-        # Find slot that contains the current time
-        minutes_since_midnight = at.hour * 60 + at.minute
-
-        for slot in slots:
-            # Only consider DEFINITE slots
-            if slot.event_type != OutageEventType.DEFINITE:
-                continue
-
-            if slot.start <= minutes_since_midnight < slot.end:
-                # Found matching slot, create event for today
-                date = at.replace(hour=0, minute=0, second=0, microsecond=0)
-                event_start = self.api.probable.minutes_to_time(slot.start, date)
-                event_end = self.api.probable.minutes_to_time(slot.end, date)
-
-                probable_event = OutageEvent(
-                    start=event_start,
-                    end=event_end,
-                    event_type=OutageEventType.DEFINITE,
-                    source=OutageSource.PROBABLE,
-                )
-                return self._build_calendar_event(probable_event)
-
-        return None
+        event = self.api.probable.get_current_event(at)
+        # Filter out NOT_PLANNED events
+        if not event or event.event_type == OutageEventType.NOT_PLANNED:
+            return None
+        return self._build_calendar_event(event)
 
     def get_probable_events_between(
         self,
@@ -365,8 +344,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     ) -> list[CalendarEvent]:
         """Get all probable outage events within the date range."""
         events = self.api.probable.get_events_between(start_date, end_date)
+        # Filter out NOT_PLANNED events
+        filtered_events = [
+            event for event in events if event.event_type != OutageEventType.NOT_PLANNED
+        ]
         # Transform to CalendarEvents
-        probable_events = [self._build_calendar_event(event) for event in events]
+        probable_events = [
+            self._build_calendar_event(event) for event in filtered_events
+        ]
         return sorted(probable_events, key=lambda e: e.start)
 
     def _build_calendar_event(
