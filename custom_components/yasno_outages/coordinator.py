@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from homeassistant.components.calendar import CalendarEvent
 from homeassistant.helpers.translation import async_get_translations
@@ -142,6 +142,16 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE
             ),
         }
+
+    def _get_event_summary(
+        self,
+        source: Literal["probable", "planned"],
+    ) -> str | None:
+        """Return localized summary for event by source (planned/probable)."""
+        return {
+            "planned": self.translations.get(TRANSLATION_KEY_EVENT_OUTAGE),
+            "probable": self.translations.get(TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE),
+        }[source]
 
     @property
     def status_state_map(self) -> dict:
@@ -327,14 +337,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             return None
 
         event_type = event.event_type.value
-        summary = self.event_name_map.get(event_type)
+        summary = self._get_event_summary("planned")
 
         output = CalendarEvent(
             summary=summary,
             start=event.start,
             end=event.end,
             description=event_type,
-            uid=event_type,
+            uid=f"planned-{event.start.isoformat()}",
         )
         LOGGER.debug("Calendar Event: %s", output)
         return output
@@ -343,11 +353,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         if not event:
             return STATE_NORMAL
 
-        # Map event types to states using uid field
-        if event.uid == OutageEventType.DEFINITE.value:
+        # Map event types to states using description field
+        if event.description == OutageEventType.DEFINITE.value:
             return STATE_OUTAGE
 
-        LOGGER.warning("Unknown event type: %s", event.uid)
+        LOGGER.warning("Unknown event type: %s", event.description)
         return STATE_NORMAL
 
     def get_probable_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
@@ -370,9 +380,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 event_end = self.api.probable.minutes_to_time(slot.end, date)
 
                 return CalendarEvent(
-                    summary=self.probable_event_name_map.get(
-                        OutageEventType.DEFINITE.value
-                    ),
+                    summary=self._get_event_summary("probable"),
                     start=event_start,
                     end=event_end,
                     description=OutageEventType.DEFINITE.value,
@@ -391,9 +399,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Transform to CalendarEvents
         return [
             CalendarEvent(
-                summary=self.probable_event_name_map.get(
-                    OutageEventType.DEFINITE.value
-                ),
+                summary=self._get_event_summary("probable"),
                 start=event.start,
                 end=event.end,
                 description=OutageEventType.DEFINITE.value,
