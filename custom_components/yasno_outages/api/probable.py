@@ -1,12 +1,14 @@
 """Probable outages API for Yasno."""
 
+import datetime
 import logging
 
 import aiohttp
+from dateutil.rrule import WEEKLY, rrule
 
 from .base import BaseYasnoApi
 from .const import PROBABLE_OUTAGES_ENDPOINT
-from .models import OutageEventType, ProbableOutageSlot
+from .models import OutageEvent, OutageEventType, ProbableOutageSlot
 
 LOGGER = logging.getLogger(__name__)
 
@@ -90,6 +92,68 @@ class ProbableOutagesApi(BaseYasnoApi):
                 continue
 
         return probable_slots
+
+    def get_events(
+        self,
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
+    ) -> list[OutageEvent]:
+        """
+        Get all probable outage events within the date range using rrule.
+
+        Args:
+          start_date: Start of the date range.
+          end_date: End of the date range.
+
+        Returns:
+          List of OutageEvent objects for probable outages in the range.
+
+        """
+        events = []
+
+        # Iterate through each day of the week (0=Monday, 6=Sunday)
+        for weekday in range(7):
+            slots = self.get_probable_slots_for_weekday(weekday)
+
+            # Process only DEFINITE slots
+            for slot in slots:
+                if slot.event_type != OutageEventType.DEFINITE:
+                    continue
+
+                # Find the first occurrence of this weekday >= start_date
+                days_ahead = weekday - start_date.weekday()
+                if days_ahead < 0:
+                    days_ahead += 7
+                first_occurrence = start_date + datetime.timedelta(days=days_ahead)
+                first_occurrence = first_occurrence.replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+
+                # Generate recurring events for this slot using rrule
+                # WEEKLY recurrence for this specific weekday
+                for dt in rrule(
+                    freq=WEEKLY,
+                    dtstart=first_occurrence,
+                    until=end_date,
+                    byweekday=weekday,
+                ):
+                    event_start = self.minutes_to_time(slot.start, dt)
+                    event_end = self.minutes_to_time(slot.end, dt)
+
+                    # Skip if event is completely outside the requested range
+                    if event_end < start_date or event_start > end_date:
+                        continue
+
+                    events.append(
+                        OutageEvent(
+                            start=event_start,
+                            end=event_end,
+                            event_type=OutageEventType.DEFINITE,
+                        )
+                    )
+
+        # Sort by start time
+        return sorted(events, key=lambda e: e.start)
 
     async def fetch_data(self) -> None:
         """Fetch all required data."""
