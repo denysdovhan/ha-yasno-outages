@@ -17,7 +17,6 @@ from homeassistant.helpers.selector import (
 )
 
 from .api import YasnoApi
-from .api.planned import PlannedOutagesApi
 from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
@@ -45,7 +44,7 @@ def build_entry_title(data: dict[str, Any]) -> str:
 
 
 def build_region_schema(
-    api: PlannedOutagesApi,
+    api: YasnoApi,
     config_entry: ConfigEntry | None,
 ) -> vol.Schema:
     """Build the schema for the region selection step."""
@@ -67,7 +66,7 @@ def build_region_schema(
 
 
 def build_provider_schema(
-    api: PlannedOutagesApi,
+    api: YasnoApi,
     config_entry: ConfigEntry | None,
     data: dict,
 ) -> vol.Schema:
@@ -134,7 +133,7 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=build_region_schema(
-                api=self.api.planned, config_entry=self.config_entry
+                api=self.api, config_entry=self.config_entry
             ),
         )
 
@@ -151,7 +150,7 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
         return self.async_show_form(
             step_id="provider",
             data_schema=build_provider_schema(
-                api=self.api.planned,
+                api=self.api,
                 config_entry=self.config_entry,
                 data=self.data,
             ),
@@ -221,7 +220,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=build_region_schema(api=self.api.planned, config_entry=None),
+            data_schema=build_region_schema(api=self.api, config_entry=None),
         )
 
     async def async_step_provider(
@@ -235,7 +234,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self.async_step_group()
 
         region = self.data[CONF_REGION]
-        providers = self.api.planned.get_providers_for_region(region)
+        providers = self.api.get_providers_for_region(region)
 
         # If only one provider available, auto-select it and proceed
         if len(providers) == 1:
@@ -247,7 +246,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="provider",
             data_schema=build_provider_schema(
-                api=self.api.planned,
+                api=self.api,
                 config_entry=None,
                 data=self.data,
             ),

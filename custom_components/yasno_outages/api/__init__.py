@@ -45,9 +45,17 @@ class YasnoApi:
         # Share the regions data with probable API
         self._probable.regions_data = self._planned.regions_data
 
+    def get_regions(self) -> list[dict]:
+        """Get a list of available regions."""
+        return self._planned.get_regions()
+
     def get_region_by_name(self, region_name: str) -> dict | None:
         """Get region data by name."""
         return self._planned.get_region_by_name(region_name)
+
+    def get_providers_for_region(self, region_name: str) -> list[dict]:
+        """Get providers (dsos) for a specific region."""
+        return self._planned.get_providers_for_region(region_name)
 
     def get_provider_by_name(
         self,
