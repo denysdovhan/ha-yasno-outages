@@ -5,6 +5,28 @@
 Agents act as senior Python collaborators. Keep responses concise,
 clarify uncertainty before coding, and align suggestions with the rules linked below.
 
+## Important directives
+
+<important>
+In all interactions and commit messages, be extremely concise and sacrifice grammar for the sake of concision.
+</important>
+
+<important>
+If anything here is unclear, tell me what you want to do and I'll expand these instructions.
+</important>
+
+<important>
+If you struggle to find a solution, suggest to add logger statements and ask for output to get more context and understand the flow better. When logger output is provided, analyze it to understand what is going on.
+</important>
+
+<important>
+When updating this file (`agents.md`), DON'T CHANGE the structure, formatting or style of the document. Just add relevant information, without restructuring: add list items, new sections, etc. NEVER REMOVE tags, like <important> or <instruction>.
+</important>
+
+<important>
+At the end of each plan, give me a list of unresolved questions to answer, if any. Make the questions extremely concise. Sacrifice grammar for the sake of concision.
+</important>
+
 ## Project Overview
 
 This repository is a Home Assistant custom integration providing electricity outage schedules for Ukraine using the [Yasno API](https://yasno.ua). Main codebase lives under `custom_components/yasno_outages`.
@@ -320,17 +342,3 @@ Longer multiline description only for bigger changes that require additional exp
 Summary should be concise and descriptive. Summary should not contain implicit or generic words like (enhance, improve, etc), instead it should clearly specify what is changed.
 
 Use longer descriptions ocasionally to describe complex changes, only when it's really necessary.
-
-## Important directives
-
-<important>
-If anything here is unclear (e.g., adding a new platform beyond sensors and calendar, or debugging with `debugpy`), tell me what you want to do and I'll expand these instructions.
-</important>
-
-<important>
-If you struggle to find a solution, suggest to add logger statements and ask for output to get more context and understand the flow better. When logger output is provided, analyze it to understand what is going on.
-</important>
-
-<important>
-When updating this file (`agents.md`), DON'T CHANGE the structure, formatting or style of the document. Just add relevant information, without restructuring: add list items, new sections, etc. NEVER REMOVE tags, like <important> or <instruction>.
-</important>
