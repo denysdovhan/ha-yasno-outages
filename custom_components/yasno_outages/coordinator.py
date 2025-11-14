@@ -294,7 +294,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the planned event at a given time."""
         event = self.api.planned.get_current_event(at)
         # Filter out NOT_PLANNED events
-        if event and event.event_type == OutageEventType.NOT_PLANNED:
+        if not event or event.event_type == OutageEventType.NOT_PLANNED:
             return None
         return self._build_calendar_event("planned", event)
 
@@ -309,20 +309,17 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         filtered_events = [
             event for event in events if event.event_type != OutageEventType.NOT_PLANNED
         ]
-        calendar_events = [
+        planned_events = [
             self._build_calendar_event("planned", event) for event in filtered_events
         ]
-        return [e for e in calendar_events if e is not None]
+        return sorted(planned_events, key=lambda e: e.start)
 
     def _build_calendar_event(
         self,
         source: Literal["planned", "probable"],
-        event: OutageEvent | None,
-    ) -> CalendarEvent | None:
+        event: OutageEvent,
+    ) -> CalendarEvent:
         """Transform an outage event into a CalendarEvent for a given source."""
-        if not event:
-            return None
-
         event_type = event.event_type.value
         summary = self.event_summary_map.get(source, "Outage")
 
@@ -383,7 +380,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get all probable outage events within the date range."""
         events = self.api.probable.get_events_between(start_date, end_date)
         # Transform to CalendarEvents
-        return [self._build_calendar_event("probable", event) for event in events]
+        probable_events = [
+            self._build_calendar_event("probable", event) for event in events
+        ]
+        return sorted(probable_events, key=lambda e: e.start)
 
     @property
     def next_probable_outage(self) -> datetime.date | datetime.datetime | None:

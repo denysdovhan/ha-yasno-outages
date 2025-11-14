@@ -264,11 +264,16 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - Extend `api.py` first; return Python objects (dicts/dataclasses) independent of raw JSON.
   - Use/extend `coordinator.py` to compute derived values (current state, next outage times).
   - Keep it simple: coordinator stored directly in `entry.runtime_data`.
+  - CalendarEvent construction is centralized via coordinator `_build_calendar_event(source, event)`.
+  - `_build_calendar_event` never returns `None`; callers must guard `None`/irrelevant events.
+  - Event `uid` is prefixed by source: `planned-<iso>` or `probable-<iso>`.
+  - Summaries come from `event_summary_map` property with translation fallbacks.
 - **Entities and platforms**
   - Add new sensor descriptors in `sensor.py` (use `translation_key`).
   - Unique ID format: `{entry_id}-{group}-{sensor_key}`; do not hardcode unique IDs in config flow.
   - Device naming uses `DeviceInfo` with translation placeholders: `{region}`, `{provider}`, `{group}`.
   - Calendar: Single calendar entity per entry showing all outage events with translated event names.
+  - Calendar events are always sorted by `start` before returning from coordinator getters.
 - **Config flow**
   - Multi-step: Region → Service (DSO) → Group
   - Auto-skip: If only one service available, auto-select it and skip to group step
