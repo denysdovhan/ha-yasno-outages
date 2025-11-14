@@ -66,7 +66,7 @@ class PlannedOutagesApi(BaseYasnoApi):
         date: datetime.datetime,
     ) -> list[OutageEvent]:
         """Parse schedule for a single day."""
-        slots = day_data.get("slots", [])
+        slots = self._parse_raw_slots(day_data.get("slots", []))
         return self._parse_slots_to_events(slots, date)
 
     def _parse_day_events(

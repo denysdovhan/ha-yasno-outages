@@ -46,52 +46,19 @@ class ProbableOutagesApi(BaseYasnoApi):
         self,
         weekday: int,
     ) -> list[OutageSlot]:
-        """
-        Get probable outage slots for a specific weekday.
-
-        Args:
-          weekday: Day of week (0=Monday, 6=Sunday) matching API spec.
-
-        Returns:
-          List of OutageSlot objects for the given weekday.
-
-        """
+        """Get probable outage slots for a specific weekday."""
         if not self.probable_outages_data:
             return []
 
-        # Navigate to the group's slots for the specified weekday
-        try:
-            region_data = self.probable_outages_data.get(str(self.region_id), {})
-            dsos_data = region_data.get("dsos", {})
-            dso_data = dsos_data.get(str(self.provider_id), {})
-            groups_data = dso_data.get("groups", {})
-            group_data = groups_data.get(self.group, {})
-            slots_data = group_data.get("slots", {})
-            weekday_slots = slots_data.get(str(weekday), [])
-        except (AttributeError, KeyError):
-            LOGGER.warning(
-                "Failed to navigate probable outages data structure for weekday %s",
-                weekday,
-            )
-            return []
+        region_data = self.probable_outages_data.get(str(self.region_id), {})
+        dsos_data = region_data.get("dsos", {})
+        dso_data = dsos_data.get(str(self.provider_id), {})
+        groups_data = dso_data.get("groups", {})
+        group_data = groups_data.get(self.group, {})
+        slots_data = group_data.get("slots", {})
+        weekday_slots = slots_data.get(str(weekday), [])
 
-        # Parse slots into OutageSlot objects
-        probable_slots = []
-        for slot in weekday_slots:
-            try:
-                event_type = OutageEventType(slot["type"])
-                probable_slots.append(
-                    OutageSlot(
-                        start=slot["start"],
-                        end=slot["end"],
-                        event_type=event_type,
-                    ),
-                )
-            except (KeyError, ValueError) as err:
-                LOGGER.warning("Failed to parse probable slot: %s", err)
-                continue
-
-        return probable_slots
+        return self._parse_raw_slots(weekday_slots)
 
     def get_events_between(
         self,

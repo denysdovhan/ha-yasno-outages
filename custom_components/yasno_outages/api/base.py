@@ -6,7 +6,7 @@ import logging
 import aiohttp
 
 from .const import REGIONS_ENDPOINT
-from .models import OutageEvent, OutageEventType
+from .models import OutageEvent, OutageEventType, OutageSlot
 
 LOGGER = logging.getLogger(__name__)
 
@@ -96,33 +96,42 @@ class BaseYasnoApi:
             )
         return date.replace(hour=hours, minute=mins, second=0, microsecond=0)
 
+    @staticmethod
+    def _parse_raw_slots(slots: list[dict]) -> list[OutageSlot]:
+        """Parse raw slot dictionaries into OutageSlot objects."""
+        parsed_slots = []
+        for slot in slots:
+            try:
+                event_type = OutageEventType(slot["type"])
+                parsed_slots.append(
+                    OutageSlot(
+                        start=slot["start"],
+                        end=slot["end"],
+                        event_type=event_type,
+                    ),
+                )
+            except (ValueError, KeyError) as err:
+                LOGGER.warning("Failed to parse slot %s: %s", slot, err)
+                continue
+        return parsed_slots
+
     def _parse_slots_to_events(
         self,
-        slots: list[dict],
+        slots: list[OutageSlot],
         date: datetime.datetime,
     ) -> list[OutageEvent]:
-        """Parse time slots into OutageEvent objects."""
+        """Convert OutageSlot objects into OutageEvent objects for a specific date."""
         events = []
 
         for slot in slots:
-            start_minutes = slot["start"]
-            end_minutes = slot["end"]
-            slot_type = slot["type"]
-
-            try:
-                event_type = OutageEventType(slot_type)
-            except ValueError:
-                LOGGER.warning("Unknown slot type: %s", slot_type)
-                continue
-
-            event_start = self.minutes_to_time(start_minutes, date)
-            event_end = self.minutes_to_time(end_minutes, date)
+            event_start = self.minutes_to_time(slot.start, date)
+            event_end = self.minutes_to_time(slot.end, date)
 
             events.append(
                 OutageEvent(
                     start=event_start,
                     end=event_end,
-                    event_type=event_type,
+                    event_type=slot.event_type,
                 ),
             )
 
