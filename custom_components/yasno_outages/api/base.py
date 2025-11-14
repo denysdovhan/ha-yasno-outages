@@ -26,7 +26,7 @@ class BaseYasnoApi:
         self.group = group
         self.regions_data = None
 
-    async def _get_route_data(
+    async def _get_data(
         self,
         session: aiohttp.ClientSession,
         url: str,
@@ -47,7 +47,7 @@ class BaseYasnoApi:
     async def fetch_regions(self) -> None:
         """Fetch regions and providers data."""
         async with aiohttp.ClientSession() as session:
-            self.regions_data = await self._get_route_data(session, REGIONS_ENDPOINT)
+            self.regions_data = await self._get_data(session, REGIONS_ENDPOINT)
 
     def get_regions(self) -> list[dict]:
         """Get a list of available regions."""

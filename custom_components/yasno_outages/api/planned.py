@@ -46,7 +46,7 @@ class PlannedOutagesApi(BaseYasnoApi):
         )
 
         async with aiohttp.ClientSession() as session:
-            self.planned_outages_data = await self._get_route_data(session, url)
+            self.planned_outages_data = await self._get_data(session, url)
 
     def get_groups(self) -> list[str]:
         """Get groups from planned outages data."""
@@ -122,13 +122,13 @@ class PlannedOutagesApi(BaseYasnoApi):
 
     def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the current event."""
-        all_events = self.get_events(at, at + datetime.timedelta(days=1))
+        all_events = self.get_events_between(at, at + datetime.timedelta(days=1))
         for event in all_events:
             if event.start <= at < event.end:
                 return event
         return None
 
-    def get_events(
+    def get_events_between(
         self,
         start_date: datetime.datetime,
         end_date: datetime.datetime,

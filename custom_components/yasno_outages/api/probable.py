@@ -40,7 +40,7 @@ class ProbableOutagesApi(BaseYasnoApi):
         )
 
         async with aiohttp.ClientSession() as session:
-            self.probable_outages_data = await self._get_route_data(session, url)
+            self.probable_outages_data = await self._get_data(session, url)
 
     def get_probable_slots_for_weekday(
         self,
@@ -93,7 +93,7 @@ class ProbableOutagesApi(BaseYasnoApi):
 
         return probable_slots
 
-    def get_events(
+    def get_events_between(
         self,
         start_date: datetime.datetime,
         end_date: datetime.datetime,
