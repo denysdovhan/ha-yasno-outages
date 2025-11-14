@@ -104,7 +104,7 @@
     }
   },
   "common": {
-    "electricity_outage": "Відключення",
+    "planned_electricity_outage": "Відключення",
     "probable_electricity_outage": "Імовірне відключення"
   },
   "issues": {
