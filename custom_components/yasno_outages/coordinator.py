@@ -312,7 +312,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Filter out NOT_PLANNED events
         if event and event.event_type == OutageEventType.NOT_PLANNED:
             return None
-        return self._get_calendar_event(event)
+        return self._build_calendar_event("planned", event)
 
     def get_planned_events_between(
         self,
@@ -325,26 +325,29 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         filtered_events = [
             event for event in events if event.event_type != OutageEventType.NOT_PLANNED
         ]
-        calendar_events = [self._get_calendar_event(event) for event in filtered_events]
+        calendar_events = [
+            self._build_calendar_event("planned", event) for event in filtered_events
+        ]
         return [e for e in calendar_events if e is not None]
 
-    def _get_calendar_event(
+    def _build_calendar_event(
         self,
+        source: Literal["planned", "probable"],
         event: OutageEvent | None,
     ) -> CalendarEvent | None:
-        """Transform an event into a CalendarEvent."""
+        """Transform an outage event into a CalendarEvent for a given source."""
         if not event:
             return None
 
         event_type = event.event_type.value
-        summary = self._get_event_summary("planned")
+        summary = self._get_event_summary(source)
 
         output = CalendarEvent(
             summary=summary,
             start=event.start,
             end=event.end,
             description=event_type,
-            uid=f"planned-{event.start.isoformat()}",
+            uid=f"{source}-{event.start.isoformat()}",
         )
         LOGGER.debug("Calendar Event: %s", output)
         return output
@@ -379,13 +382,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 event_start = self.api.probable.minutes_to_time(slot.start, date)
                 event_end = self.api.probable.minutes_to_time(slot.end, date)
 
-                return CalendarEvent(
-                    summary=self._get_event_summary("probable"),
+                probable_event = OutageEvent(
                     start=event_start,
                     end=event_end,
-                    description=OutageEventType.DEFINITE.value,
-                    uid=f"probable-{event_start.isoformat()}",
+                    event_type=OutageEventType.DEFINITE,
                 )
+                return self._build_calendar_event("probable", probable_event)
 
         return None
 
@@ -397,16 +399,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get all probable outage events within the date range."""
         events = self.api.probable.get_events_between(start_date, end_date)
         # Transform to CalendarEvents
-        return [
-            CalendarEvent(
-                summary=self._get_event_summary("probable"),
-                start=event.start,
-                end=event.end,
-                description=OutageEventType.DEFINITE.value,
-                uid=f"probable-{event.start.isoformat()}",
-            )
-            for event in events
-        ]
+        return [self._build_calendar_event("probable", event) for event in events]
 
     @property
     def next_probable_outage(self) -> datetime.date | datetime.datetime | None:
