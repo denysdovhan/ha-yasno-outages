@@ -8,7 +8,7 @@ from dateutil.rrule import WEEKLY, rrule
 
 from .base import BaseYasnoApi
 from .const import PROBABLE_OUTAGES_ENDPOINT
-from .models import OutageEvent, OutageEventType, ProbableOutageSlot
+from .models import OutageEvent, OutageEventType, OutageSlot
 
 LOGGER = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class ProbableOutagesApi(BaseYasnoApi):
     def get_probable_slots_for_weekday(
         self,
         weekday: int,
-    ) -> list[ProbableOutageSlot]:
+    ) -> list[OutageSlot]:
         """
         Get probable outage slots for a specific weekday.
 
@@ -53,7 +53,7 @@ class ProbableOutagesApi(BaseYasnoApi):
           weekday: Day of week (0=Monday, 6=Sunday) matching API spec.
 
         Returns:
-          List of ProbableOutageSlot objects for the given weekday.
+          List of OutageSlot objects for the given weekday.
 
         """
         if not self.probable_outages_data:
@@ -75,13 +75,13 @@ class ProbableOutagesApi(BaseYasnoApi):
             )
             return []
 
-        # Parse slots into ProbableOutageSlot objects
+        # Parse slots into OutageSlot objects
         probable_slots = []
         for slot in weekday_slots:
             try:
                 event_type = OutageEventType(slot["type"])
                 probable_slots.append(
-                    ProbableOutageSlot(
+                    OutageSlot(
                         start=slot["start"],
                         end=slot["end"],
                         event_type=event_type,

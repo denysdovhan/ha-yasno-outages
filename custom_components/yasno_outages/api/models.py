@@ -22,8 +22,8 @@ class OutageEvent:
 
 
 @dataclass(frozen=True)
-class ProbableOutageSlot:
-    """Represents a probable outage time slot."""
+class OutageSlot:
+    """Represents an outage time slot template."""
 
     start: int  # Minutes from midnight
     end: int  # Minutes from midnight
