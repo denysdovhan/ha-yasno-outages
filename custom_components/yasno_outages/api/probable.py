@@ -65,17 +65,7 @@ class ProbableOutagesApi(BaseYasnoApi):
         start_date: datetime.datetime,
         end_date: datetime.datetime,
     ) -> list[OutageEvent]:
-        """
-        Get all probable outage events within the date range using rrule.
-
-        Args:
-          start_date: Start of the date range.
-          end_date: End of the date range.
-
-        Returns:
-          List of OutageEvent objects for probable outages in the range.
-
-        """
+        """Get all probable outage events within the date range using rrule."""
         events = []
 
         # Iterate through each day of the week (0=Monday, 6=Sunday)
