@@ -29,9 +29,12 @@ STATE_STATUS_WAITING_FOR_SCHEDULE: Final = "waiting_for_schedule"
 STATE_STATUS_EMERGENCY_SHUTDOWNS: Final = "emergency_shutdowns"
 
 # Keys
-TRANSLATION_KEY_EVENT_OUTAGE: Final = (
+TRANSLATION_KEY_EVENT_PLANNED_OUTAGE: Final = (
     f"component.{DOMAIN}.common.planned_electricity_outage"
 )
 TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE: Final = (
     f"component.{DOMAIN}.common.probable_electricity_outage"
 )
+# Text fallbacks
+PLANNED_OUTAGE_TEXT_FALLBACK: Final = "Planned Outage"
+PROBABLE_OUTAGE_TEXT_FALLBACK: Final = "Probable Outage"

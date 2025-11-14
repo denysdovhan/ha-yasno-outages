@@ -22,6 +22,8 @@ from .const import (
     CONF_PROVIDER,
     CONF_REGION,
     DOMAIN,
+    PLANNED_OUTAGE_TEXT_FALLBACK,
+    PROBABLE_OUTAGE_TEXT_FALLBACK,
     PROVIDER_DTEK_FULL,
     PROVIDER_DTEK_SHORT,
     STATE_NORMAL,
@@ -29,7 +31,7 @@ from .const import (
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
-    TRANSLATION_KEY_EVENT_OUTAGE,
+    TRANSLATION_KEY_EVENT_PLANNED_OUTAGE,
     TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE,
     UPDATE_INTERVAL,
 )
@@ -126,32 +128,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Note: We'll resolve IDs and update API during first data update
 
     @property
-    def event_name_map(self) -> dict:
-        """Return a mapping of event names to translations."""
+    def event_summary_map(self) -> dict[str, dict[str, str]]:
+        """Return localized summaries by source and event type with fallbacks."""
         return {
-            OutageEventType.DEFINITE.value: self.translations.get(
-                TRANSLATION_KEY_EVENT_OUTAGE
-            ),
+            "planned": self.translations.get(TRANSLATION_KEY_EVENT_PLANNED_OUTAGE)
+            or PLANNED_OUTAGE_TEXT_FALLBACK,
+            "probable": self.translations.get(TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE)
+            or PROBABLE_OUTAGE_TEXT_FALLBACK,
         }
-
-    @property
-    def probable_event_name_map(self) -> dict:
-        """Return a mapping of probable event names to translations."""
-        return {
-            OutageEventType.DEFINITE.value: self.translations.get(
-                TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE
-            ),
-        }
-
-    def _get_event_summary(
-        self,
-        source: Literal["probable", "planned"],
-    ) -> str | None:
-        """Return localized summary for event by source (planned/probable)."""
-        return {
-            "planned": self.translations.get(TRANSLATION_KEY_EVENT_OUTAGE),
-            "probable": self.translations.get(TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE),
-        }[source]
 
     @property
     def status_state_map(self) -> dict:
@@ -340,7 +324,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             return None
 
         event_type = event.event_type.value
-        summary = self._get_event_summary(source)
+        summary = self.event_summary_map.get(source, "Outage")
 
         output = CalendarEvent(
             summary=summary,
