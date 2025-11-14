@@ -14,7 +14,7 @@ from .const import (
     API_KEY_TOMORROW,
     PLANNED_OUTAGES_ENDPOINT,
 )
-from .models import OutageEvent
+from .models import OutageEvent, OutageSource
 
 LOGGER = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class PlannedOutagesApi(BaseYasnoApi):
     ) -> list[OutageEvent]:
         """Parse schedule for a single day."""
         slots = self._parse_raw_slots(day_data.get("slots", []))
-        return self._parse_slots_to_events(slots, date)
+        return self._parse_slots_to_events(slots, date, OutageSource.PLANNED)
 
     def _parse_day_events(
         self,

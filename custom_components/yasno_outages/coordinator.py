@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from homeassistant.components.calendar import CalendarEvent
 from homeassistant.helpers.translation import async_get_translations
@@ -17,6 +17,7 @@ from .api.const import (
     API_STATUS_SCHEDULE_APPLIES,
     API_STATUS_WAITING_FOR_SCHEDULE,
 )
+from .api.models import OutageSource
 from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
@@ -182,13 +183,13 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         )
 
     @property
-    def event_summary_map(self) -> dict[str, dict[str, str]]:
-        """Return localized summaries by source and event type with fallbacks."""
+    def event_summary_map(self) -> dict[OutageSource, str]:
+        """Return localized summaries by source with fallbacks."""
         return {
-            "planned": self.translations.get(
+            OutageSource.PLANNED: self.translations.get(
                 TRANSLATION_KEY_EVENT_PLANNED_OUTAGE, PLANNED_OUTAGE_TEXT_FALLBACK
             ),
-            "probable": self.translations.get(
+            OutageSource.PROBABLE: self.translations.get(
                 TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE, PROBABLE_OUTAGE_TEXT_FALLBACK
             ),
         }
@@ -310,7 +311,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Filter out NOT_PLANNED events
         if not event or event.event_type == OutageEventType.NOT_PLANNED:
             return None
-        return self._build_calendar_event("planned", event)
+        return self._build_calendar_event(event)
 
     def get_planned_events_between(
         self,
@@ -324,7 +325,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             event for event in events if event.event_type != OutageEventType.NOT_PLANNED
         ]
         planned_events = [
-            self._build_calendar_event("planned", event) for event in filtered_events
+            self._build_calendar_event(event) for event in filtered_events
         ]
         return sorted(planned_events, key=lambda e: e.start)
 
@@ -351,8 +352,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                     start=event_start,
                     end=event_end,
                     event_type=OutageEventType.DEFINITE,
+                    source=OutageSource.PROBABLE,
                 )
-                return self._build_calendar_event("probable", probable_event)
+                return self._build_calendar_event(probable_event)
 
         return None
 
@@ -364,26 +366,23 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get all probable outage events within the date range."""
         events = self.api.probable.get_events_between(start_date, end_date)
         # Transform to CalendarEvents
-        probable_events = [
-            self._build_calendar_event("probable", event) for event in events
-        ]
+        probable_events = [self._build_calendar_event(event) for event in events]
         return sorted(probable_events, key=lambda e: e.start)
 
     def _build_calendar_event(
         self,
-        source: Literal["planned", "probable"],
         event: OutageEvent,
     ) -> CalendarEvent:
-        """Transform an outage event into a CalendarEvent for a given source."""
-        event_type = event.event_type.value
+        """Transform an outage event into a CalendarEvent."""
+        source = event.source or OutageSource.PLANNED
         summary = self.event_summary_map.get(source, "Outage")
 
         output = CalendarEvent(
             summary=summary,
             start=event.start,
             end=event.end,
-            description=event_type,
-            uid=f"{source}-{event.start.isoformat()}",
+            description=event.event_type.value,
+            uid=f"{source.value}-{event.start.isoformat()}",
         )
         LOGGER.debug("Calendar Event: %s", output)
         return output
@@ -408,7 +407,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 now,
                 now + datetime.timedelta(days=PLANNED_OUTAGE_LOOKAHEAD),
             ),
-            key=lambda _: _.start,
+            key=lambda event: event.start,
         )
         LOGGER.debug("Next events: %s", next_events)
         for event in next_events:

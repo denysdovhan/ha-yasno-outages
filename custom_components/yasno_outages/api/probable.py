@@ -8,7 +8,7 @@ from dateutil.rrule import WEEKLY, rrule
 
 from .base import BaseYasnoApi
 from .const import PROBABLE_OUTAGES_ENDPOINT
-from .models import OutageEvent, OutageEventType, OutageSlot
+from .models import OutageEvent, OutageEventType, OutageSlot, OutageSource
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,6 +106,7 @@ class ProbableOutagesApi(BaseYasnoApi):
                             start=event_start,
                             end=event_end,
                             event_type=OutageEventType.DEFINITE,
+                            source=OutageSource.PROBABLE,
                         )
                     )
 

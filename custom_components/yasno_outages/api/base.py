@@ -6,7 +6,7 @@ import logging
 import aiohttp
 
 from .const import REGIONS_ENDPOINT
-from .models import OutageEvent, OutageEventType, OutageSlot
+from .models import OutageEvent, OutageEventType, OutageSlot, OutageSource
 
 LOGGER = logging.getLogger(__name__)
 
@@ -119,8 +119,9 @@ class BaseYasnoApi:
         self,
         slots: list[OutageSlot],
         date: datetime.datetime,
+        source: OutageSource,
     ) -> list[OutageEvent]:
-        """Convert OutageSlot objects into OutageEvent objects for a specific date."""
+        """Convert OutageSlot instances to OutageEvent instances for a given date."""
         events = []
 
         for slot in slots:
@@ -132,6 +133,7 @@ class BaseYasnoApi:
                     start=event_start,
                     end=event_end,
                     event_type=slot.event_type,
+                    source=source,
                 ),
             )
 
