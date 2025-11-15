@@ -78,6 +78,22 @@ class BaseYasnoApi(ABC):
                 return provider
         return None
 
+    def get_next_event(
+        self,
+        at: datetime.datetime,
+        lookahead_days: int = 1,
+    ) -> OutageEvent | None:
+        """Return outage event that starts after provided time."""
+        horizon = at + datetime.timedelta(days=lookahead_days)
+        events = sorted(
+            self.get_events_between(at, horizon),
+            key=lambda event: event.start,
+        )
+        for event in events:
+            if event.start > at:
+                return event
+        return None
+
     @staticmethod
     def minutes_to_time(
         minutes: int,

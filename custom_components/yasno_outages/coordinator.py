@@ -263,9 +263,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def next_planned_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next planned outage time."""
-        event = self._get_next_event_of_type(STATE_OUTAGE)
-        LOGGER.debug("Next planned outage: %s", event)
-        return event.start if event else None
+        next_event = self.api.planned.get_next_event(
+            dt_utils.now(),
+            PLANNED_OUTAGE_LOOKAHEAD,
+        )
+        if not next_event or next_event.event_type == OutageEventType.NOT_PLANNED:
+            return None
+        LOGGER.debug("Next planned outage: %s", next_event)
+        return next_event.start
 
     @property
     def next_probable_outage(self) -> datetime.date | datetime.datetime | None:
@@ -303,9 +308,15 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             return current_event.end if current_event else None
 
         # Otherwise, return the end of the next outage
-        event = self._get_next_event_of_type(STATE_OUTAGE)
-        LOGGER.debug("Next connectivity: %s", event)
-        return event.end if event else None
+        next_event = self.api.planned.get_next_event(
+            dt_utils.now(),
+            PLANNED_OUTAGE_LOOKAHEAD,
+        )
+        if not next_event or next_event.event_type == OutageEventType.NOT_PLANNED:
+            return None
+        calendar_event = self._build_calendar_event(next_event)
+        LOGGER.debug("Next connectivity: %s", calendar_event)
+        return calendar_event.end
 
     def get_event_at(
         self,
@@ -358,6 +369,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get all probable outage events within the date range."""
         return self.get_events_between(self.api.probable, start_date, end_date)
 
+    # Note: ideally handle OutageEvent in coordinator and convert inside entity.
     def _build_calendar_event(
         self,
         event: OutageEvent,
@@ -376,6 +388,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         LOGGER.debug("Calendar Event: %s", output)
         return output
 
+    # Note: could be replaced with map lookup later.
     def _event_to_state(self, event: CalendarEvent | None) -> str | None:
         if not event:
             return STATE_NORMAL
@@ -386,20 +399,3 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         LOGGER.warning("Unknown event type: %s", event.description)
         return STATE_NORMAL
-
-    def _get_next_event_of_type(self, state_type: str) -> CalendarEvent | None:
-        """Get the next event of a specific type."""
-        now = dt_utils.now()
-        # Sort events to handle multi-day spanning events correctly
-        next_events = sorted(
-            self.get_planned_events_between(
-                now,
-                now + datetime.timedelta(days=PLANNED_OUTAGE_LOOKAHEAD),
-            ),
-            key=lambda event: event.start,
-        )
-        LOGGER.debug("Next events: %s", next_events)
-        for event in next_events:
-            if self._event_to_state(event) == state_type and event.start > now:
-                return event
-        return None
