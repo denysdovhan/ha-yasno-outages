@@ -369,7 +369,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get all probable outage events within the date range."""
         return self.get_events_between(self.api.probable, start_date, end_date)
 
-    # Note: ideally handle OutageEvent in coordinator and convert inside entity.
+    # TODO: ideally handle OutageEvent in coordinator and convert inside entity.
     def _build_calendar_event(
         self,
         event: OutageEvent,
@@ -388,7 +388,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         LOGGER.debug("Calendar Event: %s", output)
         return output
 
-    # Note: could be replaced with map lookup later.
+    # TODO: could be replaced with map lookup later.
     def _event_to_state(self, event: CalendarEvent | None) -> str | None:
         if not event:
             return STATE_NORMAL
