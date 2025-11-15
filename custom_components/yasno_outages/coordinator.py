@@ -43,6 +43,8 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
+    from .api.base import BaseYasnoApi
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -305,13 +307,40 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         LOGGER.debug("Next connectivity: %s", event)
         return event.end if event else None
 
-    def get_planned_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
-        """Get the planned event at a given time."""
-        event = self.api.planned.get_current_event(at)
-        # Filter out NOT_PLANNED events
+    def get_event_at(
+        self,
+        api: BaseYasnoApi,
+        at: datetime.datetime,
+    ) -> CalendarEvent | None:
+        """Get an outage event at a given time from provided API."""
+        event = api.get_current_event(at)
         if not event or event.event_type == OutageEventType.NOT_PLANNED:
             return None
         return self._build_calendar_event(event)
+
+    def get_planned_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
+        """Get the planned event at a given time."""
+        return self.get_event_at(self.api.planned, at)
+
+    def get_probable_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
+        """Get the probable outage event at a given time."""
+        return self.get_event_at(self.api.probable, at)
+
+    def get_events_between(
+        self,
+        api: BaseYasnoApi,
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
+    ) -> list[CalendarEvent]:
+        """Get outage events within the date range for provided API."""
+        events = api.get_events_between(start_date, end_date)
+        filtered_events = [
+            event for event in events if event.event_type != OutageEventType.NOT_PLANNED
+        ]
+        calendar_events = [
+            self._build_calendar_event(event) for event in filtered_events
+        ]
+        return sorted(calendar_events, key=lambda e: e.start)
 
     def get_planned_events_between(
         self,
@@ -319,23 +348,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Get all planned events (filtering out NOT_PLANNED)."""
-        events = self.api.planned.get_events_between(start_date, end_date)
-        # Filter out NOT_PLANNED events
-        filtered_events = [
-            event for event in events if event.event_type != OutageEventType.NOT_PLANNED
-        ]
-        planned_events = [
-            self._build_calendar_event(event) for event in filtered_events
-        ]
-        return sorted(planned_events, key=lambda e: e.start)
-
-    def get_probable_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
-        """Get the probable outage event at a given time."""
-        event = self.api.probable.get_current_event(at)
-        # Filter out NOT_PLANNED events
-        if not event or event.event_type == OutageEventType.NOT_PLANNED:
-            return None
-        return self._build_calendar_event(event)
+        return self.get_events_between(self.api.planned, start_date, end_date)
 
     def get_probable_events_between(
         self,
@@ -343,16 +356,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Get all probable outage events within the date range."""
-        events = self.api.probable.get_events_between(start_date, end_date)
-        # Filter out NOT_PLANNED events
-        filtered_events = [
-            event for event in events if event.event_type != OutageEventType.NOT_PLANNED
-        ]
-        # Transform to CalendarEvents
-        probable_events = [
-            self._build_calendar_event(event) for event in filtered_events
-        ]
-        return sorted(probable_events, key=lambda e: e.start)
+        return self.get_events_between(self.api.probable, start_date, end_date)
 
     def _build_calendar_event(
         self,

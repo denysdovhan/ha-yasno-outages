@@ -2,6 +2,7 @@
 
 import datetime
 import logging
+from abc import ABC, abstractmethod
 
 import aiohttp
 
@@ -11,7 +12,7 @@ from .models import OutageEvent, OutageEventType, OutageSlot, OutageSource
 LOGGER = logging.getLogger(__name__)
 
 
-class BaseYasnoApi:
+class BaseYasnoApi(ABC):
     """Base class for Yasno API interactions."""
 
     def __init__(
@@ -115,8 +116,8 @@ class BaseYasnoApi:
                 continue
         return parsed_slots
 
+    @staticmethod
     def _parse_slots_to_events(
-        self,
         slots: list[OutageSlot],
         date: datetime.datetime,
         source: OutageSource,
@@ -125,8 +126,8 @@ class BaseYasnoApi:
         events = []
 
         for slot in slots:
-            event_start = self.minutes_to_time(slot.start, date)
-            event_end = self.minutes_to_time(slot.end, date)
+            event_start = BaseYasnoApi.minutes_to_time(slot.start, date)
+            event_end = BaseYasnoApi.minutes_to_time(slot.end, date)
 
             events.append(
                 OutageEvent(
@@ -138,3 +139,15 @@ class BaseYasnoApi:
             )
 
         return events
+
+    @abstractmethod
+    def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
+        """Return outage event that is active at provided time."""
+
+    @abstractmethod
+    def get_events_between(
+        self,
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
+    ) -> list[OutageEvent]:
+        """Return outage events that intersect provided range."""
