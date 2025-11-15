@@ -35,15 +35,21 @@ This repository is a Home Assistant custom integration providing electricity out
 
 - `translations/` - folder containing translations (en.json, uk.json).
 - `__init__.py` - init file of the integration, creates entries, sets up platforms, handles entry reload/unload. Stores runtime data (API, coordinator, integration) in `entry.runtime_data` as a `YasnoOutagesData` dataclass.
-- `api.py` - a file containing an API class for fetching data. Should be Home Assistant agnostic, since in the future it's planned to move it to the separate package. Uses `aiohttp` for async HTTP requests.
+- `api/` - package containing API classes for fetching data. Should be Home Assistant agnostic. Uses `aiohttp` for async HTTP requests.
+  - `__init__.py` - exports `YasnoApi` facade providing unified access to planned and probable APIs.
+  - `models.py` - data models: `OutageEvent`, `OutageSlot`, `OutageEventType` enum (DEFINITE, NOT_PLANNED), `OutageSource` enum (PLANNED, PROBABLE).
+  - `base.py` - `BaseYasnoApi` with shared functionality (regions, providers, slot parsing).
+  - `planned.py` - `PlannedOutagesApi` for fetching planned outages (today/tomorrow).
+  - `probable.py` - `ProbableOutagesApi` for fetching probable outages (weekly recurring).
+  - `const.py` - API-specific constants (endpoints, status values).
 - `config_flow.py` - a file describing a flow to create new entries and options flow for reconfiguration. Multi-step flow: region → service (DSO) → group.
 - `const.py` - a file containing constants used throughout the project. Use `homeassistant.const` for commonly used constants.
-- `coordinator.py` - a data fetching coordinator (`DataUpdateCoordinator`). Fetches data from the API, transforms it to the proper format, and passes them to sensors and calendar entities. Polls API every 15 minutes. Takes API instance as a parameter.
+- `coordinator.py` - a data fetching coordinator (`DataUpdateCoordinator`). Fetches data from API facade, filters NOT_PLANNED events, transforms to CalendarEvents. Polls API every 15 minutes. Takes API instance as a parameter.
 - `data.py` - defines runtime data types: `YasnoOutagesData` dataclass holding API, coordinator, and integration instances, and `YasnoOutagesConfigEntry` type alias for typed config entries.
 - `entity.py` - a base entity class (`YasnoOutagesEntity`) that is used as a template when creating sensors and calendar. Contains important `DeviceInfo` joining different entities into a single device.
 - `repairs.py` - repair flow for detecting and notifying users about deprecated configuration (API v1 → v2 migration).
 - `manifest.json` - a file declaring an integration manifest.
-- `sensor.py` - declares sensors using entity descriptors. Implements five sensors: electricity state (enum), schedule updated timestamp, next outage, next possible outage, next connectivity. Retrieves coordinator from `entry.runtime_data.coordinator`.
+- `sensor.py` - declares sensors using entity descriptors. Implements sensors: electricity state (enum), schedule updated timestamp, next planned outage, next probable outage, next connectivity. Retrieves coordinator from `entry.runtime_data.coordinator`.
 - `calendar.py` - implements calendar entity showing outage events in a timeline format. Retrieves coordinator from `entry.runtime_data.coordinator`.
 
 <instruction>Fill in by LLM assistant memory</instruction>
@@ -71,7 +77,15 @@ Documentation: https://developers.home-assistant.io/docs/integration_fetching_da
 
 ### Decouple API Data from Coordinator
 
-Coordinator should not rely on API response structure. Instead, transform data into plain Python objects (e.g., dataclasses) on API class level, so coordinator only calls API methods and works with stable data structures.
+Coordinator should not rely on API response structure. API layer transforms raw JSON into typed Python objects (`OutageEvent`, `OutageSlot` dataclasses) before returning to coordinator.
+
+API architecture:
+
+- `YasnoApi` facade exposes `planned` and `probable` properties
+- Each API (`PlannedOutagesApi`, `ProbableOutagesApi`) inherits from `BaseYasnoApi`
+- APIs return `OutageEvent` objects with `source` field (OutageSource.PLANNED or PROBABLE)
+- Coordinator filters NOT_PLANNED events and transforms to CalendarEvents
+- API returns all events as-is; filtering happens at coordinator level
 
 ## API
 
@@ -81,13 +95,13 @@ External API:
 - Planned Outages:
   - Path: `https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages`
   - Example: `https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/25/dsos/902/planned-outages`
-- Probable Outages (not implemented yet):
+- Probable Outages:
   - Path: `https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages?regionId={region_id}&dsoId={dso_id}`
   - Example: `https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages?regionId=25&dsoId=902`
 
 All HTTP requests use `aiohttp` (async, non-blocking). No authentication required.
 
-For now, only planned outages are implemented. Probable outages support is planned in the future.
+Both planned and probable outages are implemented.
 
 ### Planned Outages
 
@@ -179,13 +193,13 @@ Here are types of statuses:
 - `WaitingForSchedule` - slots are up for a changes. Created events, but they may be changed.
 - `EmergencyShutdowns` - slots should be displayed in the calendar, but they are not active. Emmergency is happening.
 
-### Probable Outages (not implemented yet)
+### Probable Outages
 
-Probable outages reflect the permanent schedule, that is active at all time. This integration should create recurring events for slots described in specificified group.
+Probable outages reflect the permanent schedule, that is active at all time. This integration creates recurring events for DEFINITE slots described in specified group.
 
 Planned outages is a specific clarification of how schedule looks today and tomorrow. Planned outages are kind of subset of probable outages.
 
-Probable outages create a separate calendar entity describing only probable outages, skipping the days described in `today` and `tomorrow` properties of planned outages. Therefore, probable outages calendar should not contain any events for days described in planned outages.
+Calendar entity shows both planned and probable events in a unified timeline. Events are distinguished by source (OutageSource.PLANNED/PROBABLE).
 
 Here is an example of response:
 
@@ -252,7 +266,7 @@ Here is an example of response:
 
 Response contains region and service provider. `groups` property describes all available groups. Each group describes slots for each day of the week (from 0 to 6, meaning from monday to sunday). Each day has time slots for events with the same structure as planned outages.
 
-`Definite` status for probable outages should create and event for probable outages.
+`Definite` slots for probable outages create recurring weekly events. API uses `dateutil.rrule` for generating recurrences.
 
 ## Workflow
 
@@ -261,13 +275,19 @@ Response contains region and service provider. `groups` property describes all a
 This project is developed from Devcontainer described in `.devcontainer.json` file.
 
 - **Adding/changing data fetching**
-  - Extend `api.py` first; return Python objects (dicts/dataclasses) independent of raw JSON.
-  - Use/extend `coordinator.py` to compute derived values (current state, next outage times).
+  - Extend API classes in `api/` package first; return Python objects (OutageEvent dataclasses) independent of raw JSON.
+  - API should return all data as-is without filtering (e.g., return both DEFINITE and NOT_PLANNED events)
+  - Use/extend `coordinator.py` to filter NOT_PLANNED events and compute derived values (current state, next outage times).
   - Keep it simple: coordinator stored directly in `entry.runtime_data`.
-  - CalendarEvent construction is centralized via coordinator `_build_calendar_event(source, event)`.
+  - CalendarEvent construction centralized via coordinator `_build_calendar_event(event)`.
   - `_build_calendar_event` never returns `None`; callers must guard `None`/irrelevant events.
-  - Event `uid` is prefixed by source: `planned-<iso>` or `probable-<iso>`.
-  - Summaries come from `event_summary_map` property with translation fallbacks.
+  - Event `uid` format: `{source.value}-{start.isoformat()}` (e.g., `planned-2025-11-15T07:30:00+02:00`)
+  - OutageSource enum (in models.py) distinguishes PLANNED vs PROBABLE events
+  - OutageEvent.source field indicates calendar origin (OutageSource enum)
+  - Summaries come from `event_summary_map` property with translation fallbacks
+  - CalendarEvent.description contains event.event_type.value for state mapping
+  - State and connectivity determined only by planned events (settled schedule)
+  - Horizon constants (`PLANNED_OUTAGE_LOOKAHEAD`, `PROBABLE_OUTAGE_LOOKAHEAD`) in `const.py`
 - **Entities and platforms**
   - Add new sensor descriptors in `sensor.py` (use `translation_key`).
   - Unique ID format: `{entry_id}-{group}-{sensor_key}`; do not hardcode unique IDs in config flow.
