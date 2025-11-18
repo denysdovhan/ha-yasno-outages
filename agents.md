@@ -279,7 +279,7 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - API should return all data as-is without filtering (e.g., return both DEFINITE and NOT_PLANNED events)
   - Use/extend `coordinator.py` to filter NOT_PLANNED events and compute derived values (current state, next outage times).
   - Keep it simple: coordinator stored directly in `entry.runtime_data`.
-  - CalendarEvent construction centralized via coordinator `_build_calendar_event(event)`.
+  - CalendarEvent conversion happens in `calendar.py` via `_build_calendar_event(event)`.
   - `_build_calendar_event` never returns `None`; callers must guard `None`/irrelevant events.
   - Event `uid` format: `{source.value}-{start.isoformat()}` (e.g., `planned-2025-11-15T07:30:00+02:00`)
   - OutageSource enum (in models.py) distinguishes PLANNED vs PROBABLE events

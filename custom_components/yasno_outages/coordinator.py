@@ -6,7 +6,6 @@ import datetime
 import logging
 from typing import TYPE_CHECKING
 
-from homeassistant.components.calendar import CalendarEvent
 from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
@@ -50,6 +49,7 @@ LOGGER = logging.getLogger(__name__)
 
 def is_outage_event(event: OutageEvent | None) -> bool:
     """Return True for outage events that should create calendar entries."""
+    LOGGER.debug("Checking if event is an outage: %s", event)
     return bool(event and event.event_type != OutageEventType.NOT_PLANNED)
 
 
@@ -270,7 +270,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the next planned outage time."""
         next_event = self.api.planned.get_next_event(
             dt_utils.now(),
-            PLANNED_OUTAGE_LOOKAHEAD,
+            lookahead_days=PLANNED_OUTAGE_LOOKAHEAD,
         )
         if not is_outage_event(next_event):
             return None
@@ -282,7 +282,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the next probable outage time."""
         next_event = self.api.probable.get_next_event(
             dt_utils.now(),
-            PROBABLE_OUTAGE_LOOKAHEAD,
+            lookahead_days=PROBABLE_OUTAGE_LOOKAHEAD,
         )
         if not is_outage_event(next_event):
             return None
@@ -300,37 +300,34 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         current_event = self.get_planned_event_at(dt_utils.now())
         current_state = self._event_to_state(current_event)
 
-        # If currently in outage state, return when it ends
-        if current_state == STATE_OUTAGE:
-            return current_event.end if current_event else None
+        if current_state == STATE_OUTAGE and current_event:
+            return current_event.end
 
-        # Otherwise, return the end of the next outage
         next_event = self.api.planned.get_next_event(
             dt_utils.now(),
-            PLANNED_OUTAGE_LOOKAHEAD,
+            lookahead_days=PLANNED_OUTAGE_LOOKAHEAD,
         )
         if not is_outage_event(next_event):
             return None
-        calendar_event = self._build_calendar_event(next_event)
-        LOGGER.debug("Next connectivity: %s", calendar_event)
-        return calendar_event.end
+        LOGGER.debug("Next connectivity event: %s", next_event)
+        return next_event.end
 
     def get_event_at(
         self,
         api: BaseYasnoApi,
         at: datetime.datetime,
-    ) -> CalendarEvent | None:
+    ) -> OutageEvent | None:
         """Get an outage event at a given time from provided API."""
         event = api.get_current_event(at)
         if not is_outage_event(event):
             return None
-        return self._build_calendar_event(event)
+        return event
 
-    def get_planned_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
+    def get_planned_event_at(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the planned event at a given time."""
         return self.get_event_at(self.api.planned, at)
 
-    def get_probable_event_at(self, at: datetime.datetime) -> CalendarEvent | None:
+    def get_probable_event_at(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the probable outage event at a given time."""
         return self.get_event_at(self.api.probable, at)
 
@@ -339,20 +336,17 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         api: BaseYasnoApi,
         start_date: datetime.datetime,
         end_date: datetime.datetime,
-    ) -> list[CalendarEvent]:
+    ) -> list[OutageEvent]:
         """Get outage events within the date range for provided API."""
         events = api.get_events_between(start_date, end_date)
         filtered_events = [event for event in events if is_outage_event(event)]
-        calendar_events = [
-            self._build_calendar_event(event) for event in filtered_events
-        ]
-        return sorted(calendar_events, key=lambda e: e.start)
+        return sorted(filtered_events, key=lambda event: event.start)
 
     def get_planned_events_between(
         self,
         start_date: datetime.datetime,
         end_date: datetime.datetime,
-    ) -> list[CalendarEvent]:
+    ) -> list[OutageEvent]:
         """Get all planned events (filtering out NOT_PLANNED)."""
         return self.get_events_between(self.api.planned, start_date, end_date)
 
@@ -360,37 +354,17 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self,
         start_date: datetime.datetime,
         end_date: datetime.datetime,
-    ) -> list[CalendarEvent]:
+    ) -> list[OutageEvent]:
         """Get all probable outage events within the date range."""
         return self.get_events_between(self.api.probable, start_date, end_date)
 
-    # TODO: ideally handle OutageEvent in coordinator and convert inside entity.
-    def _build_calendar_event(
-        self,
-        event: OutageEvent,
-    ) -> CalendarEvent:
-        """Transform an outage event into a CalendarEvent."""
-        source = event.source or OutageSource.PLANNED
-        summary = self.event_summary_map.get(source, "Outage")
-
-        output = CalendarEvent(
-            summary=summary,
-            start=event.start,
-            end=event.end,
-            description=event.event_type.value,
-            uid=f"{source.value}-{event.start.isoformat()}",
-        )
-        LOGGER.debug("Calendar Event: %s", output)
-        return output
-
     # TODO: could be replaced with map lookup later.
-    def _event_to_state(self, event: CalendarEvent | None) -> str | None:
+    def _event_to_state(self, event: OutageEvent | None) -> str | None:
         if not event:
             return STATE_NORMAL
 
-        # Map event types to states using description field
-        if event.description == OutageEventType.DEFINITE.value:
+        if event.event_type == OutageEventType.DEFINITE:
             return STATE_OUTAGE
 
-        LOGGER.warning("Unknown event type: %s", event.description)
+        LOGGER.warning("Unknown event type: %s", event.event_type)
         return STATE_NORMAL

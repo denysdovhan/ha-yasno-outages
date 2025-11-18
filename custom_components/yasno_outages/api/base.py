@@ -81,6 +81,7 @@ class BaseYasnoApi(ABC):
     def get_next_event(
         self,
         at: datetime.datetime,
+        event_type: OutageEventType = OutageEventType.DEFINITE,
         lookahead_days: int = 1,
     ) -> OutageEvent | None:
         """Return outage event that starts after provided time."""
@@ -89,9 +90,13 @@ class BaseYasnoApi(ABC):
             self.get_events_between(at, horizon),
             key=lambda event: event.start,
         )
+
         for event in events:
+            if event.event_type != event_type:
+                continue
             if event.start > at:
                 return event
+
         return None
 
     @staticmethod

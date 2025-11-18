@@ -27,6 +27,11 @@ PROBABLE_OUTAGE_LOOKAHEAD = 7  # days
 STATE_NORMAL: Final = "normal"
 STATE_OUTAGE: Final = "outage"
 
+# Attribute keys
+ATTR_EVENT_TYPE: Final = "event_type"
+ATTR_EVENT_START: Final = "event_start"
+ATTR_EVENT_END: Final = "event_end"
+
 # Status states
 STATE_STATUS_SCHEDULE_APPLIES: Final = "schedule_applies"
 STATE_STATUS_WAITING_FOR_SCHEDULE: Final = "waiting_for_schedule"

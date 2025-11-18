@@ -9,11 +9,31 @@ from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_utils
 
+from .api import OutageEvent
+from .api.models import OutageSource
 from .coordinator import YasnoOutagesCoordinator
 from .data import YasnoOutagesConfigEntry
 from .entity import YasnoOutagesEntity
 
 LOGGER = logging.getLogger(__name__)
+
+
+def to_calendar_event(
+    coordinator: YasnoOutagesCoordinator,
+    event: OutageEvent,
+) -> CalendarEvent:
+    """Convert OutageEvent into Home Assistant CalendarEvent."""
+    source = event.source or OutageSource.PLANNED
+    summary = coordinator.event_summary_map.get(source, "Outage")
+    calendar_event = CalendarEvent(
+        summary=summary,
+        start=event.start,
+        end=event.end,
+        description=event.event_type.value,
+        uid=f"{source.value}-{event.start.isoformat()}",
+    )
+    LOGGER.debug("Calendar Event: %s", calendar_event)
+    return calendar_event
 
 
 async def async_setup_entry(
@@ -56,7 +76,10 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
     def event(self) -> CalendarEvent | None:
         """Return the current or next upcoming event or None."""
         LOGGER.debug("Getting planned event at now")
-        return self.coordinator.get_planned_event_at(dt_utils.now())
+        outage_event = self.coordinator.get_planned_event_at(dt_utils.now())
+        if not outage_event:
+            return None
+        return to_calendar_event(self.coordinator, outage_event)
 
     async def async_get_events(
         self,
@@ -68,7 +91,8 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
         LOGGER.debug(
             'Getting planned events between "%s" -> "%s"', start_date, end_date
         )
-        return self.coordinator.get_planned_events_between(start_date, end_date)
+        events = self.coordinator.get_planned_events_between(start_date, end_date)
+        return [to_calendar_event(self.coordinator, event) for event in events]
 
 
 class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
@@ -95,7 +119,10 @@ class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
     def event(self) -> CalendarEvent | None:
         """Return the current or next upcoming probable event or None."""
         LOGGER.debug("Getting probable event at now")
-        return self.coordinator.get_probable_event_at(dt_utils.now())
+        outage_event = self.coordinator.get_probable_event_at(dt_utils.now())
+        if not outage_event:
+            return None
+        return to_calendar_event(self.coordinator, outage_event)
 
     async def async_get_events(
         self,
@@ -107,4 +134,5 @@ class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
         LOGGER.debug(
             'Getting probable events between "%s" -> "%s"', start_date, end_date
         )
-        return self.coordinator.get_probable_events_between(start_date, end_date)
+        events = self.coordinator.get_probable_events_between(start_date, end_date)
+        return [to_calendar_event(self.coordinator, event) for event in events]
