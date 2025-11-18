@@ -48,6 +48,11 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
+def is_outage_event(event: OutageEvent | None) -> bool:
+    """Return True for outage events that should create calendar entries."""
+    return bool(event and event.event_type != OutageEventType.NOT_PLANNED)
+
+
 def simplify_provider_name(provider_name: str) -> str:
     """Simplify provider names for cleaner display in device names."""
     # Replace long DTEK provider names with just "ДТЕК"
@@ -267,7 +272,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             dt_utils.now(),
             PLANNED_OUTAGE_LOOKAHEAD,
         )
-        if not next_event or next_event.event_type == OutageEventType.NOT_PLANNED:
+        if not is_outage_event(next_event):
             return None
         LOGGER.debug("Next planned outage: %s", next_event)
         return next_event.start
@@ -279,7 +284,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             dt_utils.now(),
             PROBABLE_OUTAGE_LOOKAHEAD,
         )
-        if not next_event or next_event.event_type == OutageEventType.NOT_PLANNED:
+        if not is_outage_event(next_event):
             return None
         LOGGER.debug("Next probable outage: %s", next_event)
         return next_event.start
@@ -304,7 +309,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             dt_utils.now(),
             PLANNED_OUTAGE_LOOKAHEAD,
         )
-        if not next_event or next_event.event_type == OutageEventType.NOT_PLANNED:
+        if not is_outage_event(next_event):
             return None
         calendar_event = self._build_calendar_event(next_event)
         LOGGER.debug("Next connectivity: %s", calendar_event)
@@ -317,7 +322,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     ) -> CalendarEvent | None:
         """Get an outage event at a given time from provided API."""
         event = api.get_current_event(at)
-        if not event or event.event_type == OutageEventType.NOT_PLANNED:
+        if not is_outage_event(event):
             return None
         return self._build_calendar_event(event)
 
@@ -337,9 +342,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     ) -> list[CalendarEvent]:
         """Get outage events within the date range for provided API."""
         events = api.get_events_between(start_date, end_date)
-        filtered_events = [
-            event for event in events if event.event_type != OutageEventType.NOT_PLANNED
-        ]
+        filtered_events = [event for event in events if is_outage_event(event)]
         calendar_events = [
             self._build_calendar_event(event) for event in filtered_events
         ]
