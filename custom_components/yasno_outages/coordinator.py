@@ -274,23 +274,15 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     @property
     def next_probable_outage(self) -> datetime.date | datetime.datetime | None:
-        """
-        Get the next probable outage time.
-
-        This is a forecast based on weekly recurring patterns.
-        """
-        now = dt_utils.now()
-        probable_events = self.get_probable_events_between(
-            now,
-            now + datetime.timedelta(days=PROBABLE_OUTAGE_LOOKAHEAD),
+        """Get the next probable outage time."""
+        next_event = self.api.probable.get_next_event(
+            dt_utils.now(),
+            PROBABLE_OUTAGE_LOOKAHEAD,
         )
-
-        # Find first event that starts after now
-        for event in probable_events:
-            if event.start > now:
-                return event.start
-
-        return None
+        if not next_event or next_event.event_type == OutageEventType.NOT_PLANNED:
+            return None
+        LOGGER.debug("Next probable outage: %s", next_event)
+        return next_event.start
 
     @property
     def next_connectivity(self) -> datetime.date | datetime.datetime | None:
