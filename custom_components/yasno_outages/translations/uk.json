@@ -58,8 +58,11 @@
   },
   "entity": {
     "calendar": {
-      "calendar": {
-        "name": "Графік відключень"
+      "planned_outages": {
+        "name": "Заплановані відключення"
+      },
+      "probable_outages": {
+        "name": "Імовірні відключення"
       }
     },
     "sensor": {
@@ -74,7 +77,10 @@
         "name": "Графік оновлено"
       },
       "next_planned_outage": {
-        "name": "Наступне планове відключення"
+        "name": "Наступне заплановане відключення"
+      },
+      "next_probable_outage": {
+        "name": "Наступне імовірне відключення"
       },
       "next_connectivity": {
         "name": "Наступна заживленість"
@@ -98,7 +104,8 @@
     }
   },
   "common": {
-    "electricity_outage": "Відключення"
+    "planned_electricity_outage": "Відключення",
+    "probable_electricity_outage": "Імовірне відключення"
   },
   "issues": {
     "missing_config": {

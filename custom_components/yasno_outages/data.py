@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.loader import Integration
 
-    from .api import YasnoOutagesApi
+    from .api import YasnoApi
     from .coordinator import YasnoOutagesCoordinator
 
 
@@ -20,6 +20,6 @@ type YasnoOutagesConfigEntry = ConfigEntry[YasnoOutagesData]
 class YasnoOutagesData:
     """Data for the Yasno Outages integration."""
 
-    api: YasnoOutagesApi
+    api: YasnoApi
     coordinator: YasnoOutagesCoordinator
     integration: Integration

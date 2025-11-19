@@ -10,11 +10,15 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
 )
 from homeassistant.components.sensor.const import SensorDeviceClass
-from homeassistant.const import EntityCategory
+from homeassistant.const import STATE_UNKNOWN, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .const import (
+    ATTR_EVENT_END,
+    ATTR_EVENT_START,
+    ATTR_EVENT_TYPE,
     STATE_NORMAL,
     STATE_OUTAGE,
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
@@ -50,6 +54,13 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         icon="mdi:calendar-remove",
         device_class=SensorDeviceClass.TIMESTAMP,
         val_func=lambda coordinator: coordinator.next_planned_outage,
+    ),
+    YasnoOutagesSensorDescription(
+        key="next_probable_outage",
+        translation_key="next_probable_outage",
+        icon="mdi:calendar-question",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        val_func=lambda coordinator: coordinator.next_probable_outage,
     ),
     YasnoOutagesSensorDescription(
         key="next_connectivity",
@@ -137,25 +148,10 @@ class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
         """Return additional attributes for the electricity sensor."""
         if self.entity_description.key != "electricity":
             return None
-
         # Get the current event to provide additional context
-        current_event = self.coordinator.get_current_event()
-
-        if not current_event:
-            return {
-                "event_type": "none",
-                "event_start": None,
-                "event_end": None,
-            }
-
-        # Get the event details from the coordinator
-        event_dict = current_event.as_dict()
-        event_type = event_dict.get("description", "unknown")  # Original summary
-        event_start = event_dict.get("start")
-        event_end = event_dict.get("end")
-
+        event = self.coordinator.get_planned_event_at(dt_util.now())
         return {
-            "event_type": event_type,
-            "event_start": event_start,
-            "event_end": event_end,
+            ATTR_EVENT_TYPE: event.event_type.value if event else STATE_UNKNOWN,
+            ATTR_EVENT_START: event.start.isoformat() if event else None,
+            ATTR_EVENT_END: event.end.isoformat() if event else None,
         }

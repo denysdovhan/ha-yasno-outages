@@ -17,36 +17,33 @@ PROVIDER_DTEK_FULL: Final = "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖ�
 PROVIDER_DTEK_SHORT: Final = "ДТЕК"
 
 # Consts
-UPDATE_INTERVAL: Final = 15
+UPDATE_INTERVAL: Final = 15  # minutes
+
+# Horizon constants for event lookahead
+PLANNED_OUTAGE_LOOKAHEAD = 1  # day
+PROBABLE_OUTAGE_LOOKAHEAD = 7  # days
 
 # Values
 STATE_NORMAL: Final = "normal"
 STATE_OUTAGE: Final = "outage"
+
+# Attribute keys
+ATTR_EVENT_TYPE: Final = "event_type"
+ATTR_EVENT_START: Final = "event_start"
+ATTR_EVENT_END: Final = "event_end"
 
 # Status states
 STATE_STATUS_SCHEDULE_APPLIES: Final = "schedule_applies"
 STATE_STATUS_WAITING_FOR_SCHEDULE: Final = "waiting_for_schedule"
 STATE_STATUS_EMERGENCY_SHUTDOWNS: Final = "emergency_shutdowns"
 
-# Event names
-EVENT_NAME_OUTAGE: Final = "Definite"
-
-# API Endpoints
-REGIONS_ENDPOINT: Final = (
-    "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/regions"
-)
-PLANNED_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages"
-
-# API Status values
-API_STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
-API_STATUS_WAITING_FOR_SCHEDULE: Final = "WaitingForSchedule"
-API_STATUS_EMERGENCY_SHUTDOWNS: Final = "EmergencyShutdowns"
-
-# API Block names
-API_KEY_TODAY: Final = "today"
-API_KEY_TOMORROW: Final = "tomorrow"
-API_KEY_STATUS: Final = "status"
-API_KEY_DATE: Final = "date"
-
 # Keys
-TRANSLATION_KEY_EVENT_OUTAGE: Final = f"component.{DOMAIN}.common.electricity_outage"
+TRANSLATION_KEY_EVENT_PLANNED_OUTAGE: Final = (
+    f"component.{DOMAIN}.common.planned_electricity_outage"
+)
+TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE: Final = (
+    f"component.{DOMAIN}.common.probable_electricity_outage"
+)
+# Text fallbacks
+PLANNED_OUTAGE_TEXT_FALLBACK: Final = "Planned Outage"
+PROBABLE_OUTAGE_TEXT_FALLBACK: Final = "Probable Outage"
