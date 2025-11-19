@@ -18,6 +18,7 @@ from homeassistant.helpers.selector import (
 
 from .api import YasnoApi
 from .const import (
+    CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_PROVIDER,
     CONF_REGION,
@@ -106,6 +107,12 @@ def build_group_schema(
                     translation_key="group",
                 ),
             ),
+            vol.Required(
+                CONF_FILTER_PROBABLE,
+                default=get_config_value(
+                    config_entry, CONF_FILTER_PROBABLE, default=True
+                ),
+            ): bool,
         },
     )
 

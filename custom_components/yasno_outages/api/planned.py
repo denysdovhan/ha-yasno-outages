@@ -60,6 +60,26 @@ class PlannedOutagesApi(BaseYasnoApi):
             return None
         return self.planned_outages_data[self.group]
 
+    def get_planned_dates(self) -> list[datetime.date]:
+        """Get dates for which planned schedule is available."""
+        dates = []
+        group_data = self.get_planned_outages_data()
+        if not group_data:
+            return dates
+
+        for day_key in (API_KEY_TODAY, API_KEY_TOMORROW):
+            if day_key not in group_data:
+                continue
+
+            day_data = group_data[day_key]
+            if API_KEY_DATE not in day_data:
+                continue
+
+            day_date = datetime.datetime.fromisoformat(day_data[API_KEY_DATE]).date()
+            dates.append(day_date)
+
+        return dates
+
     def _parse_day_schedule(
         self,
         day_data: dict,

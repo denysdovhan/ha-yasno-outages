@@ -17,10 +17,12 @@
       "group": {
         "title": "Налаштування Yasno Відключення",
         "data": {
-          "group": "Оберіть свою групу:"
+          "group": "Оберіть свою групу:",
+          "filter_probable": "Приховати ймовірні відключення для запланованих днів"
         },
         "data_description": {
-          "group": "Знайдіть свою групу на: https://static.yasno.ua/kyiv/outages"
+          "group": "Знайдіть свою групу на: https://static.yasno.ua/kyiv/outages",
+          "filter_probable": "Приховує у календарі ймовірні відключення для днів, коли доступний плановий графік"
         }
       }
     }
@@ -42,7 +44,8 @@
       "group": {
         "title": "Налаштування Yasno Відключення",
         "data": {
-          "group": "Оберіть свою групу:"
+          "group": "Оберіть свою групу:",
+          "filter_probable": "Приховати ймовірні відключення, коли доступний плановий графік"
         },
         "data_description": {
           "group": "Знайдіть свою групу на: https://static.yasno.ua/kyiv/outages"
