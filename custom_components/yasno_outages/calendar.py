@@ -173,6 +173,12 @@ class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
         outage_event = self.coordinator.get_probable_event_at(dt_utils.now())
         if not outage_event:
             return None
+
+        if self.coordinator.filter_probable:
+            planned_dates = self.coordinator.get_planned_dates()
+            if outage_event.start.date() in planned_dates:
+                return None
+
         return to_calendar_event(self.coordinator, outage_event)
 
     async def async_get_events(
