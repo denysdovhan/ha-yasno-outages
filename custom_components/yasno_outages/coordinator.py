@@ -23,6 +23,7 @@ from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
     CONF_REGION,
+    CONF_STATUS_ALL_DAY_EVENTS,
     DOMAIN,
     PLANNED_OUTAGE_LOOKAHEAD,
     PLANNED_OUTAGE_TEXT_FALLBACK,
@@ -35,8 +36,14 @@ from .const import (
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
+    STATUS_EMERGENCY_SHUTDOWNS_TEXT_FALLBACK,
+    STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK,
+    STATUS_WAITING_FOR_SCHEDULE_TEXT_FALLBACK,
     TRANSLATION_KEY_EVENT_PLANNED_OUTAGE,
     TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE,
+    TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS,
+    TRANSLATION_KEY_STATUS_SCHEDULE_APPLIES,
+    TRANSLATION_KEY_STATUS_WAITING_FOR_SCHEDULE,
     UPDATE_INTERVAL,
 )
 
@@ -114,6 +121,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.filter_probable = config_entry.options.get(
             CONF_FILTER_PROBABLE,
             config_entry.data.get(CONF_FILTER_PROBABLE, True),
+        )
+        self.status_all_day_events = config_entry.options.get(
+            CONF_STATUS_ALL_DAY_EVENTS,
+            config_entry.data.get(CONF_STATUS_ALL_DAY_EVENTS, True),
         )
 
         if not self.region:
@@ -222,6 +233,24 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             ),
             OutageSource.PROBABLE: self.translations.get(
                 TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE, PROBABLE_OUTAGE_TEXT_FALLBACK
+            ),
+        }
+
+    @property
+    def status_event_summary_map(self) -> dict[str, str]:
+        """Return localized summaries for planned status events."""
+        return {
+            STATE_STATUS_SCHEDULE_APPLIES: self.translations.get(
+                TRANSLATION_KEY_STATUS_SCHEDULE_APPLIES,
+                STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK,
+            ),
+            STATE_STATUS_WAITING_FOR_SCHEDULE: self.translations.get(
+                TRANSLATION_KEY_STATUS_WAITING_FOR_SCHEDULE,
+                STATUS_WAITING_FOR_SCHEDULE_TEXT_FALLBACK,
+            ),
+            STATE_STATUS_EMERGENCY_SHUTDOWNS: self.translations.get(
+                TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS,
+                STATUS_EMERGENCY_SHUTDOWNS_TEXT_FALLBACK,
             ),
         }
 
