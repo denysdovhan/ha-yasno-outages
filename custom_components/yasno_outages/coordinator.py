@@ -371,12 +371,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         end_date: datetime.datetime,
     ) -> list[OutageEvent]:
         """Get all probable outage events within the date range."""
-        events = self.get_events_between(self.api.probable, start_date, end_date)
+        return self.get_events_between(self.api.probable, start_date, end_date)
 
-        if self.filter_probable:
-            planned_dates = self.api.planned.get_planned_dates()
-            return [
-                event for event in events if event.start.date() not in planned_dates
-            ]
-
-        return events
+    def get_planned_dates(self) -> list[datetime.date]:
+        """Get dates with planned outages."""
+        return self.api.planned.get_planned_dates()

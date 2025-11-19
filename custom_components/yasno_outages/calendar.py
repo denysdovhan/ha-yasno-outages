@@ -135,4 +135,16 @@ class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
             'Getting probable events between "%s" -> "%s"', start_date, end_date
         )
         events = self.coordinator.get_probable_events_between(start_date, end_date)
+
+        # Filter out probable events on days with planned outages if configured
+        if self.coordinator.filter_probable:
+            planned_dates = self.coordinator.get_planned_dates()
+            LOGGER.debug(
+                "Filtering out probable events on planned outage dates: %s",
+                planned_dates,
+            )
+            events = [
+                event for event in events if event.start.date() not in planned_dates
+            ]
+
         return [to_calendar_event(self.coordinator, event) for event in events]
