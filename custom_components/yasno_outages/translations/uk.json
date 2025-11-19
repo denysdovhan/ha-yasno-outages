@@ -112,7 +112,10 @@
   },
   "common": {
     "planned_electricity_outage": "Відключення",
-    "probable_electricity_outage": "Імовірне відключення"
+    "probable_electricity_outage": "Імовірне відключення",
+    "status_schedule_applies": "Графік діє",
+    "status_waiting_for_schedule": "Очікування графіка",
+    "status_emergency_shutdowns": "Аварійні відключення"
   },
   "issues": {
     "missing_config": {
