@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.helpers.translation import async_get_translations
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_utils
 
 from .api import OutageEvent, OutageEventType, YasnoApi
@@ -168,7 +168,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         # Resolve IDs if not already resolved
         if self.region_id is None or self.provider_id is None:
-            await self._resolve_ids()
+            try:
+                await self._resolve_ids()
+            except Exception as err:
+                msg = f"Failed to resolve IDs: {err}"
+                raise UpdateFailed(msg) from err
 
             # Update API with resolved IDs
             self.api = YasnoApi(
@@ -180,8 +184,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Fetch planned outages data
         try:
             await self.api.planned.fetch_data()
-        except Exception:
-            LOGGER.exception("Failed to fetch planned outages data")
+        except Exception as err:
+            msg = f"Failed to fetch planned outages data: {err}"
+            raise UpdateFailed(msg) from err
 
         # Fetch probable outages data
         try:
@@ -372,7 +377,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         at: datetime.datetime,
     ) -> OutageEvent | None:
         """Get an outage event at a given time from provided API."""
-        event = api.get_current_event(at)
+        try:
+            event = api.get_current_event(at)
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Failed to get current event", exc_info=True)
+            return None
+
         if not is_outage_event(event):
             return None
         return event
@@ -392,7 +402,17 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         end_date: datetime.datetime,
     ) -> list[OutageEvent]:
         """Get outage events within the date range for provided API."""
-        events = api.get_events_between(start_date, end_date)
+        try:
+            events = api.get_events_between(start_date, end_date)
+        except Exception:  # noqa: BLE001
+            LOGGER.warning(
+                'Failed to get events between "%s" -> "%s"',
+                start_date,
+                end_date,
+                exc_info=True,
+            )
+            return []
+
         filtered_events = [event for event in events if is_outage_event(event)]
         return sorted(filtered_events, key=lambda event: event.start)
 

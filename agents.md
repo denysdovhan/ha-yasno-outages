@@ -86,6 +86,7 @@ API architecture:
 - APIs return `OutageEvent` objects with `source` field (OutageSource.PLANNED or PROBABLE)
 - Coordinator filters NOT_PLANNED events and transforms to CalendarEvents
 - API returns all events as-is; filtering happens at coordinator level
+- Coordinator is responsible for catching/handling API parsing/runtime errors; API layers may raise on malformed data so coordinator must log+fallback
 
 ## API
 
