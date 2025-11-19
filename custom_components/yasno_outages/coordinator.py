@@ -300,6 +300,16 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return self.api.planned.get_updated_on()
 
     @property
+    def today_date(self) -> datetime.date | None:
+        """Get today's date."""
+        return self.api.planned.get_today_date()
+
+    @property
+    def tomorrow_date(self) -> datetime.date | None:
+        """Get tomorrow's date."""
+        return self.api.planned.get_tomorrow_date()
+
+    @property
     def status_today(self) -> str | None:
         """Get the status for today."""
         return STATUS_STATE_MAP.get(self.api.planned.get_status_today())

@@ -36,6 +36,24 @@ def to_calendar_event(
     return calendar_event
 
 
+def to_all_day_calendar_event(
+    coordinator: YasnoOutagesCoordinator,
+    date: datetime.date,
+    status: str,
+) -> CalendarEvent:
+    """Convert status into Home Assistant all-day CalendarEvent."""
+    summary = coordinator.status_event_summary_map.get(status, status)
+    calendar_event = CalendarEvent(
+        summary=summary,
+        start=date,
+        end=date + datetime.timedelta(days=1),
+        description=status,
+        uid=f"status-{date.isoformat()}",
+    )
+    LOGGER.debug("All-day event: %s", calendar_event)
+    return calendar_event
+
+
 async def async_setup_entry(
     hass: HomeAssistant,  # noqa: ARG001
     config_entry: YasnoOutagesConfigEntry,
@@ -90,14 +108,7 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
     ) -> CalendarEvent | None:
         """Create a status event for a specific date."""
         if date and status and start_date.date() <= date <= end_date.date():
-            summary = self.coordinator.status_event_summary_map.get(status, status)
-            return CalendarEvent(
-                summary=summary,
-                start=date,
-                end=date + datetime.timedelta(days=1),
-                description=status,
-                uid=f"status-{date.isoformat()}",
-            )
+            return to_all_day_calendar_event(self.coordinator, date, status)
         return None
 
     async def async_get_events(
@@ -116,21 +127,21 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
         ]
 
         if self.coordinator.status_all_day_events:
-            if event := self.get_all_day_status_event(
-                self.coordinator.api.planned.get_today_date(),
+            if today_status := self.get_all_day_status_event(
+                self.coordinator.today_date,
                 self.coordinator.status_today,
                 start_date,
                 end_date,
             ):
-                calendar_events.append(event)
+                calendar_events.append(today_status)
 
-            if event := self.get_all_day_status_event(
-                self.coordinator.api.planned.get_tomorrow_date(),
+            if tomorrow_status := self.get_all_day_status_event(
+                self.coordinator.tomorrow_date,
                 self.coordinator.status_tomorrow,
                 start_date,
                 end_date,
             ):
-                calendar_events.append(event)
+                calendar_events.append(tomorrow_status)
 
         return calendar_events
 
@@ -179,10 +190,6 @@ class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
         # Filter out probable events on days with planned outages if configured
         if self.coordinator.filter_probable:
             planned_dates = self.coordinator.get_planned_dates()
-            LOGGER.debug(
-                "Filtering out probable events on planned outage dates: %s",
-                planned_dates,
-            )
             events = [
                 event for event in events if event.start.date() not in planned_dates
             ]
