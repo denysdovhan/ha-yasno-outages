@@ -46,6 +46,18 @@ TRANSLATION_KEY_EVENT_PLANNED_OUTAGE: Final = (
 TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE: Final = (
     f"component.{DOMAIN}.common.probable_electricity_outage"
 )
+TRANSLATION_KEY_STATUS_SCHEDULE_APPLIES: Final = (
+    f"component.{DOMAIN}.common.status_schedule_applies"
+)
+TRANSLATION_KEY_STATUS_WAITING_FOR_SCHEDULE: Final = (
+    f"component.{DOMAIN}.common.status_waiting_for_schedule"
+)
+TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS: Final = (
+    f"component.{DOMAIN}.common.status_emergency_shutdowns"
+)
 # Text fallbacks
 PLANNED_OUTAGE_TEXT_FALLBACK: Final = "Planned Outage"
 PROBABLE_OUTAGE_TEXT_FALLBACK: Final = "Probable Outage"
+STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK: Final = "Schedule Applies"
+STATUS_WAITING_FOR_SCHEDULE_TEXT_FALLBACK: Final = "Waiting for Schedule"
+STATUS_EMERGENCY_SHUTDOWNS_TEXT_FALLBACK: Final = "Emergency Shutdowns"
