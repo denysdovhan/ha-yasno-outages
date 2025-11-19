@@ -6,6 +6,7 @@ import datetime
 import logging
 from typing import TYPE_CHECKING
 
+from homeassistant.const import STATE_UNKNOWN
 from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
@@ -45,6 +46,17 @@ if TYPE_CHECKING:
     from .api.base import BaseYasnoApi
 
 LOGGER = logging.getLogger(__name__)
+
+EVENT_TYPE_STATE_MAP: dict[OutageEventType, str] = {
+    OutageEventType.DEFINITE: STATE_OUTAGE,
+    OutageEventType.NOT_PLANNED: STATE_NORMAL,
+}
+
+STATUS_STATE_MAP: dict[str, str] = {
+    API_STATUS_SCHEDULE_APPLIES: STATE_STATUS_SCHEDULE_APPLIES,
+    API_STATUS_WAITING_FOR_SCHEDULE: STATE_STATUS_WAITING_FOR_SCHEDULE,
+    API_STATUS_EMERGENCY_SHUTDOWNS: STATE_STATUS_EMERGENCY_SHUTDOWNS,
+}
 
 
 def is_outage_event(event: OutageEvent | None) -> bool:
@@ -180,6 +192,13 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                         # Cache the provider name for device naming
                         self._provider_name = provider_data["name"]
 
+    def _event_to_state(self, event: OutageEvent | None) -> str | None:
+        return (
+            EVENT_TYPE_STATE_MAP.get(event.event_type, STATE_UNKNOWN)
+            if event
+            else STATE_UNKNOWN
+        )
+
     async def async_fetch_translations(self) -> None:
         """Fetch translations."""
         self.translations = await async_get_translations(
@@ -199,15 +218,6 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             OutageSource.PROBABLE: self.translations.get(
                 TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE, PROBABLE_OUTAGE_TEXT_FALLBACK
             ),
-        }
-
-    @property
-    def status_state_map(self) -> dict:
-        """Return a mapping of status names to translations."""
-        return {
-            API_STATUS_SCHEDULE_APPLIES: STATE_STATUS_SCHEDULE_APPLIES,
-            API_STATUS_WAITING_FOR_SCHEDULE: STATE_STATUS_WAITING_FOR_SCHEDULE,
-            API_STATUS_EMERGENCY_SHUTDOWNS: STATE_STATUS_EMERGENCY_SHUTDOWNS,
         }
 
     @property
@@ -258,12 +268,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def status_today(self) -> str | None:
         """Get the status for today."""
-        return self.status_state_map.get(self.api.planned.get_status_today())
+        return STATUS_STATE_MAP.get(self.api.planned.get_status_today())
 
     @property
     def status_tomorrow(self) -> str | None:
         """Get the status for tomorrow."""
-        return self.status_state_map.get(self.api.planned.get_status_tomorrow())
+        return STATUS_STATE_MAP.get(self.api.planned.get_status_tomorrow())
 
     @property
     def next_planned_outage(self) -> datetime.date | datetime.datetime | None:
@@ -357,14 +367,3 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     ) -> list[OutageEvent]:
         """Get all probable outage events within the date range."""
         return self.get_events_between(self.api.probable, start_date, end_date)
-
-    # TODO: could be replaced with map lookup later.
-    def _event_to_state(self, event: OutageEvent | None) -> str | None:
-        if not event:
-            return STATE_NORMAL
-
-        if event.event_type == OutageEventType.DEFINITE:
-            return STATE_OUTAGE
-
-        LOGGER.warning("Unknown event type: %s", event.event_type)
-        return STATE_NORMAL
