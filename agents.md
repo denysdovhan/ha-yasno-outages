@@ -294,6 +294,7 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - Device naming uses `DeviceInfo` with translation placeholders: `{region}`, `{provider}`, `{group}`.
   - Calendar: Single calendar entity per entry showing all outage events with translated event names.
   - Calendar events are always sorted by `start` before returning from coordinator getters.
+  - Calendar can optionally show all-day events for today/tomorrow statuses if enabled in config.
 - **Config flow**
   - Multi-step: Region → Service (DSO) → Group
   - Auto-skip: If only one service available, auto-select it and skip to group step

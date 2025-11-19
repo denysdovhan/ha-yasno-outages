@@ -81,6 +81,25 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
             return None
         return to_calendar_event(self.coordinator, outage_event)
 
+    def get_all_day_status_event(
+        self,
+        date: datetime.date | None,
+        status: str | None,
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
+    ) -> CalendarEvent | None:
+        """Create a status event for a specific date."""
+        if date and status and start_date.date() <= date <= end_date.date():
+            summary = self.coordinator.status_event_summary_map.get(status, status)
+            return CalendarEvent(
+                summary=summary,
+                start=date,
+                end=date + datetime.timedelta(days=1),
+                description=status,
+                uid=f"status-{date.isoformat()}",
+            )
+        return None
+
     async def async_get_events(
         self,
         hass: HomeAssistant,  # noqa: ARG002
@@ -92,7 +111,28 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
             'Getting planned events between "%s" -> "%s"', start_date, end_date
         )
         events = self.coordinator.get_planned_events_between(start_date, end_date)
-        return [to_calendar_event(self.coordinator, event) for event in events]
+        calendar_events = [
+            to_calendar_event(self.coordinator, event) for event in events
+        ]
+
+        if self.coordinator.status_all_day_events:
+            if event := self.get_all_day_status_event(
+                self.coordinator.api.planned.get_today_date(),
+                self.coordinator.status_today,
+                start_date,
+                end_date,
+            ):
+                calendar_events.append(event)
+
+            if event := self.get_all_day_status_event(
+                self.coordinator.api.planned.get_tomorrow_date(),
+                self.coordinator.status_tomorrow,
+                start_date,
+                end_date,
+            ):
+                calendar_events.append(event)
+
+        return calendar_events
 
 
 class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):

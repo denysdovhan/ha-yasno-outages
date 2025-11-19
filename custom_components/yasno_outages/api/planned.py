@@ -113,13 +113,21 @@ class PlannedOutagesApi(BaseYasnoApi):
             return None
         return datetime.datetime.fromisoformat(group_data[API_KEY_UPDATED_ON])
 
-    def get_status_by_day(self, day: Literal["today", "tomorrow"]) -> str | None:
-        """Get the status for a specific day."""
+    def get_data_by_day(self, day: Literal["today", "tomorrow"]) -> dict | None:
+        """Get the data for a specific day."""
         group_data = self.get_planned_outages_data()
         if not group_data or day not in group_data:
             return None
 
-        return group_data[day].get(API_KEY_STATUS)
+        return group_data[day]
+
+    def get_status_by_day(self, day: Literal["today", "tomorrow"]) -> str | None:
+        """Get the status for a specific day."""
+        day_data = self.get_data_by_day(day)
+        if not day_data:
+            return None
+
+        return day_data.get(API_KEY_STATUS)
 
     def get_status_today(self) -> str | None:
         """Get the status for today."""
@@ -128,6 +136,24 @@ class PlannedOutagesApi(BaseYasnoApi):
     def get_status_tomorrow(self) -> str | None:
         """Get the status for tomorrow."""
         return self.get_status_by_day(API_KEY_TOMORROW)
+
+    def get_date_by_day(
+        self, day: Literal["today", "tomorrow"]
+    ) -> datetime.date | None:
+        """Get the date for a specific day."""
+        day_data = self.get_data_by_day(day)
+        if not day_data or API_KEY_DATE not in day_data:
+            return None
+
+        return datetime.datetime.fromisoformat(day_data[API_KEY_DATE]).date()
+
+    def get_today_date(self) -> datetime.date | None:
+        """Get today's date."""
+        return self.get_date_by_day(API_KEY_TODAY)
+
+    def get_tomorrow_date(self) -> datetime.date | None:
+        """Get tomorrow's date."""
+        return self.get_date_by_day(API_KEY_TOMORROW)
 
     def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the current event."""
