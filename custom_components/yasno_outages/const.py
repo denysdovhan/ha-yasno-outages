@@ -11,6 +11,7 @@ CONF_PROVIDER: Final = "provider"
 CONF_GROUP: Final = "group"
 CONF_CITY: Final = "city"  # Deprecated, use CONF_REGION
 CONF_SERVICE: Final = "service"  # Deprecated, use CONF_PROVIDER
+CONF_FILTER_PROBABLE: Final = "filter_probable"
 
 # Provider name simplification
 PROVIDER_DTEK_FULL: Final = "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ"

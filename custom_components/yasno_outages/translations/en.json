@@ -17,10 +17,12 @@
       "group": {
         "title": "Yasno Outages Settings",
         "data": {
-          "group": "Please select your group:"
+          "group": "Please select your group:",
+          "filter_probable": "Hide probable outages for planned days"
         },
         "data_description": {
-          "group": "You can find your group at: https://static.yasno.ua/kyiv/outages"
+          "group": "You can find your group at: https://static.yasno.ua/kyiv/outages",
+          "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available"
         }
       }
     }
@@ -42,7 +44,8 @@
       "group": {
         "title": "Yasno Outages Settings",
         "data": {
-          "group": "Please select your group:"
+          "group": "Please select your group:",
+          "filter_probable": "Hide probable outages when planned schedule is available"
         },
         "data_description": {
           "group": "You can find your group at: https://static.yasno.ua/kyiv/outages"
