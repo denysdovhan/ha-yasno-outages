@@ -24,7 +24,7 @@
         "data_description": {
           "group": "You can find your group at: https://static.yasno.ua/kyiv/outages",
           "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
-          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outages status"
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
         }
       }
     }
