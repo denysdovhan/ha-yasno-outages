@@ -18,11 +18,13 @@
         "title": "Налаштування Yasno Відключення",
         "data": {
           "group": "Оберіть свою групу:",
-          "filter_probable": "Приховати ймовірні відключення для запланованих днів"
+          "filter_probable": "Приховати ймовірні відключення для запланованих днів",
+          "status_all_day_events": "Показувати цілодобові події статусу"
         },
         "data_description": {
           "group": "Знайдіть свою групу на: https://static.yasno.ua/kyiv/outages",
-          "filter_probable": "Приховує у календарі ймовірні відключення для днів, коли доступний плановий графік"
+          "filter_probable": "Приховує у календарі ймовірні відключення для днів, коли доступний плановий графік",
+          "status_all_day_events": "Додає цілодобові події про статуси відключень на сьогодні та завтра"
         }
       }
     }
@@ -45,10 +47,12 @@
         "title": "Налаштування Yasno Відключення",
         "data": {
           "group": "Оберіть свою групу:",
-          "filter_probable": "Приховати ймовірні відключення, коли доступний плановий графік"
+          "filter_probable": "Приховати ймовірні відключення, коли доступний плановий графік",
+          "status_all_day_events": "Показувати цілодобові події для статусів"
         },
         "data_description": {
-          "group": "Знайдіть свою групу на: https://static.yasno.ua/kyiv/outages"
+          "group": "Знайдіть свою групу на: https://static.yasno.ua/kyiv/outages",
+          "status_all_day_events": "Додавати у календар цілодобові події про статус відключень на сьогодні та завтра"
         }
       }
     }
@@ -108,7 +112,10 @@
   },
   "common": {
     "planned_electricity_outage": "Відключення",
-    "probable_electricity_outage": "Імовірне відключення"
+    "probable_electricity_outage": "Імовірне відключення",
+    "status_schedule_applies": "Графік діє",
+    "status_waiting_for_schedule": "Очікування графіка",
+    "status_emergency_shutdowns": "Аварійні відключення"
   },
   "issues": {
     "missing_config": {

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.helpers.translation import async_get_translations
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_utils
 
 from .api import OutageEvent, OutageEventType, YasnoApi
@@ -23,6 +23,7 @@ from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
     CONF_REGION,
+    CONF_STATUS_ALL_DAY_EVENTS,
     DOMAIN,
     PLANNED_OUTAGE_LOOKAHEAD,
     PLANNED_OUTAGE_TEXT_FALLBACK,
@@ -35,8 +36,14 @@ from .const import (
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
+    STATUS_EMERGENCY_SHUTDOWNS_TEXT_FALLBACK,
+    STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK,
+    STATUS_WAITING_FOR_SCHEDULE_TEXT_FALLBACK,
     TRANSLATION_KEY_EVENT_PLANNED_OUTAGE,
     TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE,
+    TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS,
+    TRANSLATION_KEY_STATUS_SCHEDULE_APPLIES,
+    TRANSLATION_KEY_STATUS_WAITING_FOR_SCHEDULE,
     UPDATE_INTERVAL,
 )
 
@@ -115,6 +122,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             CONF_FILTER_PROBABLE,
             config_entry.data.get(CONF_FILTER_PROBABLE, True),
         )
+        self.status_all_day_events = config_entry.options.get(
+            CONF_STATUS_ALL_DAY_EVENTS,
+            config_entry.data.get(CONF_STATUS_ALL_DAY_EVENTS, True),
+        )
 
         if not self.region:
             region_required_msg = (
@@ -157,7 +168,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         # Resolve IDs if not already resolved
         if self.region_id is None or self.provider_id is None:
-            await self._resolve_ids()
+            try:
+                await self._resolve_ids()
+            except Exception as err:
+                msg = f"Failed to resolve IDs: {err}"
+                raise UpdateFailed(msg) from err
 
             # Update API with resolved IDs
             self.api = YasnoApi(
@@ -169,8 +184,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Fetch planned outages data
         try:
             await self.api.planned.fetch_data()
-        except Exception:
-            LOGGER.exception("Failed to fetch planned outages data")
+        except Exception as err:
+            msg = f"Failed to fetch planned outages data: {err}"
+            raise UpdateFailed(msg) from err
 
         # Fetch probable outages data
         try:
@@ -226,6 +242,24 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         }
 
     @property
+    def status_event_summary_map(self) -> dict[str, str]:
+        """Return localized summaries for planned status events."""
+        return {
+            STATE_STATUS_SCHEDULE_APPLIES: self.translations.get(
+                TRANSLATION_KEY_STATUS_SCHEDULE_APPLIES,
+                STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK,
+            ),
+            STATE_STATUS_WAITING_FOR_SCHEDULE: self.translations.get(
+                TRANSLATION_KEY_STATUS_WAITING_FOR_SCHEDULE,
+                STATUS_WAITING_FOR_SCHEDULE_TEXT_FALLBACK,
+            ),
+            STATE_STATUS_EMERGENCY_SHUTDOWNS: self.translations.get(
+                TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS,
+                STATUS_EMERGENCY_SHUTDOWNS_TEXT_FALLBACK,
+            ),
+        }
+
+    @property
     def region_name(self) -> str:
         """Get the configured region name."""
         return self.region or ""
@@ -269,6 +303,16 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def schedule_updated_on(self) -> datetime.datetime | None:
         """Get the schedule last updated timestamp."""
         return self.api.planned.get_updated_on()
+
+    @property
+    def today_date(self) -> datetime.date | None:
+        """Get today's date."""
+        return self.api.planned.get_today_date()
+
+    @property
+    def tomorrow_date(self) -> datetime.date | None:
+        """Get tomorrow's date."""
+        return self.api.planned.get_tomorrow_date()
 
     @property
     def status_today(self) -> str | None:
@@ -333,7 +377,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         at: datetime.datetime,
     ) -> OutageEvent | None:
         """Get an outage event at a given time from provided API."""
-        event = api.get_current_event(at)
+        try:
+            event = api.get_current_event(at)
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Failed to get current event", exc_info=True)
+            return None
+
         if not is_outage_event(event):
             return None
         return event
@@ -353,7 +402,17 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         end_date: datetime.datetime,
     ) -> list[OutageEvent]:
         """Get outage events within the date range for provided API."""
-        events = api.get_events_between(start_date, end_date)
+        try:
+            events = api.get_events_between(start_date, end_date)
+        except Exception:  # noqa: BLE001
+            LOGGER.warning(
+                'Failed to get events between "%s" -> "%s"',
+                start_date,
+                end_date,
+                exc_info=True,
+            )
+            return []
+
         filtered_events = [event for event in events if is_outage_event(event)]
         return sorted(filtered_events, key=lambda event: event.start)
 
@@ -371,12 +430,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         end_date: datetime.datetime,
     ) -> list[OutageEvent]:
         """Get all probable outage events within the date range."""
-        events = self.get_events_between(self.api.probable, start_date, end_date)
+        return self.get_events_between(self.api.probable, start_date, end_date)
 
-        if self.filter_probable:
-            planned_dates = self.api.planned.get_planned_dates()
-            return [
-                event for event in events if event.start.date() not in planned_dates
-            ]
-
-        return events
+    def get_planned_dates(self) -> list[datetime.date]:
+        """Get dates with planned outages."""
+        return self.api.planned.get_planned_dates()

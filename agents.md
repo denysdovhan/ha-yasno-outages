@@ -86,6 +86,7 @@ API architecture:
 - APIs return `OutageEvent` objects with `source` field (OutageSource.PLANNED or PROBABLE)
 - Coordinator filters NOT_PLANNED events and transforms to CalendarEvents
 - API returns all events as-is; filtering happens at coordinator level
+- Coordinator is responsible for catching/handling API parsing/runtime errors; API layers may raise on malformed data so coordinator must log+fallback
 
 ## API
 
@@ -279,12 +280,12 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - API should return all data as-is without filtering (e.g., return both DEFINITE and NOT_PLANNED events)
   - Use/extend `coordinator.py` to filter NOT_PLANNED events and compute derived values (current state, next outage times).
   - Keep it simple: coordinator stored directly in `entry.runtime_data`.
-  - CalendarEvent conversion happens in `calendar.py` via `_build_calendar_event(event)`.
-  - `_build_calendar_event` never returns `None`; callers must guard `None`/irrelevant events.
-  - Event `uid` format: `{source.value}-{start.isoformat()}` (e.g., `planned-2025-11-15T07:30:00+02:00`)
+  - CalendarEvent conversion happens in `calendar.py` via `to_calendar_event(coordinator, event)`.
+  - `to_calendar_event` never returns `None`; callers must guard `None`/irrelevant events.
+  - Event `uid` format: `{source.value}-{start.isoformat()}` (e.g., `planned-2025-11-15T07:30:00+02:00`) or `status-{date.isoformat()}` for status events.
   - OutageSource enum (in models.py) distinguishes PLANNED vs PROBABLE events
   - OutageEvent.source field indicates calendar origin (OutageSource enum)
-  - Summaries come from `event_summary_map` property with translation fallbacks
+  - Summaries come from `event_summary_map` (outages) or `status_event_summary_map` (statuses) property with translation fallbacks
   - CalendarEvent.description contains event.event_type.value for state mapping
   - State and connectivity determined only by planned events (settled schedule)
   - Horizon constants (`PLANNED_OUTAGE_LOOKAHEAD`, `PROBABLE_OUTAGE_LOOKAHEAD`) in `const.py`
@@ -294,6 +295,7 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - Device naming uses `DeviceInfo` with translation placeholders: `{region}`, `{provider}`, `{group}`.
   - Calendar: Single calendar entity per entry showing all outage events with translated event names.
   - Calendar events are always sorted by `start` before returning from coordinator getters.
+  - Calendar can optionally show all-day events for today/tomorrow statuses if enabled in config.
 - **Config flow**
   - Multi-step: Region → Service (DSO) → Group
   - Auto-skip: If only one service available, auto-select it and skip to group step

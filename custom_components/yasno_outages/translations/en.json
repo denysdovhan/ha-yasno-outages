@@ -18,11 +18,13 @@
         "title": "Yasno Outages Settings",
         "data": {
           "group": "Please select your group:",
-          "filter_probable": "Hide probable outages for planned days"
+          "filter_probable": "Hide probable outages for planned days",
+          "status_all_day_events": "Show status all-day events"
         },
         "data_description": {
           "group": "You can find your group at: https://static.yasno.ua/kyiv/outages",
-          "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available"
+          "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
         }
       }
     }
@@ -45,10 +47,12 @@
         "title": "Yasno Outages Settings",
         "data": {
           "group": "Please select your group:",
-          "filter_probable": "Hide probable outages when planned schedule is available"
+          "filter_probable": "Hide probable outages when planned schedule is available",
+          "status_all_day_events": "Show status all-day events"
         },
         "data_description": {
-          "group": "You can find your group at: https://static.yasno.ua/kyiv/outages"
+          "group": "You can find your group at: https://static.yasno.ua/kyiv/outages",
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status"
         }
       }
     }
@@ -108,7 +112,10 @@
   },
   "common": {
     "planned_electricity_outage": "Outage",
-    "probable_electricity_outage": "Probable Outage"
+    "probable_electricity_outage": "Probable Outage",
+    "status_schedule_applies": "Schedule Applies",
+    "status_waiting_for_schedule": "Waiting for Schedule",
+    "status_emergency_shutdowns": "Emergency Shutdowns"
   },
   "issues": {
     "missing_config": {

@@ -22,6 +22,7 @@ from .const import (
     CONF_GROUP,
     CONF_PROVIDER,
     CONF_REGION,
+    CONF_STATUS_ALL_DAY_EVENTS,
     DOMAIN,
 )
 
@@ -111,6 +112,14 @@ def build_group_schema(
                 CONF_FILTER_PROBABLE,
                 default=get_config_value(
                     config_entry, CONF_FILTER_PROBABLE, default=True
+                ),
+            ): bool,
+            vol.Required(
+                CONF_STATUS_ALL_DAY_EVENTS,
+                default=get_config_value(
+                    config_entry,
+                    CONF_STATUS_ALL_DAY_EVENTS,
+                    default=True,
                 ),
             ): bool,
         },
