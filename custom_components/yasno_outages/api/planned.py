@@ -12,6 +12,7 @@ from .const import (
     API_KEY_STATUS,
     API_KEY_TODAY,
     API_KEY_TOMORROW,
+    API_KEY_UPDATED_ON,
     PLANNED_OUTAGES_ENDPOINT,
 )
 from .models import OutageEvent, OutageSource
@@ -102,27 +103,15 @@ class PlannedOutagesApi(BaseYasnoApi):
         if API_KEY_DATE not in day_data:
             return []
 
-        try:
-            day_date = datetime.datetime.fromisoformat(day_data["date"])
-            return self._parse_day_schedule(day_data, day_date)
-        except (ValueError, TypeError) as err:
-            LOGGER.warning("Failed to parse %s date: %s", day_key, err)
-            return []
+        day_date = datetime.datetime.fromisoformat(day_data[API_KEY_DATE])
+        return self._parse_day_schedule(day_data, day_date)
 
     def get_updated_on(self) -> datetime.datetime | None:
         """Get the updated on timestamp for the configured group."""
         group_data = self.get_planned_outages_data()
-        if not group_data or "updatedOn" not in group_data:
+        if not group_data or API_KEY_UPDATED_ON not in group_data:
             return None
-
-        try:
-            return datetime.datetime.fromisoformat(group_data["updatedOn"])
-        except (ValueError, TypeError):
-            LOGGER.warning(
-                "Failed to parse updatedOn timestamp: %s",
-                group_data["updatedOn"],
-            )
-            return None
+        return datetime.datetime.fromisoformat(group_data[API_KEY_UPDATED_ON])
 
     def get_status_by_day(self, day: Literal["today", "tomorrow"]) -> str | None:
         """Get the status for a specific day."""
