@@ -317,12 +317,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def status_today(self) -> str | None:
         """Get the status for today."""
-        return STATUS_STATE_MAP.get(self.api.planned.get_status_today())
+        return STATUS_STATE_MAP.get(self.api.planned.get_status_today(), STATE_UNKNOWN)
 
     @property
     def status_tomorrow(self) -> str | None:
         """Get the status for tomorrow."""
-        return STATUS_STATE_MAP.get(self.api.planned.get_status_tomorrow())
+        return STATUS_STATE_MAP.get(
+            self.api.planned.get_status_tomorrow(), STATE_UNKNOWN
+        )
 
     @property
     def next_planned_outage(self) -> datetime.date | datetime.datetime | None:
