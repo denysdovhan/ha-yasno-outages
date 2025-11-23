@@ -217,7 +217,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return (
             EVENT_TYPE_STATE_MAP.get(event.event_type, STATE_UNKNOWN)
             if event
-            else STATE_UNKNOWN
+            else STATE_NORMAL
         )
 
     async def async_fetch_translations(self) -> None:
