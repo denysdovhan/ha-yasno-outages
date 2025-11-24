@@ -54,6 +54,38 @@ def to_all_day_calendar_event(
     return calendar_event
 
 
+def merge_consecutive_events(events: list[CalendarEvent]) -> list[CalendarEvent]:
+    """Merge consecutive calendar events"""
+    if not events:
+        return []
+
+    sorted_events = sorted(events, key=lambda e: (e.summary, e.start))
+
+    merged = []
+    current_event = sorted_events[0]
+
+    for next_event in sorted_events[1:]:
+        if (
+            current_event.end == next_event.start
+            and current_event.description == next_event.description
+            and current_event.summary == next_event.summary
+        ):
+            current_event = CalendarEvent(
+                summary=current_event.summary,
+                start=current_event.start,
+                end=next_event.end,
+                description=current_event.description,
+                uid=current_event.uid,
+            )
+        else:
+            merged.append(current_event)
+            current_event = next_event
+
+    merged.append(current_event)
+
+    return merged
+
+
 async def async_setup_entry(
     hass: HomeAssistant,  # noqa: ARG001
     config_entry: YasnoOutagesConfigEntry,
@@ -125,6 +157,9 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
         calendar_events = [
             to_calendar_event(self.coordinator, event) for event in events
         ]
+
+        if self.coordinator.merge_multi_day_events:
+            calendar_events = merge_consecutive_events(calendar_events)
 
         if self.coordinator.status_all_day_events:
             if today_status := self.get_all_day_status_event(
@@ -200,4 +235,11 @@ class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
                 event for event in events if event.start.date() not in planned_dates
             ]
 
-        return [to_calendar_event(self.coordinator, event) for event in events]
+        calendar_events = [
+            to_calendar_event(self.coordinator, event) for event in events
+        ]
+        
+        if self.coordinator.merge_multi_day_events:
+            calendar_events = merge_consecutive_events(calendar_events)
+
+        return calendar_events

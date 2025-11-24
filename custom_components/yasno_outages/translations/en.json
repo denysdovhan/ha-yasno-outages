@@ -19,12 +19,14 @@
         "data": {
           "group": "Please select your group:",
           "filter_probable": "Hide probable outages for planned days",
-          "status_all_day_events": "Show status all-day events"
+          "status_all_day_events": "Show status all-day events",
+          "merge_multi_day_events": "Merge multi-day events"
         },
         "data_description": {
           "group": "You can find your group at: https://static.yasno.ua/kyiv/outages",
           "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
-          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status",
+          "merge_multi_day_events": "Merges consecutive events that span multiple days into a single calendar event"
         }
       }
     }
@@ -48,11 +50,13 @@
         "data": {
           "group": "Please select your group:",
           "filter_probable": "Hide probable outages when planned schedule is available",
-          "status_all_day_events": "Show status all-day events"
+          "status_all_day_events": "Show status all-day events",
+          "merge_multi_day_events": "Merge multi-day events"
         },
         "data_description": {
           "group": "You can find your group at: https://static.yasno.ua/kyiv/outages",
-          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status"
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status",
+          "merge_multi_day_events": "Merges consecutive events that span multiple days into a single calendar event"
         }
       }
     }
