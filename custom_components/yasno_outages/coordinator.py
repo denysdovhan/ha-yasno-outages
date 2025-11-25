@@ -379,7 +379,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         at: datetime.datetime,
     ) -> OutageEvent | None:
         """Get an outage event at a given time from provided API."""
-        event = api.get_current_event(at)
+        try:
+            event = api.get_current_event(at)
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Failed to get current outage", exc_info=True)
+            return None
         if not is_outage_event(event):
             return None
         return event
