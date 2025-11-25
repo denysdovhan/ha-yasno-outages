@@ -291,7 +291,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     @property
     def current_event(self) -> OutageEvent | None:
-        """Get the current outage event."""
+        """Get the current planned event (including NotPlanned events)."""
         return self.api.planned.get_current_event(dt_utils.now())
 
     @property
