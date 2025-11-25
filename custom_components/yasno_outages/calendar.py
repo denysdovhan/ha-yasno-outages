@@ -94,7 +94,7 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
     def event(self) -> CalendarEvent | None:
         """Return the current or next upcoming event or None."""
         LOGGER.debug("Getting planned event at now")
-        outage_event = self.coordinator.get_planned_event_at(dt_utils.now())
+        outage_event = self.coordinator.get_planned_outage_at(dt_utils.now())
         if not outage_event:
             return None
         return to_calendar_event(self.coordinator, outage_event)
@@ -170,7 +170,7 @@ class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
     def event(self) -> CalendarEvent | None:
         """Return the current or next upcoming probable event or None."""
         LOGGER.debug("Getting probable event at now")
-        outage_event = self.coordinator.get_probable_event_at(dt_utils.now())
+        outage_event = self.coordinator.get_probable_outage_at(dt_utils.now())
         if not outage_event:
             return None
 
