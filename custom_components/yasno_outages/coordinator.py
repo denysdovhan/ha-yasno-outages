@@ -213,7 +213,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                         # Cache the provider name for device naming
                         self._provider_name = provider_data["name"]
 
-    def _event_to_state(self, event: OutageEvent | None) -> str | None:
+    def _event_to_state(self, event: OutageEvent | None) -> str:
+        """Map outage event to electricity state."""
         return (
             EVENT_TYPE_STATE_MAP.get(event.event_type, STATE_UNKNOWN)
             if event
