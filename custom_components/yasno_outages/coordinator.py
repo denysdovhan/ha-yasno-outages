@@ -389,7 +389,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return event
 
     def get_planned_outage_at(self, at: datetime.datetime) -> OutageEvent | None:
-        """Get the planned event at a given time."""
+        """Get the planned outage event at a given time."""
         return self.get_outage_at(self.api.planned, at)
 
     def get_probable_outage_at(self, at: datetime.datetime) -> OutageEvent | None:
