@@ -295,7 +295,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         try:
             return self.api.planned.get_current_event(dt_utils.now())
         except Exception:  # noqa: BLE001
-            LOGGER.warning("Failed to get current event", exc_info=True)
+            LOGGER.warning(
+                "Failed to get current event, sensors will show unknown state",
+                exc_info=True
+            )
             return None
 
     @property
