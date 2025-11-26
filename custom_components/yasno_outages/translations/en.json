@@ -122,5 +122,10 @@
       "title": "{entry_title}: Configuration incomplete",
       "description": "This integration entry is missing required settings (region and/or provider).\n\nTo fix this error, [edit the integration entry]({edit}) and update your settings with the correct region and provider."
     }
+  },
+  "repairs": {
+    "abort": {
+      "not_supported": "Nothing to fix for this issue."
+    }
   }
 }
