@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from homeassistant.components.repairs import RepairsFlow
 from homeassistant.helpers import issue_registry as ir
 
 from .const import CONF_PROVIDER, CONF_REGION, DOMAIN
@@ -12,6 +13,7 @@ from .const import CONF_PROVIDER, CONF_REGION, DOMAIN
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
+    from homeassistant.data_entry_flow import FlowResult
 
 LOGGER = logging.getLogger(__name__)
 
@@ -53,3 +55,23 @@ async def async_check_and_create_repair(
     else:
         # Delete the issue if it exists (config is now complete)
         ir.async_delete_issue(hass, DOMAIN, f"missing_config_{entry.entry_id}")
+
+
+class YasnoOutagesRepairsFlow(RepairsFlow):
+    """Repairs flow placeholder; issues are informational only."""
+
+    def __init__(self, issue_id: str) -> None:
+        """Store issue id."""
+        self._issue_id = issue_id
+
+    async def async_step_init(self) -> FlowResult:
+        """Abort because nothing to fix from UI side."""
+        return self.async_abort(reason="not_supported")
+
+
+async def async_create_fix_flow(
+    hass: HomeAssistant,  # noqa: ARG001
+    issue_id: str,
+) -> RepairsFlow:
+    """Create a repairs flow for the given issue."""
+    return YasnoOutagesRepairsFlow(issue_id)
