@@ -21,7 +21,6 @@ from .api.models import OutageSource
 from .const import (
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
-    CONF_MERGE_MULTI_DAY_EVENTS,
     CONF_PROVIDER,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
@@ -126,10 +125,6 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.status_all_day_events = config_entry.options.get(
             CONF_STATUS_ALL_DAY_EVENTS,
             config_entry.data.get(CONF_STATUS_ALL_DAY_EVENTS, True),
-        )
-        self.merge_multi_day_events = config_entry.options.get(
-            CONF_MERGE_MULTI_DAY_EVENTS,
-            config_entry.data.get(CONF_MERGE_MULTI_DAY_EVENTS, False),
         )
 
         if not self.region:

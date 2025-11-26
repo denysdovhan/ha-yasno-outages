@@ -20,7 +20,6 @@ from .api import YasnoApi
 from .const import (
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
-    CONF_MERGE_MULTI_DAY_EVENTS,
     CONF_PROVIDER,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
@@ -121,14 +120,6 @@ def build_group_schema(
                     config_entry,
                     CONF_STATUS_ALL_DAY_EVENTS,
                     default=True,
-                ),
-            ): bool,
-            vol.Required(
-                CONF_MERGE_MULTI_DAY_EVENTS,
-                default=get_config_value(
-                    config_entry,
-                    CONF_MERGE_MULTI_DAY_EVENTS,
-                    default=False,
                 ),
             ): bool,
         },

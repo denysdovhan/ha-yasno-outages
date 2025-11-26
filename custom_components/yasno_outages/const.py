@@ -11,7 +11,6 @@ CONF_PROVIDER: Final = "provider"
 CONF_GROUP: Final = "group"
 CONF_FILTER_PROBABLE: Final = "filter_probable"
 CONF_STATUS_ALL_DAY_EVENTS: Final = "status_all_day_events"
-CONF_MERGE_MULTI_DAY_EVENTS: Final = "merge_multi_day_events"
 CONF_CITY: Final = "city"  # Deprecated, use CONF_REGION
 CONF_SERVICE: Final = "service"  # Deprecated, use CONF_PROVIDER
 
