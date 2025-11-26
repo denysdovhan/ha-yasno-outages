@@ -12,3 +12,8 @@ logger:
   default: info
   logs:
     custom_components.yasno_outages: debug
+  filters:
+    homeassistant.components.go2rtc:
+      - "Could not find go2rtc docker binary"
+    homeassistant.setup:
+      - ".*go2rtc.*"
