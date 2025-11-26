@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from homeassistant.components.repairs import RepairsFlow
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.helpers.repairs import RepairsFlow
 
 from .const import CONF_PROVIDER, CONF_REGION, DOMAIN
 
