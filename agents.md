@@ -52,6 +52,7 @@ This repository is a Home Assistant custom integration providing electricity out
 - `sensor.py` - declares sensors using entity descriptors. Implements sensors: electricity state (enum), schedule updated timestamp, next planned outage, next probable outage, next connectivity. Retrieves coordinator from `entry.runtime_data.coordinator`.
 - `calendar.py` - implements calendar entity showing outage events in a timeline format. Retrieves coordinator from `entry.runtime_data.coordinator`.
 - `helpers.py` - shared helpers, e.g., `merge_consecutive_outages` used to merge adjacent outage slots before creating calendar events (always applied before status all-day events are added).
+- `diagnostics.py` - exposes `async_get_config_entry_diagnostics` with coordinator/api snapshots (states, ids, raw data) for HA diagnostics download.
 
 <instruction>Fill in by LLM assistant memory</instruction>
 
@@ -317,12 +318,22 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
 - **When unsure**
   - Prefer adding debug logs and ask for the output to reason about runtime state.
 
+### Tooling
+
+- Python deps tracked in `pyproject.toml` and `uv.lock`; use `scripts/bootstrap` for dev installs.
+- CI workflows (`lint.yml`, `validate.yml`) install uv via `astral-sh/setup-uv` and run tooling with `uv run`.
+- Run python tools via `uv run <tool>` to ensure consistent environment.
+- Each time you make changes to Python code, run `scripts/lint` to check for errors and formatting issues. Fix any issues reported by the linter.
+
 ### Develompent Scripts
 
-- `scripts/setup` - installs dependencies and installs pre-commit.
+Use these scripts for common development tasks. When you make changes and want to validate your work, use these scripts.
+
+- `scripts/bootstrap` - sets up dev environment (creates venv, installs dependencies).
+- `scripts/bump_version` - bumps version in manifest.json.
 - `scripts/develop` - starts a development Home Assistant server instance on port 8123. Use this script for checking changes in the browser.
 - `scripts/lint` - runs linter/formatter. Always use this script for checking for errors and formatting.
-- `scripts/bump_version` - bumps version in manifest.json.
+- `scripts/setup` - installs dependencies and installs pre-commit.
 
 ### Development Process
 
