@@ -362,7 +362,6 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         Only planned events determine connectivity.
         Probable events are forecasts and do not affect connectivity calculation.
         """
-        now = dt_utils.now()
         current_event = self.current_event
         current_state = self.current_state
 
@@ -371,7 +370,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         try:
             next_event = self.api.planned.get_next_event(
-                now,
+                dt_utils.now(),
                 lookahead_days=PLANNED_OUTAGE_LOOKAHEAD,
             )
         except Exception:  # noqa: BLE001
