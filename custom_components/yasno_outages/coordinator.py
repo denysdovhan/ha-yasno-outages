@@ -292,7 +292,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def current_event(self) -> OutageEvent | None:
         """Get the current planned event (including NotPlanned events)."""
-        return self.api.planned.get_current_event(dt_utils.now())
+        try:
+            return self.api.planned.get_current_event(dt_utils.now())
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Failed to get current event", exc_info=True)
+            return None
 
     @property
     def current_state(self) -> str:
