@@ -14,6 +14,7 @@ from .api.models import OutageSource
 from .coordinator import YasnoOutagesCoordinator
 from .data import YasnoOutagesConfigEntry
 from .entity import YasnoOutagesEntity
+from .helpers import merge_consecutive_outages
 
 LOGGER = logging.getLogger(__name__)
 
@@ -122,6 +123,8 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
             'Getting planned events between "%s" -> "%s"', start_date, end_date
         )
         events = self.coordinator.get_planned_events_between(start_date, end_date)
+        events = merge_consecutive_outages(events)
+
         calendar_events = [
             to_calendar_event(self.coordinator, event) for event in events
         ]
@@ -199,5 +202,7 @@ class YasnoProbableOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
             events = [
                 event for event in events if event.start.date() not in planned_dates
             ]
+
+        events = merge_consecutive_outages(events)
 
         return [to_calendar_event(self.coordinator, event) for event in events]

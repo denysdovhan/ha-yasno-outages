@@ -51,6 +51,7 @@ This repository is a Home Assistant custom integration providing electricity out
 - `manifest.json` - a file declaring an integration manifest.
 - `sensor.py` - declares sensors using entity descriptors. Implements sensors: electricity state (enum), schedule updated timestamp, next planned outage, next probable outage, next connectivity. Retrieves coordinator from `entry.runtime_data.coordinator`.
 - `calendar.py` - implements calendar entity showing outage events in a timeline format. Retrieves coordinator from `entry.runtime_data.coordinator`.
+- `helpers.py` - shared helpers, e.g., `merge_consecutive_outages` used to merge adjacent outage slots before creating calendar events (always applied before status all-day events are added).
 
 <instruction>Fill in by LLM assistant memory</instruction>
 
