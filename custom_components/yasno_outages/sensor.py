@@ -13,7 +13,6 @@ from homeassistant.components.sensor.const import SensorDeviceClass
 from homeassistant.const import STATE_UNKNOWN, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.util import dt as dt_util
 
 from .const import (
     ATTR_EVENT_END,
@@ -151,7 +150,7 @@ class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
         if self.entity_description.key != "electricity":
             return None
         # Get the current event to provide additional context
-        event = self.coordinator.get_planned_event_at(dt_util.now())
+        event = self.coordinator.current_event
         return {
             ATTR_EVENT_TYPE: event.event_type.value if event else STATE_UNKNOWN,
             ATTR_EVENT_START: event.start.isoformat() if event else None,

@@ -213,7 +213,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                         # Cache the provider name for device naming
                         self._provider_name = provider_data["name"]
 
-    def _event_to_state(self, event: OutageEvent | None) -> str | None:
+    def _event_to_state(self, event: OutageEvent | None) -> str:
+        """Map outage event to electricity state."""
         return (
             EVENT_TYPE_STATE_MAP.get(event.event_type, STATE_UNKNOWN)
             if event
@@ -289,15 +290,21 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return ""
 
     @property
-    def current_state(self) -> str:
-        """
-        Get the current state.
+    def current_event(self) -> OutageEvent | None:
+        """Get the current planned event (including NotPlanned events)."""
+        try:
+            return self.api.planned.get_current_event(dt_utils.now())
+        except Exception:  # noqa: BLE001
+            LOGGER.warning(
+                "Failed to get current event, sensors will show unknown state",
+                exc_info=True,
+            )
+            return None
 
-        Only planned events determine current state.
-        Probable events are forecasts and do not affect state.
-        """
-        event = self.get_planned_event_at(dt_utils.now())
-        return self._event_to_state(event)
+    @property
+    def current_state(self) -> str:
+        """Get the current state."""
+        return self._event_to_state(self.current_event)
 
     @property
     def schedule_updated_on(self) -> datetime.datetime | None:
@@ -358,22 +365,27 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         Only planned events determine connectivity.
         Probable events are forecasts and do not affect connectivity calculation.
         """
-        current_event = self.get_planned_event_at(dt_utils.now())
-        current_state = self._event_to_state(current_event)
+        current_event = self.current_event
+        current_state = self.current_state
 
         if current_state == STATE_OUTAGE and current_event:
             return current_event.end
 
-        next_event = self.api.planned.get_next_event(
-            dt_utils.now(),
-            lookahead_days=PLANNED_OUTAGE_LOOKAHEAD,
-        )
+        try:
+            next_event = self.api.planned.get_next_event(
+                dt_utils.now(),
+                lookahead_days=PLANNED_OUTAGE_LOOKAHEAD,
+            )
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Failed to get next planned outage", exc_info=True)
+            return None
+
         if not is_outage_event(next_event):
             return None
         LOGGER.debug("Next connectivity event: %s", next_event)
         return next_event.end
 
-    def get_event_at(
+    def get_outage_at(
         self,
         api: BaseYasnoApi,
         at: datetime.datetime,
@@ -382,20 +394,19 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         try:
             event = api.get_current_event(at)
         except Exception:  # noqa: BLE001
-            LOGGER.warning("Failed to get current event", exc_info=True)
+            LOGGER.warning("Failed to get current outage", exc_info=True)
             return None
-
         if not is_outage_event(event):
             return None
         return event
 
-    def get_planned_event_at(self, at: datetime.datetime) -> OutageEvent | None:
-        """Get the planned event at a given time."""
-        return self.get_event_at(self.api.planned, at)
+    def get_planned_outage_at(self, at: datetime.datetime) -> OutageEvent | None:
+        """Get the planned outage event at a given time."""
+        return self.get_outage_at(self.api.planned, at)
 
-    def get_probable_event_at(self, at: datetime.datetime) -> OutageEvent | None:
+    def get_probable_outage_at(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the probable outage event at a given time."""
-        return self.get_event_at(self.api.probable, at)
+        return self.get_outage_at(self.api.probable, at)
 
     def get_events_between(
         self,
