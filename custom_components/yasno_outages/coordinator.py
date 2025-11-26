@@ -292,7 +292,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def current_event(self) -> OutageEvent | None:
         """Get the current outage event."""
-        return self.api.planned.get_current_event(dt_utils.now())
+        try:
+            return self.api.planned.get_current_event(dt_utils.now())
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Failed to get current planned event", exc_info=True)
+            return None
 
     @property
     def current_state(self) -> str:
@@ -358,16 +362,22 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         Only planned events determine connectivity.
         Probable events are forecasts and do not affect connectivity calculation.
         """
-        current_event = self.get_planned_outage_at(dt_utils.now())
-        current_state = self._event_to_state(current_event)
+        now = dt_utils.now()
+        current_event = self.current_event
+        current_state = self.current_state
 
         if current_state == STATE_OUTAGE and current_event:
             return current_event.end
 
-        next_event = self.api.planned.get_next_event(
-            dt_utils.now(),
-            lookahead_days=PLANNED_OUTAGE_LOOKAHEAD,
-        )
+        try:
+            next_event = self.api.planned.get_next_event(
+                now,
+                lookahead_days=PLANNED_OUTAGE_LOOKAHEAD,
+            )
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Failed to get next planned outage", exc_info=True)
+            return None
+
         if not is_outage_event(next_event):
             return None
         LOGGER.debug("Next connectivity event: %s", next_event)
