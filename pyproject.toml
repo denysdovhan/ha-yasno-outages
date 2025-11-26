@@ -1,0 +1,44 @@
+[project]
+name = "ha-yasno-outages"
+version = "0.0.0"
+description = "Home Assistant custom component: Yasno Outages"
+readme = "readme.md"
+requires-python = ">=3.13.2"
+dependencies = [
+  "homeassistant==2025.10.4",
+  "python-dateutil>=2.8.2",
+]
+
+[dependency-groups]
+dev = [
+  "pre-commit>=3.7.1",
+  "ruff==0.14.3",
+]
+
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed
+    "D203",    # no-blank-line-before-class (incompatible with formatter)
+    "D212",    # multi-line-summary-first-line (incompatible with formatter)
+    "COM812",  # incompatible with formatter
+    "ISC001",  # incompatible with formatter
+    "TD002",   # todo require author tag
+    "TD003",   # todo should have a link to an issue
+    "FIX002",  # require todo to be resolved
+]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.lint.mccabe]
+max-complexity = 25
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
