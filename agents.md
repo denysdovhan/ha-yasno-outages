@@ -65,6 +65,8 @@ The coordinator:
 - Fetches outage schedules for the configured region, service (DSO), and group
 - Transforms API data into `CalendarEvent` objects
 - Computes derived values (current state, next outage times, etc.)
+- `current_event` wraps `planned.get_current_event` in try/except; use it instead of direct calls.
+- `next_connectivity` uses `current_event/current_state`; returns end of current outage, otherwise end of next planned outage; logs and returns None on errors.
 
 The runtime data pattern follows Home Assistant best practices:
 
@@ -289,6 +291,7 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - CalendarEvent.description contains event.event_type.value for state mapping
   - State and connectivity determined only by planned events (settled schedule)
   - Horizon constants (`PLANNED_OUTAGE_LOOKAHEAD`, `PROBABLE_OUTAGE_LOOKAHEAD`) in `const.py`
+  - Electricity sensor attributes use raw planned `get_current_event` (may be NotPlanned); attributes must reflect active slot even when power is normal.
 - **Entities and platforms**
   - Add new sensor descriptors in `sensor.py` (use `translation_key`).
   - Unique ID format: `{entry_id}-{group}-{sensor_key}`; do not hardcode unique IDs in config flow.
@@ -325,7 +328,7 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
 - Ask for clarification when requirements are ambiguous; surface 2–3 options when trade-offs matter.
 - Update documentation and related rules when introducing new patterns or services.
 - When unsure or need to make a significant decision ASK the user for guidance
-- Do not commit anything. Leave commits to be done by a developer.
+- Commit only when directly asked to do so. Write descriptive commit messages.
 
 ## Code Style
 
@@ -343,6 +346,9 @@ Never import modules in functions. All imports must be located on top of the fil
 ## Home Assistant API
 
 Carefully read links to the Home Assistant Developer documentation for guidance.
+
+Use these code quality guidelines by Home Assistant developers:
+https://github.com/home-assistant/core/raw/refs/heads/dev/.github/copilot-instructions.md
 
 Fetch these links to get more information about specific Home Assistant APIs directly from its documentation:
 
