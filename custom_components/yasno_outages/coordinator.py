@@ -46,6 +46,7 @@ from .const import (
     TRANSLATION_KEY_STATUS_WAITING_FOR_SCHEDULE,
     UPDATE_INTERVAL,
 )
+from .helpers import merge_consecutive_outages
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -71,6 +72,17 @@ def is_outage_event(event: OutageEvent | None) -> bool:
     """Return True for outage events that should create calendar entries."""
     LOGGER.debug("Checking if event is an outage: %s", event)
     return bool(event and event.event_type != OutageEventType.NOT_PLANNED)
+
+
+def find_next_outage(
+    events: list[OutageEvent],
+    now: datetime.datetime,
+) -> OutageEvent | None:
+    """Find the next outage event that starts after the given time."""
+    for event in events:
+        if event.start > now:
+            return event
+    return None
 
 
 def simplify_provider_name(provider_name: str) -> str:
@@ -336,26 +348,34 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def next_planned_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next planned outage time."""
-        next_event = self.api.planned.get_next_event(
-            dt_utils.now(),
-            lookahead_days=PLANNED_OUTAGE_LOOKAHEAD,
+        now = dt_utils.now()
+        events = self.get_merged_outages(
+            self.api.planned,
+            now,
+            PLANNED_OUTAGE_LOOKAHEAD,
         )
-        if not is_outage_event(next_event):
-            return None
-        LOGGER.debug("Next planned outage: %s", next_event)
-        return next_event.start
+
+        if event := find_next_outage(events, now):
+            LOGGER.debug("Next planned outage: %s", event)
+            return event.start
+
+        return None
 
     @property
     def next_probable_outage(self) -> datetime.date | datetime.datetime | None:
         """Get the next probable outage time."""
-        next_event = self.api.probable.get_next_event(
-            dt_utils.now(),
-            lookahead_days=PROBABLE_OUTAGE_LOOKAHEAD,
+        now = dt_utils.now()
+        events = self.get_merged_outages(
+            self.api.probable,
+            now,
+            PROBABLE_OUTAGE_LOOKAHEAD,
         )
-        if not is_outage_event(next_event):
-            return None
-        LOGGER.debug("Next probable outage: %s", next_event)
-        return next_event.start
+
+        if event := find_next_outage(events, now):
+            LOGGER.debug("Next probable outage: %s", event)
+            return event.start
+
+        return None
 
     @property
     def next_connectivity(self) -> datetime.date | datetime.datetime | None:
@@ -365,25 +385,24 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         Only planned events determine connectivity.
         Probable events are forecasts and do not affect connectivity calculation.
         """
-        current_event = self.current_event
-        current_state = self.current_state
+        now = dt_utils.now()
+        events = self.get_merged_outages(
+            self.api.planned,
+            now,
+            PLANNED_OUTAGE_LOOKAHEAD,
+        )
 
-        if current_state == STATE_OUTAGE and current_event:
-            return current_event.end
+        # Check if we are in an outage
+        for event in events:
+            if event.start <= now < event.end:
+                return event.end
 
-        try:
-            next_event = self.api.planned.get_next_event(
-                dt_utils.now(),
-                lookahead_days=PLANNED_OUTAGE_LOOKAHEAD,
-            )
-        except Exception:  # noqa: BLE001
-            LOGGER.warning("Failed to get next planned outage", exc_info=True)
-            return None
+        # Find next outage
+        if event := find_next_outage(events, now):
+            LOGGER.debug("Next connectivity event: %s", event)
+            return event.start
 
-        if not is_outage_event(next_event):
-            return None
-        LOGGER.debug("Next connectivity event: %s", next_event)
-        return next_event.end
+        return None
 
     def get_outage_at(
         self,
@@ -448,3 +467,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def get_planned_dates(self) -> list[datetime.date]:
         """Get dates with planned outages."""
         return self.api.planned.get_planned_dates()
+
+    def get_merged_outages(
+        self,
+        api: BaseYasnoApi,
+        start_date: datetime.datetime,
+        lookahead_days: int,
+    ) -> list[OutageEvent]:
+        """Get merged outage events for a lookahead period."""
+        end_date = start_date + datetime.timedelta(days=lookahead_days)
+        events = self.get_events_between(api, start_date, end_date)
+        return merge_consecutive_outages(events)
