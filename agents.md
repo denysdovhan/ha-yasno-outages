@@ -7,25 +7,12 @@ clarify uncertainty before coding, and align suggestions with the rules linked b
 
 ## Important directives
 
-<important>
-In all interactions and commit messages, be extremely concise and sacrifice grammar for the sake of concision.
-</important>
-
-<important>
-If anything here is unclear, tell me what you want to do and I'll expand these instructions.
-</important>
-
-<important>
-If you struggle to find a solution, suggest to add logger statements and ask for output to get more context and understand the flow better. When logger output is provided, analyze it to understand what is going on.
-</important>
-
-<important>
-When updating this file (`agents.md`), DON'T CHANGE the structure, formatting or style of the document. Just add relevant information, without restructuring: add list items, new sections, etc. NEVER REMOVE tags, like <important> or <instruction>.
-</important>
-
-<important>
-At the end of each plan, give me a list of unresolved questions to answer, if any. Make the questions extremely concise. Sacrifice grammar for the sake of concision.
-</important>
+- In all interactions and commit messages, be extremely concise and sacrifice grammar for the sake of concision.
+- If anything here is unclear, tell me what you want to do and I'll expand these instructions.
+- If you struggle to find a solution, suggest to add logger statements and ask for output to get more context and understand the flow better. When logger output is provided, analyze it to understand what is going on.
+- When updating this file (`agents.md`), DON'T CHANGE the structure, formatting or style of the document. Just add relevant information, without restructuring: add list items, new sections, etc. NEVER REMOVE tags, like <important> or <instruction>.
+- At the end of each plan, give me a list of unresolved questions to answer, if any. Make the questions extremely concise. Sacrifice grammar for the sake of concision.
+- Always use conventional commits format for commit messages.
 
 ## Project Overview
 
