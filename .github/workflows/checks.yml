@@ -1,4 +1,4 @@
-name: Lint
+name: Checks
 
 on:
   push:
@@ -13,8 +13,8 @@ on:
       - uv.lock
 
 jobs:
-  python:
-    name: Python
+  checks:
+    name: Checks
     runs-on: ubuntu-latest
     steps:
       - name: ⬇️ Checkout Repo
@@ -35,3 +35,6 @@ jobs:
 
       - name: ⚙️ Lint
         run: uv run pre-commit run --all-files
+
+      - name: 🧪 Run tests
+        run: uv run pytest tests
