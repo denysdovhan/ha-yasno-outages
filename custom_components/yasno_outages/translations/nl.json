@@ -1,0 +1,126 @@
+{
+  "title": "Yasno Stroomonderbrekingen",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "region": "Selecteer je regio:"
+        }
+      },
+      "provider": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "provider": "Selecteer je provider:"
+        }
+      },
+      "group": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "group": "Selecteer je groep:",
+          "filter_probable": "Verberg waarschijnlijke onderbrekingen op geplande dagen",
+          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+        },
+        "data_description": {
+          "group": "Je kunt je groep vinden op: https://static.yasno.ua/kyiv/outages",
+          "filter_probable": "Verbergt waarschijnlijke onderbrekingen in de kalender op dagen waarop een gepland schema beschikbaar is",
+          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "region": "Selecteer je regio:"
+        }
+      },
+      "provider": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "provider": "Selecteer je provider:"
+        }
+      },
+      "group": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "group": "Selecteer je groep:",
+          "filter_probable": "Verberg waarschijnlijke onderbrekingen wanneer een gepland schema beschikbaar is",
+          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+        },
+        "data_description": {
+          "group": "Je kunt je groep vinden op: https://static.yasno.ua/kyiv/outages",
+          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven"
+        }
+      }
+    }
+  },
+
+  "device": {
+    "yasno_outages": {
+      "name": "Yasno {region} {provider} {group}"
+    }
+  },
+  "entity": {
+    "calendar": {
+      "planned_outages": {
+        "name": "Geplande Onderbrekingen"
+      },
+      "probable_outages": {
+        "name": "Waarschijnlijke Onderbrekingen"
+      }
+    },
+    "sensor": {
+      "electricity": {
+        "name": "Elektriciteit",
+        "state": {
+          "normal": "Verbonden",
+          "outage": "Onderbreking"
+        }
+      },
+      "schedule_updated_on": {
+        "name": "Schema Bijgewerkt Op"
+      },
+      "next_planned_outage": {
+        "name": "Volgende Geplande Onderbreking"
+      },
+      "next_probable_outage": {
+        "name": "Volgende Waarschijnlijke Onderbreking"
+      },
+      "next_connectivity": {
+        "name": "Volgende Herverbinding"
+      },
+      "status_today": {
+        "name": "Status Vandaag",
+        "state": {
+          "schedule_applies": "Schema van Toepassing",
+          "waiting_for_schedule": "Wachten op Schema",
+          "emergency_shutdowns": "Noodafschakelingen"
+        }
+      },
+      "status_tomorrow": {
+        "name": "Status Morgen",
+        "state": {
+          "schedule_applies": "Schema van Toepassing",
+          "waiting_for_schedule": "Wachten op Schema",
+          "emergency_shutdowns": "Noodafschakelingen"
+        }
+      }
+    }
+  },
+  "common": {
+    "planned_electricity_outage": "Onderbreking",
+    "probable_electricity_outage": "Waarschijnlijke Onderbreking",
+    "status_schedule_applies": "Schema van Toepassing",
+    "status_waiting_for_schedule": "Wachten op Schema",
+    "status_emergency_shutdowns": "Noodafschakelingen"
+  },
+  "issues": {
+    "missing_config": {
+      "title": "{entry_title}: Configuratie onvolledig",
+      "description": "Deze integratie mist vereiste instellingen (regio en/of provider).\n\nOm dit op te lossen, [bewerk de integratie]({edit}) en vul de juiste regio en provider in."
+    }
+  }
+}
