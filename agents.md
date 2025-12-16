@@ -305,15 +305,17 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - Translate values only; keep keys the same. Preserve placeholders: `{region}`, `{provider}`, `{group}`.
   - Structure: `config.step.*` (flows), `entity.{platform}.{key}` (entities), `device.*` (device naming), `common.*` (shared strings), `issues.*` (repairs).
 - **Testing**
-  - Tests in `tests/` cover API modules (`models.py`, `base.py`, `planned.py`, `probable.py`).
-  - 104 tests total, 94% coverage of API layer.
+  - Tests in `tests/` cover API and integration modules.
+  - API tests in `tests/api/`: `test_models.py`, `test_base.py`, `test_planned.py`, `test_probable.py` (104 tests, 94% API coverage).
+  - Integration tests: `test_helpers.py`, `test_calendar.py`, `test_coordinator.py` (46 tests).
   - Run `scripts/test` for full test suite with coverage.
-  - Run `uv run pytest tests/test_models.py` for specific test file.
+  - Run `uv run pytest tests/api/test_models.py` for specific test file.
   - Run `uv run pytest tests/test_base.py::TestBaseYasnoApiInit` for specific test class.
   - Fixtures in `tests/conftest.py`: `today`, `tomorrow`, `regions_data`, `planned_outage_data`, `probable_outage_data`.
   - Use async/await for async tests; pytest-asyncio handles automatically.
   - Mock aiohttp responses with `AsyncMock` for API fetch tests.
-  - When adding API features, write tests first (TDD). Maintain >90% coverage.
+  - Mock coordinator/HA components with `MagicMock` for integration tests.
+  - When adding features, write tests. Maintain >90% API coverage.
 - **When unsure**
   - Prefer adding debug logs and ask for the output to reason about runtime state.
 
