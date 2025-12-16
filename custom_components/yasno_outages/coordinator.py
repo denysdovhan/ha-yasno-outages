@@ -400,7 +400,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Find next outage
         if event := find_next_outage(events, now):
             LOGGER.debug("Next connectivity event: %s", event)
-            return event.start
+            return event.end
 
         return None
 
