@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "==> Running tests with coverage..."
+uv run pytest tests/ --cov=custom_components.yasno_outages.api --cov-report=term-missing --cov-report=xml
+
+echo "==> Tests completed!"
