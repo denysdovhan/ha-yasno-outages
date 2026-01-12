@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.const import CONF_SCAN_INTERVAL
+
 from .const import (
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
@@ -46,6 +48,7 @@ async def async_get_config_entry_diagnostics(
                 "group": data.get(CONF_GROUP),
                 "filter_probable": data.get(CONF_FILTER_PROBABLE),
                 "status_all_day_events": data.get(CONF_STATUS_ALL_DAY_EVENTS),
+                CONF_SCAN_INTERVAL: data.get(CONF_SCAN_INTERVAL),
             },
             "options": {
                 "region": entry.options.get(CONF_REGION),
@@ -57,7 +60,6 @@ async def async_get_config_entry_diagnostics(
         },
         "coordinator": {
             "last_update_success": coordinator.last_update_success,
-            "update_interval": str(coordinator.update_interval),
             "region": coordinator.region,
             "region_id": coordinator.region_id,
             "provider": coordinator.provider,

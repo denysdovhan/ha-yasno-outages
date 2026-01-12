@@ -18,9 +18,6 @@ CONF_SERVICE: Final = "service"  # Deprecated, use CONF_PROVIDER
 PROVIDER_DTEK_FULL: Final = "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ"
 PROVIDER_DTEK_SHORT: Final = "ДТЕК"
 
-# Consts
-UPDATE_INTERVAL: Final = 15  # minutes
-
 # Horizon constants for event lookahead
 PLANNED_OUTAGE_LOOKAHEAD = 1  # day
 PROBABLE_OUTAGE_LOOKAHEAD = 7  # days

@@ -19,12 +19,14 @@
         "data": {
           "group": "Selecteer je groep:",
           "filter_probable": "Verberg waarschijnlijke onderbrekingen op geplande dagen",
-          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+          "status_all_day_events": "Toon status-evenementen voor de hele dag",
+          "scan_interval": "Updatefrequentie"
         },
         "data_description": {
           "group": "Je kunt je groep vinden op: https://static.yasno.ua/kyiv/outages",
           "filter_probable": "Verbergt waarschijnlijke onderbrekingen in de kalender op dagen waarop een gepland schema beschikbaar is",
-          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven"
+          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven",
+          "scan_interval": "Aantal minuten tussen het bijwerken van grafieken"
         }
       }
     }

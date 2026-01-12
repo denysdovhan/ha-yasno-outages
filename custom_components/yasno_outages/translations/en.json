@@ -19,12 +19,14 @@
         "data": {
           "group": "Please select your group:",
           "filter_probable": "Hide probable outages for planned days",
-          "status_all_day_events": "Show status all-day events"
+          "status_all_day_events": "Show status all-day events",
+          "scan_interval": "Update interval"
         },
         "data_description": {
           "group": "You can find your group at: https://static.yasno.ua/kyiv/outages",
           "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
-          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status",
+          "scan_interval": "The number of minutes between updates"
         }
       }
     }
