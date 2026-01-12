@@ -10,6 +10,7 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlow,
 )
+from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
     SelectSelector,
@@ -122,6 +123,17 @@ def build_group_schema(
                     default=True,
                 ),
             ): bool,
+            vol.Optional(
+                CONF_SCAN_INTERVAL,
+                default=get_config_value(
+                    config_entry,
+                    CONF_SCAN_INTERVAL,
+                    default=15,
+                ),
+            ): vol.All(
+                vol.Coerce(int),
+                vol.Range(min=1, max=60),
+            ),
         },
     )
 
