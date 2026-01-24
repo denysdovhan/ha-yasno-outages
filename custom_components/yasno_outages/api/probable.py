@@ -40,7 +40,13 @@ class ProbableOutagesApi(BaseYasnoApi):
         )
 
         async with aiohttp.ClientSession() as session:
-            self.probable_outages_data = await self._get_data(session, url)
+            new_data = await self._get_data(session, url)
+
+        if new_data is None:
+            LOGGER.warning("Probable outages fetch failed, keeping cached data")
+            return
+
+        self.probable_outages_data = new_data
 
     def get_probable_slots_for_weekday(
         self,

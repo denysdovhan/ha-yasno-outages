@@ -1,5 +1,6 @@
 """Base API class for Yasno outages."""
 
+import asyncio
 import datetime
 import logging
 from abc import ABC, abstractmethod
@@ -32,18 +33,37 @@ class BaseYasnoApi(ABC):
         session: aiohttp.ClientSession,
         url: str,
         timeout_secs: int = 60,
+        retries: int = 3,
+        retry_delay_secs: float = 2.0,
     ) -> dict | None:
         """Fetch data from the given URL."""
-        try:
-            async with session.get(
-                url,
-                timeout=aiohttp.ClientTimeout(total=timeout_secs),
-            ) as response:
-                response.raise_for_status()
-                return await response.json()
-        except aiohttp.ClientError:
+        last_error: Exception | None = None
+        for attempt in range(1, retries + 1):
+            try:
+                async with session.get(
+                    url,
+                    timeout=aiohttp.ClientTimeout(total=timeout_secs),
+                ) as response:
+                    response.raise_for_status()
+                    return await response.json()
+            except aiohttp.ClientError as err:
+                last_error = err
+                if attempt < retries:
+                    LOGGER.warning(
+                        "Fetch failed (%s/%s), retrying in %ss: %s",
+                        attempt,
+                        retries,
+                        retry_delay_secs,
+                        url,
+                    )
+                    await asyncio.sleep(retry_delay_secs)
+                    continue
+                LOGGER.exception("Error fetching data from %s", url)
+                return None
+
+        if last_error:
             LOGGER.exception("Error fetching data from %s", url)
-            return None
+        return None
 
     async def fetch_regions(self) -> None:
         """Fetch regions and providers data."""

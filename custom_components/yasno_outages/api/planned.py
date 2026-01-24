@@ -47,7 +47,13 @@ class PlannedOutagesApi(BaseYasnoApi):
         )
 
         async with aiohttp.ClientSession() as session:
-            self.planned_outages_data = await self._get_data(session, url)
+            new_data = await self._get_data(session, url)
+
+        if new_data is None:
+            LOGGER.warning("Planned outages fetch failed, keeping cached data")
+            return
+
+        self.planned_outages_data = new_data
 
     def get_groups(self) -> list[str]:
         """Get groups from planned outages data."""
