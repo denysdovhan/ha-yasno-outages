@@ -369,7 +369,9 @@ class TestCoordinatorPlannedEventFiltering:
         coordinator.api.planned.get_events_between = MagicMock(
             return_value=[outage_event]
         )
-        coordinator.api.planned.get_today_date = MagicMock(return_value=start_date.date())
+        coordinator.api.planned.get_today_date = MagicMock(
+            return_value=start_date.date()
+        )
         coordinator.api.planned.get_status_today = MagicMock(
             return_value=API_STATUS_WAITING_FOR_SCHEDULE
         )
@@ -394,7 +396,9 @@ class TestCoordinatorPlannedEventFiltering:
         coordinator.api.planned.get_events_between = MagicMock(
             return_value=[outage_event]
         )
-        coordinator.api.planned.get_today_date = MagicMock(return_value=start_date.date())
+        coordinator.api.planned.get_today_date = MagicMock(
+            return_value=start_date.date()
+        )
         coordinator.api.planned.get_status_today = MagicMock(
             return_value=API_STATUS_SCHEDULE_APPLIES
         )
