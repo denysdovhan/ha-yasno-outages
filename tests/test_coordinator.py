@@ -380,9 +380,7 @@ class TestCoordinatorPlannedEventFiltering:
 
         assert events == []
 
-    def test_planned_events_between_keeps_schedule_applies(
-        self, coordinator, today
-    ):
+    def test_planned_events_between_keeps_schedule_applies(self, coordinator, today):
         """Test planned events remain when schedule applies."""
         start_date = today
         end_date = today + timedelta(days=1)
