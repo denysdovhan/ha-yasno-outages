@@ -421,6 +421,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     def get_planned_outage_at(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the planned outage event at a given time."""
+        if self._is_waiting_for_schedule(at.date()):
+            return None
         return self.get_outage_at(self.api.planned, at)
 
     def get_probable_outage_at(self, at: datetime.datetime) -> OutageEvent | None:
@@ -454,7 +456,28 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         end_date: datetime.datetime,
     ) -> list[OutageEvent]:
         """Get all planned events (filtering out NOT_PLANNED)."""
-        return self.get_events_between(self.api.planned, start_date, end_date)
+        events = self.get_events_between(self.api.planned, start_date, end_date)
+        return [
+            event
+            for event in events
+            if not self._is_waiting_for_schedule(event.start.date())
+        ]
+
+    def _planned_status_for_date(self, date: datetime.date) -> str | None:
+        """Get raw planned status for a given date, if available."""
+        today_date = self.api.planned.get_today_date()
+        if today_date and date == today_date:
+            return self.api.planned.get_status_today()
+
+        tomorrow_date = self.api.planned.get_tomorrow_date()
+        if tomorrow_date and date == tomorrow_date:
+            return self.api.planned.get_status_tomorrow()
+
+        return None
+
+    def _is_waiting_for_schedule(self, date: datetime.date) -> bool:
+        """Return True when planned schedule status is waiting for schedule."""
+        return self._planned_status_for_date(date) == API_STATUS_WAITING_FOR_SCHEDULE
 
     def get_probable_events_between(
         self,

@@ -332,6 +332,78 @@ class TestCoordinatorGetOutageAt:
         assert result is None
 
 
+class TestCoordinatorPlannedEventFiltering:
+    """Test planned schedule filtering for calendar events."""
+
+    def test_planned_outage_at_skips_waiting_status(self, coordinator, today):
+        """Test planned outage is skipped when schedule is waiting."""
+        now = today + timedelta(hours=11)
+        outage_event = OutageEvent(
+            start=today + timedelta(hours=10),
+            end=today + timedelta(hours=12),
+            event_type=OutageEventType.DEFINITE,
+            source=OutageSource.PLANNED,
+        )
+
+        coordinator.api.planned.get_current_event = MagicMock(return_value=outage_event)
+        coordinator.api.planned.get_today_date = MagicMock(return_value=now.date())
+        coordinator.api.planned.get_status_today = MagicMock(
+            return_value=API_STATUS_WAITING_FOR_SCHEDULE
+        )
+
+        result = coordinator.get_planned_outage_at(now)
+
+        assert result is None
+
+    def test_planned_events_between_skips_waiting_status(self, coordinator, today):
+        """Test planned events are skipped when schedule is waiting."""
+        start_date = today
+        end_date = today + timedelta(days=1)
+        outage_event = OutageEvent(
+            start=today + timedelta(hours=10),
+            end=today + timedelta(hours=12),
+            event_type=OutageEventType.DEFINITE,
+            source=OutageSource.PLANNED,
+        )
+
+        coordinator.api.planned.get_events_between = MagicMock(
+            return_value=[outage_event]
+        )
+        coordinator.api.planned.get_today_date = MagicMock(return_value=start_date.date())
+        coordinator.api.planned.get_status_today = MagicMock(
+            return_value=API_STATUS_WAITING_FOR_SCHEDULE
+        )
+
+        events = coordinator.get_planned_events_between(start_date, end_date)
+
+        assert events == []
+
+    def test_planned_events_between_keeps_schedule_applies(
+        self, coordinator, today
+    ):
+        """Test planned events remain when schedule applies."""
+        start_date = today
+        end_date = today + timedelta(days=1)
+        outage_event = OutageEvent(
+            start=today + timedelta(hours=10),
+            end=today + timedelta(hours=12),
+            event_type=OutageEventType.DEFINITE,
+            source=OutageSource.PLANNED,
+        )
+
+        coordinator.api.planned.get_events_between = MagicMock(
+            return_value=[outage_event]
+        )
+        coordinator.api.planned.get_today_date = MagicMock(return_value=start_date.date())
+        coordinator.api.planned.get_status_today = MagicMock(
+            return_value=API_STATUS_SCHEDULE_APPLIES
+        )
+
+        events = coordinator.get_planned_events_between(start_date, end_date)
+
+        assert events == [outage_event]
+
+
 class TestCoordinatorEventToState:
     """Test _event_to_state method."""
 
