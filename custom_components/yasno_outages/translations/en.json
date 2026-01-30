@@ -96,30 +96,10 @@
       "init": {
         "title": "Yasno Outages Settings",
         "data": {
-          "region": "Please select your region:"
-        },
-        "data_description": {
-          "region": "Select the region used to fetch outage schedules"
-        }
-      },
-      "provider": {
-        "title": "Yasno Outages Settings",
-        "data": {
-          "provider": "Please select your provider:"
-        },
-        "data_description": {
-          "provider": "Select the distribution system operator"
-        }
-      },
-      "group": {
-        "title": "Yasno Outages Settings",
-        "data": {
-          "group": "Please select your group:",
           "filter_probable": "Hide probable outages when planned schedule is available",
           "status_all_day_events": "Show status all-day events"
         },
         "data_description": {
-          "group": "You can find your group at: {yasno_group_url}",
           "filter_probable": "Hides probable outages when planned schedule exists for a day",
           "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status"
         }

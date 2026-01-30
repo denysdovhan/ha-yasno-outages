@@ -96,30 +96,10 @@
       "init": {
         "title": "Yasno Stroomonderbrekingen Instellingen",
         "data": {
-          "region": "Selecteer je regio:"
-        },
-        "data_description": {
-          "region": "Regio gebruikt voor het ophalen van storingsschema's"
-        }
-      },
-      "provider": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
-        "data": {
-          "provider": "Selecteer je provider:"
-        },
-        "data_description": {
-          "provider": "Selecteer de netbeheerder"
-        }
-      },
-      "group": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
-        "data": {
-          "group": "Selecteer je groep:",
           "filter_probable": "Verberg waarschijnlijke onderbrekingen wanneer een gepland schema beschikbaar is",
           "status_all_day_events": "Toon status-evenementen voor de hele dag"
         },
         "data_description": {
-          "group": "Je kunt je groep vinden op: {yasno_group_url}",
           "filter_probable": "Verbergt waarschijnlijke onderbrekingen als er een gepland schema is",
           "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven"
         }

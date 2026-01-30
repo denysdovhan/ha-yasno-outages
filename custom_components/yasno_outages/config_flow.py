@@ -132,40 +132,6 @@ def build_group_schema(
     )
 
 
-def build_group_options_schema(
-    groups: list[str],
-    config_entry: ConfigEntry | None,
-) -> vol.Schema:
-    """Build the schema for the group and options selection step."""
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_GROUP,
-                default=get_config_value(config_entry, CONF_GROUP),
-            ): SelectSelector(
-                SelectSelectorConfig(
-                    options=groups,
-                    translation_key="group",
-                ),
-            ),
-            vol.Required(
-                CONF_FILTER_PROBABLE,
-                default=get_config_value(
-                    config_entry, CONF_FILTER_PROBABLE, default=True
-                ),
-            ): bool,
-            vol.Required(
-                CONF_STATUS_ALL_DAY_EVENTS,
-                default=get_config_value(
-                    config_entry,
-                    CONF_STATUS_ALL_DAY_EVENTS,
-                    default=True,
-                ),
-            ): bool,
-        },
-    )
-
-
 def build_preferences_schema(
     config_entry: ConfigEntry | None,
 ) -> vol.Schema:
@@ -199,89 +165,15 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
         self.data: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
-        """Handle the region change."""
+        """Handle options."""
         if user_input is not None:
             LOGGER.debug("Updating options: %s", user_input)
             self.data.update(user_input)
-            return await self.async_step_provider()
-
-        await self.api.fetch_regions()
-
-        LOGGER.debug("Options: %s", self.config_entry.options)
-        LOGGER.debug("Data: %s", self.config_entry.data)
+            return self.async_create_entry(title="", data=self.data)
 
         return self.async_show_form(
             step_id="init",
-            data_schema=build_region_schema(
-                api=self.api, config_entry=self.config_entry
-            ),
-        )
-
-    async def async_step_provider(
-        self,
-        user_input: dict | None = None,
-    ) -> ConfigFlowResult:
-        """Handle the provider change."""
-        if user_input is not None:
-            LOGGER.debug("Provider selected: %s", user_input)
-            self.data.update(user_input)
-            return await self.async_step_group()
-
-        return self.async_show_form(
-            step_id="provider",
-            data_schema=build_provider_schema(
-                api=self.api,
-                config_entry=self.config_entry,
-                data=self.data,
-            ),
-        )
-
-    async def async_step_group(
-        self,
-        user_input: dict | None = None,
-    ) -> ConfigFlowResult:
-        """Handle the group change."""
-        if user_input is not None:
-            LOGGER.debug("Group selected: %s", user_input)
-            self.data.update(user_input)
-            # Update entry title along with options
-            updated_data = dict(self.config_entry.data)
-            updated_data[CONF_REGION] = self.data[CONF_REGION]
-            updated_data[CONF_PROVIDER] = self.data[CONF_PROVIDER]
-            updated_data[CONF_GROUP] = self.data[CONF_GROUP]
-            updated_data.pop(CONF_STREET_ID, None)
-            updated_data.pop(CONF_HOUSE_ID, None)
-            updated_data.pop(CONF_ADDRESS_NAME, None)
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                title=build_entry_title(
-                    region=self.data[CONF_REGION],
-                    provider=self.data[CONF_PROVIDER],
-                    group=self.data[CONF_GROUP],
-                ),
-                data=updated_data,
-            )
-            return self.async_create_entry(title="", data=self.data)
-
-        # Fetch groups for the selected region/provider
-        region = self.data[CONF_REGION]
-        provider = self.data[CONF_PROVIDER]
-
-        region_data = self.api.get_region_by_name(region)
-        provider_data = self.api.get_provider_by_name(region, provider)
-        groups = []
-        if region_data and provider_data:
-            temp_api = YasnoApi(
-                region_id=region_data["id"],
-                provider_id=provider_data["id"],
-            )
-            await temp_api.planned.fetch_planned_outages_data()
-            groups = temp_api.planned.get_groups()
-
-        return self.async_show_form(
-            step_id="group",
-            data_schema=build_group_options_schema(groups, self.config_entry),
-            description_placeholders={"yasno_group_url": YASNO_GROUP_URL},
+            data_schema=build_preferences_schema(self.config_entry),
         )
 
 
