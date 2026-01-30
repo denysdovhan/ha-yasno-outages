@@ -2,12 +2,16 @@
 
 import datetime
 from datetime import timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.const import STATE_UNKNOWN
 
-from custom_components.yasno_outages.api import OutageEvent, OutageEventType
+from custom_components.yasno_outages.api import (
+    OutageEvent,
+    OutageEventType,
+    YasnoApiError,
+)
 from custom_components.yasno_outages.api.const import (
     API_STATUS_EMERGENCY_SHUTDOWNS,
     API_STATUS_SCHEDULE_APPLIES,
@@ -669,3 +673,129 @@ class TestCoordinatorProviderName:
 
         assert provider_name == "ДТЕК"
         assert coordinator._provider_name == "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»"
+
+
+class TestCoordinatorDataCaching:
+    """Test data caching when API fails."""
+
+    async def test_restores_planned_data_on_api_failure(self, coordinator):
+        """Test restores cached planned data when API fails."""
+        # Set up cached data
+        cached_data = {"group": {"today": {}, "tomorrow": {}}}
+        coordinator.api.planned.planned_outages_data = cached_data
+        coordinator.api.probable.probable_outages_data = None
+
+        # Set resolved IDs to skip ID resolution
+        coordinator.region_id = 25
+        coordinator.provider_id = 902
+
+        # Make planned fetch raise YasnoApiError
+        async def raise_api_error():
+            raise YasnoApiError
+
+        coordinator.api.planned.fetch_data = raise_api_error
+        coordinator.api.probable.fetch_data = AsyncMock()
+
+        # Run update
+        with patch(
+            "custom_components.yasno_outages.coordinator.async_get_translations",
+            return_value={},
+        ):
+            await coordinator._async_update_data()
+
+        # Cached data should be restored
+        assert coordinator.api.planned.planned_outages_data == cached_data
+
+    async def test_restores_probable_data_on_api_failure(self, coordinator):
+        """Test restores cached probable data when API fails."""
+        # Set up cached data
+        cached_planned = {"group": {"today": {}, "tomorrow": {}}}
+        cached_probable = {"25": {"dsos": {"902": {"groups": {}}}}}
+        coordinator.api.planned.planned_outages_data = cached_planned
+        coordinator.api.probable.probable_outages_data = cached_probable
+
+        # Set resolved IDs to skip ID resolution
+        coordinator.region_id = 25
+        coordinator.provider_id = 902
+
+        # Make probable fetch raise YasnoApiError
+        async def raise_api_error():
+            raise YasnoApiError
+
+        coordinator.api.planned.fetch_data = AsyncMock()
+        coordinator.api.probable.fetch_data = raise_api_error
+
+        # Run update
+        with patch(
+            "custom_components.yasno_outages.coordinator.async_get_translations",
+            return_value={},
+        ):
+            await coordinator._async_update_data()
+
+        # Cached data should be restored
+        assert coordinator.api.probable.probable_outages_data == cached_probable
+
+    async def test_updates_data_on_successful_fetch(self, coordinator):
+        """Test updates data when API fetch succeeds."""
+        # Set up initial cached data
+        old_data = {"old": "data"}
+        coordinator.api.planned.planned_outages_data = old_data
+        coordinator.api.probable.probable_outages_data = old_data
+
+        # Set resolved IDs to skip ID resolution
+        coordinator.region_id = 25
+        coordinator.provider_id = 902
+
+        # Set up new data that fetch will return
+        new_planned = {"new": "planned"}
+        new_probable = {"new": "probable"}
+
+        async def fetch_planned():
+            coordinator.api.planned.planned_outages_data = new_planned
+
+        async def fetch_probable():
+            coordinator.api.probable.probable_outages_data = new_probable
+
+        coordinator.api.planned.fetch_data = fetch_planned
+        coordinator.api.probable.fetch_data = fetch_probable
+
+        # Run update
+        with patch(
+            "custom_components.yasno_outages.coordinator.async_get_translations",
+            return_value={},
+        ):
+            await coordinator._async_update_data()
+
+        # New data should be set
+        assert coordinator.api.planned.planned_outages_data == new_planned
+        assert coordinator.api.probable.probable_outages_data == new_probable
+
+    async def test_both_apis_fail_restores_both_caches(self, coordinator):
+        """Test restores both caches when both APIs fail."""
+        # Set up cached data
+        cached_planned = {"planned": "cache"}
+        cached_probable = {"probable": "cache"}
+        coordinator.api.planned.planned_outages_data = cached_planned
+        coordinator.api.probable.probable_outages_data = cached_probable
+
+        # Set resolved IDs to skip ID resolution
+        coordinator.region_id = 25
+        coordinator.provider_id = 902
+
+        # Make both fetch raise YasnoApiError
+        async def raise_api_error():
+            raise YasnoApiError
+
+        coordinator.api.planned.fetch_data = raise_api_error
+        coordinator.api.probable.fetch_data = raise_api_error
+
+        # Run update
+        with patch(
+            "custom_components.yasno_outages.coordinator.async_get_translations",
+            return_value={},
+        ):
+            await coordinator._async_update_data()
+
+        # Both caches should be restored
+        assert coordinator.api.planned.planned_outages_data == cached_planned
+        assert coordinator.api.probable.probable_outages_data == cached_probable

@@ -6,7 +6,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import aiohttp
 import pytest
 
-from custom_components.yasno_outages.api.models import OutageEventType, OutageSource
+from custom_components.yasno_outages.api.models import (
+    OutageEventType,
+    OutageSource,
+    YasnoApiError,
+)
 from custom_components.yasno_outages.api.planned import PlannedOutagesApi
 
 TEST_REGION_ID = 25
@@ -64,11 +68,11 @@ class TestPlannedOutagesApiFetchData:
         assert api.planned_outages_data is None
 
     async def test_fetch_planned_outages_error(self, api):
-        """Test planned outage fetch with error."""
+        """Test planned outage fetch with error raises YasnoApiError."""
         with patch("aiohttp.ClientSession.get") as mock_get:
             mock_get.return_value.__aenter__.side_effect = aiohttp.ClientError()
-            await api.fetch_planned_outages_data()
-            assert api.planned_outages_data is None
+            with pytest.raises(YasnoApiError):
+                await api.fetch_planned_outages_data()
 
     async def test_fetch_data(self, api, planned_outage_data):
         """Test fetch_data method."""
