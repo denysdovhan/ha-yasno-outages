@@ -3,11 +3,15 @@
 import datetime
 import logging
 from abc import ABC, abstractmethod
-from urllib.parse import quote_plus
 
 import aiohttp
 
 from .const import (
+    API_PARAM_DSO_ID,
+    API_PARAM_HOUSE_ID,
+    API_PARAM_QUERY,
+    API_PARAM_REGION_ID,
+    API_PARAM_STREET_ID,
     GROUP_BY_ADDRESS_ENDPOINT,
     HOUSES_ENDPOINT,
     REGIONS_ENDPOINT,
@@ -44,23 +48,29 @@ class BaseYasnoApi(ABC):
         session: aiohttp.ClientSession,
         url: str,
         timeout_secs: int = 60,
+        params: dict[str, int | str] | None = None,
     ) -> dict | list:
         """Fetch data from the given URL."""
         try:
             async with session.get(
                 url,
                 timeout=aiohttp.ClientTimeout(total=timeout_secs),
+                params=params,
             ) as response:
                 response.raise_for_status()
                 return await response.json()
-        except aiohttp.ClientError as err:
+        except (aiohttp.ClientError, aiohttp.ContentTypeError, ValueError) as err:
             msg = f"Failed to fetch data from {url}"
             raise YasnoApiError(msg) from err
 
     async def fetch_regions(self) -> None:
         """Fetch regions and providers data."""
         async with aiohttp.ClientSession() as session:
-            self.regions_data = await self._get_data(session, REGIONS_ENDPOINT)
+            data = await self._get_data(session, REGIONS_ENDPOINT)
+        if not isinstance(data, list):
+            msg = "Unexpected regions response format"
+            raise YasnoApiError(msg)
+        self.regions_data = data
 
     def get_regions(self) -> list[dict]:
         """Get a list of available regions."""
@@ -103,15 +113,20 @@ class BaseYasnoApi(ABC):
             )
             return []
 
-        url = STREETS_ENDPOINT.format(
-            region_id=region_id,
-            dso_id=provider_id,
-            query=quote_plus(query),
-        )
-
         async with aiohttp.ClientSession() as session:
-            data = await self._get_data(session, url)
-        return data if isinstance(data, list) else []
+            data = await self._get_data(
+                session,
+                STREETS_ENDPOINT,
+                params={
+                    API_PARAM_REGION_ID: region_id,
+                    API_PARAM_DSO_ID: provider_id,
+                    API_PARAM_QUERY: query,
+                },
+            )
+        if not isinstance(data, list):
+            msg = "Unexpected streets response format"
+            raise YasnoApiError(msg)
+        return data
 
     async def fetch_houses(
         self,
@@ -128,16 +143,21 @@ class BaseYasnoApi(ABC):
             )
             return []
 
-        url = HOUSES_ENDPOINT.format(
-            region_id=region_id,
-            street_id=street_id,
-            dso_id=provider_id,
-            query=quote_plus(query),
-        )
-
         async with aiohttp.ClientSession() as session:
-            data = await self._get_data(session, url)
-        return data if isinstance(data, list) else []
+            data = await self._get_data(
+                session,
+                HOUSES_ENDPOINT,
+                params={
+                    API_PARAM_REGION_ID: region_id,
+                    API_PARAM_STREET_ID: street_id,
+                    API_PARAM_DSO_ID: provider_id,
+                    API_PARAM_QUERY: query,
+                },
+            )
+        if not isinstance(data, list):
+            msg = "Unexpected houses response format"
+            raise YasnoApiError(msg)
+        return data
 
     async def fetch_group_by_address(
         self,
@@ -154,25 +174,27 @@ class BaseYasnoApi(ABC):
             )
             return None
 
-        url = GROUP_BY_ADDRESS_ENDPOINT.format(
-            region_id=region_id,
-            street_id=street_id,
-            house_id=house_id,
-            dso_id=provider_id,
-        )
-
         async with aiohttp.ClientSession() as session:
-            data = await self._get_data(session, url)
+            data = await self._get_data(
+                session,
+                GROUP_BY_ADDRESS_ENDPOINT,
+                params={
+                    API_PARAM_REGION_ID: region_id,
+                    API_PARAM_STREET_ID: street_id,
+                    API_PARAM_HOUSE_ID: house_id,
+                    API_PARAM_DSO_ID: provider_id,
+                },
+            )
 
         if not isinstance(data, dict):
-            LOGGER.warning("Unexpected response for group by address: %s", data)
-            return None
+            msg = "Unexpected group-by-address response format"
+            raise YasnoApiError(msg)
 
         group = data.get("group")
         subgroup = data.get("subgroup")
         if group is None or subgroup is None:
-            LOGGER.warning("Missing group data for address response: %s", data)
-            return None
+            msg = "Missing group data in address response"
+            raise YasnoApiError(msg)
 
         return f"{group}.{subgroup}"
 

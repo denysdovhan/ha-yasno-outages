@@ -7,8 +7,8 @@ import aiohttp
 from dateutil.rrule import WEEKLY, rrule
 
 from .base import BaseYasnoApi
-from .const import PROBABLE_OUTAGES_ENDPOINT
-from .models import OutageEvent, OutageSlot, OutageSource
+from .const import API_PARAM_DSO_ID, API_PARAM_REGION_ID, PROBABLE_OUTAGES_ENDPOINT
+from .models import OutageEvent, OutageSlot, OutageSource, YasnoApiError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,13 +34,21 @@ class ProbableOutagesApi(BaseYasnoApi):
             )
             return
 
-        url = PROBABLE_OUTAGES_ENDPOINT.format(
-            region_id=self.region_id,
-            dso_id=self.provider_id,
-        )
+        url = PROBABLE_OUTAGES_ENDPOINT
 
         async with aiohttp.ClientSession() as session:
-            self.probable_outages_data = await self._get_data(session, url)
+            data = await self._get_data(
+                session,
+                url,
+                params={
+                    API_PARAM_REGION_ID: self.region_id,
+                    API_PARAM_DSO_ID: self.provider_id,
+                },
+            )
+        if not isinstance(data, dict):
+            msg = "Unexpected probable outages response format"
+            raise YasnoApiError(msg)
+        self.probable_outages_data = data
 
     def get_probable_slots_for_weekday(
         self,
