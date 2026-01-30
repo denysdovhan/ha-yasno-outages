@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 
+class YasnoApiError(Exception):
+    """Raised when Yasno API request fails."""
+
+
 class OutageEventType(StrEnum):
     """Outage event types."""
 

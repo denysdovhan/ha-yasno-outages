@@ -7,7 +7,13 @@ from abc import ABC, abstractmethod
 import aiohttp
 
 from .const import REGIONS_ENDPOINT
-from .models import OutageEvent, OutageEventType, OutageSlot, OutageSource
+from .models import (
+    OutageEvent,
+    OutageEventType,
+    OutageSlot,
+    OutageSource,
+    YasnoApiError,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +38,7 @@ class BaseYasnoApi(ABC):
         session: aiohttp.ClientSession,
         url: str,
         timeout_secs: int = 60,
-    ) -> dict | None:
+    ) -> dict:
         """Fetch data from the given URL."""
         try:
             async with session.get(
@@ -41,9 +47,9 @@ class BaseYasnoApi(ABC):
             ) as response:
                 response.raise_for_status()
                 return await response.json()
-        except aiohttp.ClientError:
-            LOGGER.exception("Error fetching data from %s", url)
-            return None
+        except aiohttp.ClientError as err:
+            msg = f"Failed to fetch data from {url}"
+            raise YasnoApiError(msg) from err
 
     async def fetch_regions(self) -> None:
         """Fetch regions and providers data."""
