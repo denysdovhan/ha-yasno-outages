@@ -65,11 +65,13 @@
         "title": "Yasno Stroomonderbrekingen Instellingen",
         "data": {
           "filter_probable": "Verberg waarschijnlijke onderbrekingen op geplande dagen",
-          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+          "status_all_day_events": "Toon status-evenementen voor de hele dag",
+          "scan_interval": "Updatefrequentie"
         },
         "data_description": {
           "filter_probable": "Verbergt waarschijnlijke onderbrekingen in de kalender op dagen waarop een gepland schema beschikbaar is",
-          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven"
+          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven",
+          "scan_interval": "Aantal minuten tussen updates"
         }
       },
       "group": {
@@ -97,11 +99,13 @@
         "title": "Yasno Stroomonderbrekingen Instellingen",
         "data": {
           "filter_probable": "Verberg waarschijnlijke onderbrekingen wanneer een gepland schema beschikbaar is",
-          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+          "status_all_day_events": "Toon status-evenementen voor de hele dag",
+          "scan_interval": "Updatefrequentie"
         },
         "data_description": {
           "filter_probable": "Verbergt waarschijnlijke onderbrekingen als er een gepland schema is",
-          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven"
+          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven",
+          "scan_interval": "Aantal minuten tussen updates"
         }
       }
     }

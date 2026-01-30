@@ -10,6 +10,7 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlow,
 )
+from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
     SelectOptionDict,
@@ -153,6 +154,17 @@ def build_preferences_schema(
     """Build the schema for preferences."""
     return vol.Schema(
         {
+            vol.Optional(
+                CONF_SCAN_INTERVAL,
+                default=get_config_value(
+                    config_entry,
+                    CONF_SCAN_INTERVAL,
+                    default=15,
+                ),
+            ): vol.All(
+                vol.Coerce(int),
+                vol.Range(min=1, max=60),
+            ),
             vol.Required(
                 CONF_FILTER_PROBABLE,
                 default=get_config_value(
