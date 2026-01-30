@@ -4,6 +4,7 @@ from typing import Final
 
 DOMAIN: Final = "yasno_outages"
 NAME: Final = "Yasno Outages"
+YASNO_GROUP_URL: Final = "https://static.yasno.ua/kyiv/outages"
 
 # Configuration option
 CONF_REGION: Final = "region"
