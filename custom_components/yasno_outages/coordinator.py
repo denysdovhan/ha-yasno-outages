@@ -6,7 +6,7 @@ import datetime
 import logging
 from typing import TYPE_CHECKING
 
-from homeassistant.const import STATE_UNKNOWN
+from homeassistant.const import CONF_SCAN_INTERVAL, STATE_UNKNOWN
 from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
@@ -45,7 +45,6 @@ from .const import (
     TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS,
     TRANSLATION_KEY_STATUS_SCHEDULE_APPLIES,
     TRANSLATION_KEY_STATUS_WAITING_FOR_SCHEDULE,
-    UPDATE_INTERVAL,
 )
 from .helpers import merge_consecutive_outages
 
@@ -113,7 +112,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             hass,
             LOGGER,
             name=DOMAIN,
-            update_interval=datetime.timedelta(minutes=UPDATE_INTERVAL),
+            update_interval=datetime.timedelta(
+                minutes=config_entry.options.get(
+                    CONF_SCAN_INTERVAL,
+                    config_entry.data.get(CONF_SCAN_INTERVAL, 15),
+                ),
+            ),
         )
         self.hass = hass
         self.config_entry = config_entry
