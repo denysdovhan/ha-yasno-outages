@@ -11,10 +11,7 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
-from homeassistant.helpers.selector import (
-    SelectSelector,
-    SelectSelectorConfig,
-)
+from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .api import YasnoApi
 from .const import (
@@ -51,19 +48,19 @@ def get_config_value(
     return default
 
 
-def build_entry_title(data: dict[str, Any]) -> str:
+def build_entry_title(*, region: str, provider: str, group: str) -> str:
     """Build a descriptive title from region, provider, and group."""
-    return f"Yasno {data[CONF_REGION]} {data[CONF_PROVIDER]} {data[CONF_GROUP]}"
+    return f"Yasno {region} {provider} {group}"
 
 
 def build_address_entry_title(
+    *,
     region: str,
-    provider: str,
     street: str,
     house: str,
 ) -> str:
     """Build a descriptive title from region, provider, and address."""
-    return f"Yasno {region} {provider} {street} {house}"
+    return f"Yasno {region} {street} {house}"
 
 
 def build_region_schema(
@@ -167,26 +164,10 @@ def build_group_options_schema(
     )
 
 
-def build_setup_mode_schema() -> vol.Schema:
-    """Build the schema for selecting setup mode."""
-    return vol.Schema(
-        {
-            vol.Required(CONF_SETUP_MODE, default=SETUP_MODE_GROUP): SelectSelector(
-                SelectSelectorConfig(
-                    options=[
-                        {"value": SETUP_MODE_GROUP, "label": "By group"},
-                        {"value": SETUP_MODE_ADDRESS, "label": "By address"},
-                    ],
-                ),
-            ),
-        },
-    )
-
-
-def build_address_options_schema(
+def build_preferences_schema(
     config_entry: ConfigEntry | None,
 ) -> vol.Schema:
-    """Build the schema for address options."""
+    """Build the schema for preferences."""
     return vol.Schema(
         {
             vol.Required(
@@ -264,7 +245,11 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
             # Update entry title along with options
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
-                title=build_entry_title(self.data),
+                title=build_entry_title(
+                    region=self.data[CONF_REGION],
+                    provider=self.data[CONF_PROVIDER],
+                    group=self.data[CONF_GROUP],
+                ),
             )
             return self.async_create_entry(title="", data=self.data)
 
@@ -356,20 +341,20 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_method(
         self,
-        user_input: dict | None = None,
+        user_input: dict | None = None,  # noqa: ARG002
     ) -> ConfigFlowResult:
         """Handle setup method selection."""
-        if user_input is not None:
-            LOGGER.debug("Setup method selected: %s", user_input)
-            self.data.update(user_input)
-            if self.data[CONF_SETUP_MODE] == SETUP_MODE_ADDRESS:
-                return await self.async_step_street_query()
-            return await self.async_step_group()
-
-        return self.async_show_form(
+        return self.async_show_menu(
             step_id="method",
-            data_schema=build_setup_mode_schema(),
+            menu_options=[SETUP_MODE_GROUP, SETUP_MODE_ADDRESS],
         )
+
+    async def async_step_address(
+        self,
+        user_input: dict | None = None,  # noqa: ARG002
+    ) -> ConfigFlowResult:
+        """Handle address setup method."""
+        return await self.async_step_street_query()
 
     async def async_step_street_query(
         self,
@@ -471,7 +456,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     if not group:
                         errors["base"] = "no_group"
                     else:
-                        return await self.async_step_address_options()
+                        return await self.async_step_preferences()
         else:
             region_id, provider_id = self._get_region_provider_ids()
             street_id = self.data.get(CONF_STREET_ID)
@@ -509,15 +494,19 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_address_options(
+    async def async_step_preferences(
         self,
         user_input: dict | None = None,
     ) -> ConfigFlowResult:
-        """Handle address options before entry creation."""
+        """Handle preferences before entry creation."""
         if user_input is not None:
             self.data.update(user_input)
             if self.data.get(CONF_GROUP):
-                title = build_entry_title(self.data)
+                title = build_entry_title(
+                    region=self.data[CONF_REGION],
+                    provider=self.data[CONF_PROVIDER],
+                    group=self.data[CONF_GROUP],
+                )
                 data = {
                     CONF_REGION: self.data[CONF_REGION],
                     CONF_PROVIDER: self.data[CONF_PROVIDER],
@@ -525,10 +514,9 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                 }
             else:
                 title = build_address_entry_title(
-                    self.data[CONF_REGION],
-                    self.data[CONF_PROVIDER],
-                    self._street_name,
-                    self._house_name,
+                    region=self.data[CONF_REGION],
+                    street=self._street_name,
+                    house=self._house_name,
                 )
                 data = {
                     CONF_REGION: self.data[CONF_REGION],
@@ -537,14 +525,18 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_HOUSE_ID: self.data[CONF_HOUSE_ID],
                 }
 
-            data[CONF_FILTER_PROBABLE] = self.data[CONF_FILTER_PROBABLE]
-            data[CONF_STATUS_ALL_DAY_EVENTS] = self.data[CONF_STATUS_ALL_DAY_EVENTS]
+            data.update(
+                {
+                    CONF_FILTER_PROBABLE: self.data[CONF_FILTER_PROBABLE],
+                    CONF_STATUS_ALL_DAY_EVENTS: self.data[CONF_STATUS_ALL_DAY_EVENTS],
+                }
+            )
 
             return self.async_create_entry(title=title, data=data)
 
         return self.async_show_form(
-            step_id="address_options",
-            data_schema=build_address_options_schema(None),
+            step_id="preferences",
+            data_schema=build_preferences_schema(None),
         )
 
     def _get_region_provider_ids(self) -> tuple[int | None, int | None]:
@@ -566,7 +558,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             LOGGER.debug("User input: %s", user_input)
             self.data.update(user_input)
-            return await self.async_step_address_options()
+            return await self.async_step_preferences()
 
         # Fetch groups for the selected region/provider
         region = self.data[CONF_REGION]

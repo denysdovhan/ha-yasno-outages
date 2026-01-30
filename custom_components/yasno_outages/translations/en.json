@@ -18,6 +18,10 @@
         "title": "Yasno Outages Settings",
         "data": {
           "setup_mode": "How do you want to select your group?"
+        },
+        "menu_options": {
+          "group": "By group",
+          "address": "By address"
         }
       },
       "street_query": {
@@ -38,7 +42,7 @@
           "house": "Select your house:"
         }
       },
-      "address_options": {
+      "preferences": {
         "title": "Yasno Outages Settings",
         "data": {
           "filter_probable": "Hide probable outages for planned days",

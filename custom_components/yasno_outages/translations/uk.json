@@ -18,6 +18,10 @@
         "title": "Налаштування Yasno Відключення",
         "data": {
           "setup_mode": "Як ви хочете обрати групу?"
+        },
+        "menu_options": {
+          "group": "За групою",
+          "address": "За адресою"
         }
       },
       "street_query": {
@@ -38,7 +42,7 @@
           "house": "Оберіть будинок:"
         }
       },
-      "address_options": {
+      "preferences": {
         "title": "Налаштування Yasno Відключення",
         "data": {
           "filter_probable": "Приховати ймовірні відключення для запланованих днів",
