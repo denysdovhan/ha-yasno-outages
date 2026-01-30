@@ -12,14 +12,11 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.const import CONF_SCAN_INTERVAL
 
 from .const import (
-    CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
-    CONF_HOUSE_ID,
     CONF_PROVIDER,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
-    CONF_STREET_ID,
 )
 
 if TYPE_CHECKING:
@@ -49,9 +46,6 @@ async def async_get_config_entry_diagnostics(
                 "region": data.get(CONF_REGION),
                 "provider": data.get(CONF_PROVIDER),
                 "group": data.get(CONF_GROUP),
-                "street_id": data.get(CONF_STREET_ID),
-                "house_id": data.get(CONF_HOUSE_ID),
-                "address_name_present": bool(data.get(CONF_ADDRESS_NAME)),
                 "filter_probable": data.get(CONF_FILTER_PROBABLE),
                 "status_all_day_events": data.get(CONF_STATUS_ALL_DAY_EVENTS),
                 CONF_SCAN_INTERVAL: data.get(CONF_SCAN_INTERVAL),
@@ -60,9 +54,6 @@ async def async_get_config_entry_diagnostics(
                 "region": entry.options.get(CONF_REGION),
                 "provider": entry.options.get(CONF_PROVIDER),
                 "group": entry.options.get(CONF_GROUP),
-                "street_id": entry.options.get(CONF_STREET_ID),
-                "house_id": entry.options.get(CONF_HOUSE_ID),
-                "address_name_present": bool(entry.options.get(CONF_ADDRESS_NAME)),
                 "filter_probable": entry.options.get(CONF_FILTER_PROBABLE),
                 "status_all_day_events": entry.options.get(CONF_STATUS_ALL_DAY_EVENTS),
                 CONF_SCAN_INTERVAL: entry.options.get(CONF_SCAN_INTERVAL),
