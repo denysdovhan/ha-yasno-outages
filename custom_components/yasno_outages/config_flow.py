@@ -11,7 +11,11 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+)
 
 from .api import YasnoApi
 from .const import (
@@ -132,6 +136,17 @@ def build_group_schema(
     )
 
 
+def build_select_options(options: dict[str, str]) -> list[SelectOptionDict]:
+    """Build select options from a value map."""
+    return [
+        SelectOptionDict(
+            label=value,
+            value=key,
+        )
+        for key, value in options.items()
+    ]
+
+
 def build_preferences_schema(
     config_entry: ConfigEntry | None,
 ) -> vol.Schema:
@@ -180,7 +195,7 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
 class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Yasno Outages."""
 
-    VERSION = 2
+    VERSION = 3
     MINOR_VERSION = 0
 
     def __init__(self) -> None:
@@ -322,10 +337,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_STREET): SelectSelector(
                         SelectSelectorConfig(
-                            options=[
-                                {"value": key, "label": value}
-                                for key, value in self._street_options.items()
-                            ]
+                            options=build_select_options(self._street_options)
                         ),
                     ),
                 }
@@ -370,10 +382,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_HOUSE): SelectSelector(
                         SelectSelectorConfig(
-                            options=[
-                                {"value": key, "label": value}
-                                for key, value in self._house_options.items()
-                            ]
+                            options=build_select_options(self._house_options)
                         ),
                     ),
                 }
