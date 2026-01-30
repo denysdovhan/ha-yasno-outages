@@ -22,7 +22,7 @@
           "status_all_day_events": "Toon status-evenementen voor de hele dag"
         },
         "data_description": {
-          "group": "Je kunt je groep vinden op: https://static.yasno.ua/kyiv/outages",
+          "group": "Je kunt je groep vinden op: {yasno_group_url}",
           "filter_probable": "Verbergt waarschijnlijke onderbrekingen in de kalender op dagen waarop een gepland schema beschikbaar is",
           "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven"
         }
@@ -51,7 +51,7 @@
           "status_all_day_events": "Toon status-evenementen voor de hele dag"
         },
         "data_description": {
-          "group": "Je kunt je groep vinden op: https://static.yasno.ua/kyiv/outages",
+          "group": "Je kunt je groep vinden op: {yasno_group_url}",
           "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven"
         }
       }
