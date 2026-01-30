@@ -119,7 +119,7 @@
 
   "device": {
     "yasno_outages": {
-      "name": "Yasno {region} {provider} {group}"
+      "name": "Yasno {region} {address}"
     }
   },
   "entity": {

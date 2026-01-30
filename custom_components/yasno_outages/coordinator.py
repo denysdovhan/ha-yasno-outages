@@ -19,6 +19,7 @@ from .api.const import (
 )
 from .api.models import OutageSource
 from .const import (
+    CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_PROVIDER,
@@ -130,6 +131,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.group = group or config_entry.options.get(
             CONF_GROUP, config_entry.data.get(CONF_GROUP)
         )
+        self.address_name = config_entry.data.get(CONF_ADDRESS_NAME)
         self.filter_probable = config_entry.options.get(
             CONF_FILTER_PROBABLE,
             config_entry.data.get(CONF_FILTER_PROBABLE, True),

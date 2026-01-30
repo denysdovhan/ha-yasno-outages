@@ -12,6 +12,7 @@ CONF_PROVIDER: Final = "provider"
 CONF_GROUP: Final = "group"
 CONF_STREET_ID: Final = "street_id"
 CONF_HOUSE_ID: Final = "house_id"
+CONF_ADDRESS_NAME: Final = "address_name"
 CONF_FILTER_PROBABLE: Final = "filter_probable"
 CONF_STATUS_ALL_DAY_EVENTS: Final = "status_all_day_events"
 CONF_CITY: Final = "city"  # Deprecated, use CONF_REGION

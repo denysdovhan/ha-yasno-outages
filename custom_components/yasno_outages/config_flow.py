@@ -15,6 +15,7 @@ from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .api import YasnoApi
 from .const import (
+    CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_HOUSE_ID,
@@ -243,6 +244,13 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
             LOGGER.debug("Group selected: %s", user_input)
             self.data.update(user_input)
             # Update entry title along with options
+            updated_data = dict(self.config_entry.data)
+            updated_data[CONF_REGION] = self.data[CONF_REGION]
+            updated_data[CONF_PROVIDER] = self.data[CONF_PROVIDER]
+            updated_data[CONF_GROUP] = self.data[CONF_GROUP]
+            updated_data.pop(CONF_STREET_ID, None)
+            updated_data.pop(CONF_HOUSE_ID, None)
+            updated_data.pop(CONF_ADDRESS_NAME, None)
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 title=build_entry_title(
@@ -250,6 +258,7 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
                     provider=self.data[CONF_PROVIDER],
                     group=self.data[CONF_GROUP],
                 ),
+                data=updated_data,
             )
             return self.async_create_entry(title="", data=self.data)
 
@@ -523,6 +532,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_PROVIDER: self.data[CONF_PROVIDER],
                     CONF_STREET_ID: self.data[CONF_STREET_ID],
                     CONF_HOUSE_ID: self.data[CONF_HOUSE_ID],
+                    CONF_ADDRESS_NAME: f"{self._street_name} {self._house_name}",
                 }
 
             data.update(
