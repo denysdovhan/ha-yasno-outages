@@ -19,7 +19,7 @@
       },
       "method": {
         "title": "Yasno Stroomonderbrekingen Instellingen",
-        "description": "Kies tussen instellen op groep of adres:",
+        "description": "Kies tussen instellen op groep of adres",
         "menu_options": {
           "group": "Op groep",
           "address": "Op adres"
@@ -52,6 +52,15 @@
           "house": "Kies een huisnummer voor de geselecteerde straat"
         }
       },
+      "house_query": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "house_query": "Voer een deel van je huisnummer in:"
+        },
+        "data_description": {
+          "house_query": "Wordt gebruikt om huizen te zoeken voor de geselecteerde straat"
+        }
+      },
       "preferences": {
         "title": "Yasno Stroomonderbrekingen Instellingen",
         "data": {
@@ -72,6 +81,14 @@
           "group": "Je kunt je groep vinden op: {yasno_group_url}"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken met de Yasno API.",
+      "street_query_required": "Zoekopdracht voor straat is vereist.",
+      "house_query_required": "Zoekopdracht voor huis is vereist.",
+      "no_streets": "Geen straten gevonden voor deze zoekopdracht.",
+      "no_houses": "Geen huizen gevonden voor deze straat.",
+      "no_group": "Kan geen groep bepalen voor dit adres."
     }
   },
   "options": {

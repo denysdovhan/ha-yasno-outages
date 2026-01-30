@@ -52,6 +52,15 @@
           "house": "Pick a house number for the selected street"
         }
       },
+      "house_query": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "house_query": "Enter your house number:"
+        },
+        "data_description": {
+          "house_query": "Used to search houses for the selected street"
+        }
+      },
       "preferences": {
         "title": "Yasno Outages Settings",
         "data": {
@@ -76,6 +85,7 @@
     "error": {
       "cannot_connect": "Failed to connect to Yasno API.",
       "street_query_required": "Street search query is required.",
+      "house_query_required": "House search query is required.",
       "no_streets": "No streets found for this query.",
       "no_houses": "No houses found for this street.",
       "no_group": "Failed to resolve group for this address."

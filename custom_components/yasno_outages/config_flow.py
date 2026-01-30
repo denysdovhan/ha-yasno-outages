@@ -31,6 +31,7 @@ LOGGER = logging.getLogger(__name__)
 
 CONF_SETUP_MODE = "setup_mode"
 CONF_STREET_QUERY = "street_query"
+CONF_HOUSE_QUERY = "house_query"
 CONF_STREET = "street"
 CONF_HOUSE = "house"
 
@@ -416,7 +417,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 self.data[CONF_STREET_ID] = int(street_id)
                 self._street_name = street_name
-                return await self.async_step_house()
+                return await self.async_step_house_query()
 
         return self.async_show_form(
             step_id="street",
@@ -466,26 +467,6 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                         errors["base"] = "no_group"
                     else:
                         return await self.async_step_preferences()
-        else:
-            region_id, provider_id = self._get_region_provider_ids()
-            street_id = self.data.get(CONF_STREET_ID)
-            try:
-                houses = await self.api.fetch_houses(
-                    region_id=region_id,
-                    provider_id=provider_id,
-                    street_id=street_id,
-                    query="",
-                )
-            except Exception:  # noqa: BLE001
-                errors["base"] = "cannot_connect"
-            else:
-                if not houses:
-                    errors["base"] = "no_houses"
-                else:
-                    self._house_options = {
-                        str(item["id"]): item["value"] for item in houses
-                    }
-
         return self.async_show_form(
             step_id="house",
             data_schema=vol.Schema(
@@ -500,6 +481,44 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     ),
                 }
             ),
+            errors=errors,
+        )
+
+    async def async_step_house_query(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle house search query."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            query = user_input[CONF_HOUSE_QUERY].strip()
+            if not query:
+                errors["base"] = "house_query_required"
+            else:
+                region_id, provider_id = self._get_region_provider_ids()
+                street_id = self.data.get(CONF_STREET_ID)
+                try:
+                    houses = await self.api.fetch_houses(
+                        region_id=region_id,
+                        provider_id=provider_id,
+                        street_id=street_id,
+                        query=query,
+                    )
+                except Exception:  # noqa: BLE001
+                    errors["base"] = "cannot_connect"
+                else:
+                    if not houses:
+                        errors["base"] = "no_houses"
+                    else:
+                        self._house_options = {
+                            str(item["id"]): item["value"] for item in houses
+                        }
+                        return await self.async_step_house()
+
+        return self.async_show_form(
+            step_id="house_query",
+            data_schema=vol.Schema({vol.Required(CONF_HOUSE_QUERY): str}),
             errors=errors,
         )
 
