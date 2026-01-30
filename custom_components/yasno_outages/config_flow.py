@@ -391,6 +391,11 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     if not streets:
                         errors["base"] = "no_streets"
                     else:
+                        if len(streets) == 1:
+                            street = streets[0]
+                            self.data[CONF_STREET_ID] = street["id"]
+                            self._street_name = street["value"]
+                            return await self.async_step_house_query()
                         self._street_options = {
                             str(item["id"]): item["value"] for item in streets
                         }
