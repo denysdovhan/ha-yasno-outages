@@ -13,6 +13,8 @@ clarify uncertainty before coding, and align suggestions with the rules linked b
 - When updating this file (`agents.md`), DON'T CHANGE the structure, formatting or style of the document. Just add relevant information, without restructuring: add list items, new sections, etc. NEVER REMOVE tags, like <important> or <instruction>.
 - At the end of each plan, give me a list of unresolved questions to answer, if any. Make the questions extremely concise. Sacrifice grammar for the sake of concision.
 - Always use conventional commits format for commit messages.
+- ALWAYS run `scripts/lint` after any changes to the code.
+- ALWAYS run `scripts/test` before committing changes.
 
 ## Project Overview
 
@@ -302,6 +304,18 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - Edit `translations/*.json` directly (en.json, uk.json).
   - Translate values only; keep keys the same. Preserve placeholders: `{region}`, `{provider}`, `{group}`.
   - Structure: `config.step.*` (flows), `entity.{platform}.{key}` (entities), `device.*` (device naming), `common.*` (shared strings), `issues.*` (repairs).
+- **Testing**
+  - Tests in `tests/` cover API and integration modules.
+  - API tests in `tests/api/`: `test_models.py`, `test_base.py`, `test_planned.py`, `test_probable.py` (104 tests, 94% API coverage).
+  - Integration tests: `test_helpers.py`, `test_calendar.py`, `test_coordinator.py` (46 tests).
+  - Run `scripts/test` for full test suite with coverage.
+  - Run `uv run pytest tests/api/test_models.py` for specific test file.
+  - Run `uv run pytest tests/test_base.py::TestBaseYasnoApiInit` for specific test class.
+  - Fixtures in `tests/conftest.py`: `today`, `tomorrow`, `regions_data`, `planned_outage_data`, `probable_outage_data`.
+  - Use async/await for async tests; pytest-asyncio handles automatically.
+  - Mock aiohttp responses with `AsyncMock` for API fetch tests.
+  - Mock coordinator/HA components with `MagicMock` for integration tests.
+  - When adding features, write tests. Maintain >90% API coverage.
 - **When unsure**
   - Prefer adding debug logs and ask for the output to reason about runtime state.
 
@@ -311,6 +325,7 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
 - CI workflows (`lint.yml`, `validate.yml`) install uv via `astral-sh/setup-uv` and run tooling with `uv run`.
 - Run python tools via `uv run <tool>` to ensure consistent environment.
 - Each time you make changes to Python code, run `scripts/lint` to check for errors and formatting issues. Fix any issues reported by the linter.
+- Run `scripts/test` to execute tests with coverage reporting.
 
 ### Develompent Scripts
 
@@ -320,6 +335,7 @@ Use these scripts for common development tasks. When you make changes and want t
 - `scripts/bump_version` - bumps version in manifest.json.
 - `scripts/develop` - starts a development Home Assistant server instance on port 8123. Use this script for checking changes in the browser.
 - `scripts/lint` - runs linter/formatter. Always use this script for checking for errors and formatting.
+- `scripts/test` - runs test suite with coverage reporting. Use for validating changes.
 - `scripts/setup` - installs dependencies and installs pre-commit.
 
 ### Development Process

@@ -2,6 +2,7 @@
   "name": "ha-yasno-outages",
   "image": "mcr.microsoft.com/devcontainers/python:3.13",
   "postCreateCommand": "scripts/setup",
+  "updateContentCommand": "uv sync --extra cli",
   "forwardPorts": [8123],
   "portsAttributes": {
     "8123": {
@@ -13,9 +14,10 @@
     "vscode": {
       "extensions": [
         "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.pylint",
         "github.vscode-pull-request-github",
         "ryanluker.vscode-coverage-gutters",
-        "ms-python.vscode-pylance",
         "charliermarsh.ruff",
         "tamasfe.even-better-toml"
       ],
@@ -30,6 +32,7 @@
   },
   "remoteUser": "vscode",
   "features": {
+    "ghcr.io/va-h/devcontainers-features/uv:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers-extra/features/apt-packages:1": {
       "packages": "ffmpeg,libturbojpeg0,libpcap-dev"
