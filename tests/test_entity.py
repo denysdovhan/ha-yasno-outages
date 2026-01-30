@@ -21,10 +21,12 @@ def _build_coordinator(address_name: str | None, group: str) -> MagicMock:
 def test_device_info_uses_address_name():
     """Device info uses address when present."""
     entity = DummyEntity(_build_coordinator("Main St 12", "1.1"))
-    assert entity.device_info.translation_placeholders["address"] == "Main St 12"
+    placeholders = entity.device_info["translation_placeholders"]
+    assert placeholders["address"] == "Main St 12"
 
 
 def test_device_info_falls_back_to_group():
     """Device info falls back to group when address missing."""
     entity = DummyEntity(_build_coordinator(None, "1.1"))
-    assert entity.device_info.translation_placeholders["address"] == "1.1"
+    placeholders = entity.device_info["translation_placeholders"]
+    assert placeholders["address"] == "1.1"
