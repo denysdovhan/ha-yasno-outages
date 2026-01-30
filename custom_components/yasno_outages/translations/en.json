@@ -64,14 +64,14 @@
       "preferences": {
         "title": "Yasno Outages Settings",
         "data": {
+          "scan_interval": "Update interval",
           "filter_probable": "Hide probable outages for planned days",
-          "status_all_day_events": "Show status all-day events",
-          "scan_interval": "Update interval"
+          "status_all_day_events": "Show status all-day events"
         },
         "data_description": {
+          "scan_interval": "The number of minutes between updates",
           "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
-          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status",
-          "scan_interval": "The number of minutes between updates"
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
         }
       },
       "group": {
@@ -98,14 +98,14 @@
       "init": {
         "title": "Yasno Outages Settings",
         "data": {
+          "scan_interval": "Update interval",
           "filter_probable": "Hide probable outages when planned schedule is available",
-          "status_all_day_events": "Show status all-day events",
-          "scan_interval": "Update interval"
+          "status_all_day_events": "Show status all-day events"
         },
         "data_description": {
+          "scan_interval": "The number of minutes between updates",
           "filter_probable": "Hides probable outages when planned schedule exists for a day",
-          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status",
-          "scan_interval": "The number of minutes between updates"
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status"
         }
       }
     }
