@@ -1,6 +1,6 @@
 """Yasno Outages API package."""
 
-from .models import OutageEvent, OutageEventType, OutageSlot
+from .models import OutageEvent, OutageEventType, OutageSlot, YasnoApiError
 from .planned import PlannedOutagesApi
 from .probable import ProbableOutagesApi
 
@@ -73,4 +73,5 @@ __all__ = [
     "PlannedOutagesApi",
     "ProbableOutagesApi",
     "YasnoApi",
+    "YasnoApiError",
 ]

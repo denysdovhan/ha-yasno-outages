@@ -12,6 +12,7 @@ from custom_components.yasno_outages.api.models import (
     OutageEventType,
     OutageSlot,
     OutageSource,
+    YasnoApiError,
 )
 
 TEST_REGION_ID = 25
@@ -102,10 +103,11 @@ class TestBaseYasnoApiFetchData:
             assert api.regions_data == regions_data
 
     async def test_fetch_regions_error(self, api):
-        """Test regions fetch with error."""
+        """Test regions fetch with error raises YasnoApiError."""
         with patch("aiohttp.ClientSession.get") as mock_get:
             mock_get.return_value.__aenter__.side_effect = aiohttp.ClientError()
-            await api.fetch_regions()
+            with pytest.raises(YasnoApiError):
+                await api.fetch_regions()
             assert api.regions_data is None
 
     async def test_get_data_success(self, api):
@@ -122,13 +124,23 @@ class TestBaseYasnoApiFetchData:
                 assert result == test_data
 
     async def test_get_data_error(self, api):
-        """Test data fetch with error."""
+        """Test data fetch with error raises YasnoApiError."""
         with patch("aiohttp.ClientSession.get") as mock_get:
             mock_get.return_value.__aenter__.side_effect = aiohttp.ClientError()
 
             async with aiohttp.ClientSession() as session:
-                result = await api._get_data(session, "https://example.com")
-                assert result is None
+                with pytest.raises(YasnoApiError):
+                    await api._get_data(session, "https://example.com")
+
+    async def test_get_data_error_contains_url(self, api):
+        """Test YasnoApiError contains URL in message."""
+        test_url = "https://example.com/test"
+        with patch("aiohttp.ClientSession.get") as mock_get:
+            mock_get.return_value.__aenter__.side_effect = aiohttp.ClientError()
+
+            async with aiohttp.ClientSession() as session:
+                with pytest.raises(YasnoApiError, match=test_url):
+                    await api._get_data(session, test_url)
 
 
 class TestBaseYasnoApiRegions:

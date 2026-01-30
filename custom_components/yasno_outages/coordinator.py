@@ -11,7 +11,7 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_utils
 
-from .api import OutageEvent, OutageEventType, YasnoApi
+from .api import OutageEvent, OutageEventType, YasnoApi, YasnoApiError
 from .api.const import (
     API_STATUS_EMERGENCY_SHUTDOWNS,
     API_STATUS_SCHEDULE_APPLIES,
@@ -193,18 +193,27 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 group=self.group,
             )
 
+        # Cache current data before fetching (for fallback on API failure)
+        planned_cache = self.api.planned.planned_outages_data
+        probable_cache = self.api.probable.probable_outages_data
+
         # Fetch planned outages data
         try:
             await self.api.planned.fetch_data()
-        except Exception as err:
-            msg = f"Failed to fetch planned outages data: {err}"
-            raise UpdateFailed(msg) from err
+        except YasnoApiError:
+            LOGGER.warning(
+                "Failed to fetch planned outages, using cached data", exc_info=True
+            )
+            self.api.planned.planned_outages_data = planned_cache
 
         # Fetch probable outages data
         try:
             await self.api.probable.fetch_data()
-        except Exception:  # noqa: BLE001
-            LOGGER.warning("Failed to fetch probable outages data", exc_info=True)
+        except YasnoApiError:
+            LOGGER.warning(
+                "Failed to fetch probable outages, using cached data", exc_info=True
+            )
+            self.api.probable.probable_outages_data = probable_cache
 
     async def _resolve_ids(self) -> None:
         """Resolve region and provider IDs from names."""
