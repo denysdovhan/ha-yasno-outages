@@ -12,21 +12,83 @@
         "title": "Yasno Outages Settings",
         "data": {
           "provider": "Please select your provider:"
+        },
+        "data_description": {
+          "provider": "Select the distribution system operator"
+        }
+      },
+      "method": {
+        "title": "Yasno Outages Settings",
+        "description": "Choose between group-based or address-based setup:",
+        "menu_options": {
+          "group": "By group",
+          "address": "By address"
+        }
+      },
+      "street_query": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "street_query": "Enter part of your street name:"
+        },
+        "data_description": {
+          "street_query": "Used to search your street in the selected region and provider"
+        }
+      },
+      "street": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "street": "Select your street:"
+        },
+        "data_description": {
+          "street": "Pick a street from the search results"
+        }
+      },
+      "house": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "house": "Select your house:"
+        },
+        "data_description": {
+          "house": "Pick a house number for the selected street"
+        }
+      },
+      "house_query": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "house_query": "Enter your house number:"
+        },
+        "data_description": {
+          "house_query": "Used to search houses for the selected street"
+        }
+      },
+      "preferences": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "filter_probable": "Hide probable outages for planned days",
+          "status_all_day_events": "Show status all-day events"
+        },
+        "data_description": {
+          "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
         }
       },
       "group": {
         "title": "Yasno Outages Settings",
         "data": {
-          "group": "Please select your group:",
-          "filter_probable": "Hide probable outages for planned days",
-          "status_all_day_events": "Show status all-day events"
+          "group": "Please select your group:"
         },
         "data_description": {
-          "group": "You can find your group at: {yasno_group_url}",
-          "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
-          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
+          "group": "You can find your group at: {yasno_group_url}"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Yasno API.",
+      "street_query_required": "Street search query is required.",
+      "house_query_required": "House search query is required.",
+      "no_streets": "No streets found for this query.",
+      "no_houses": "No houses found for this street.",
+      "no_group": "Failed to resolve group for this address."
     }
   },
   "options": {
@@ -34,24 +96,11 @@
       "init": {
         "title": "Yasno Outages Settings",
         "data": {
-          "region": "Please select your region:"
-        }
-      },
-      "provider": {
-        "title": "Yasno Outages Settings",
-        "data": {
-          "provider": "Please select your provider:"
-        }
-      },
-      "group": {
-        "title": "Yasno Outages Settings",
-        "data": {
-          "group": "Please select your group:",
           "filter_probable": "Hide probable outages when planned schedule is available",
           "status_all_day_events": "Show status all-day events"
         },
         "data_description": {
-          "group": "You can find your group at: {yasno_group_url}",
+          "filter_probable": "Hides probable outages when planned schedule exists for a day",
           "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status"
         }
       }
@@ -60,7 +109,7 @@
 
   "device": {
     "yasno_outages": {
-      "name": "Yasno {region} {provider} {group}"
+      "name": "Yasno {region} {address}"
     }
   },
   "entity": {

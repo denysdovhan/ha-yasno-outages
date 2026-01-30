@@ -15,7 +15,7 @@ from .const import (
     API_KEY_UPDATED_ON,
     PLANNED_OUTAGES_ENDPOINT,
 )
-from .models import OutageEvent, OutageSource
+from .models import OutageEvent, OutageSource, YasnoApiError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +47,11 @@ class PlannedOutagesApi(BaseYasnoApi):
         )
 
         async with aiohttp.ClientSession() as session:
-            self.planned_outages_data = await self._get_data(session, url)
+            data = await self._get_data(session, url)
+        if not isinstance(data, dict):
+            msg = "Unexpected planned outages response format"
+            raise YasnoApiError(msg)
+        self.planned_outages_data = data
 
     def get_groups(self) -> list[str]:
         """Get groups from planned outages data."""

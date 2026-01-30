@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.helpers.translation import async_get_translations
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
 from .api import OutageEvent, OutageEventType, YasnoApi, YasnoApiError
@@ -19,6 +19,7 @@ from .api.const import (
 )
 from .api.models import OutageSource
 from .const import (
+    CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_PROVIDER,
@@ -105,6 +106,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         config_entry: ConfigEntry,
         api: YasnoApi,
+        group: str | None = None,
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -126,10 +128,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             CONF_PROVIDER,
             config_entry.data.get(CONF_PROVIDER),
         )
-        self.group = config_entry.options.get(
-            CONF_GROUP,
-            config_entry.data.get(CONF_GROUP),
+        self.group = group or config_entry.options.get(
+            CONF_GROUP, config_entry.data.get(CONF_GROUP)
         )
+        self.address_name = config_entry.data.get(CONF_ADDRESS_NAME)
         self.filter_probable = config_entry.options.get(
             CONF_FILTER_PROBABLE,
             config_entry.data.get(CONF_FILTER_PROBABLE, True),
@@ -166,9 +168,6 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             LOGGER.error(group_required_msg)
             raise ValueError(group_error)
 
-        # Initialize with names first, then we'll update with IDs when we fetch data
-        self.region_id = None
-        self.provider_id = None
         self._provider_name = ""  # Cache the provider name
 
         # Use the provided API instance
@@ -177,21 +176,6 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> None:
         """Fetch data from new Yasno API."""
         await self.async_fetch_translations()
-
-        # Resolve IDs if not already resolved
-        if self.region_id is None or self.provider_id is None:
-            try:
-                await self._resolve_ids()
-            except Exception as err:
-                msg = f"Failed to resolve IDs: {err}"
-                raise UpdateFailed(msg) from err
-
-            # Update API with resolved IDs
-            self.api = YasnoApi(
-                region_id=self.region_id,
-                provider_id=self.provider_id,
-                group=self.group,
-            )
 
         # Cache current data before fetching (for fallback on API failure)
         planned_cache = self.api.planned.planned_outages_data
@@ -214,25 +198,6 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 "Failed to fetch probable outages, using cached data", exc_info=True
             )
             self.api.probable.probable_outages_data = probable_cache
-
-    async def _resolve_ids(self) -> None:
-        """Resolve region and provider IDs from names."""
-        if not self.api.regions_data:
-            await self.api.fetch_regions()
-
-        if self.region:
-            region_data = self.api.get_region_by_name(self.region)
-            if region_data:
-                self.region_id = region_data["id"]
-                if self.provider:
-                    provider_data = self.api.get_provider_by_name(
-                        self.region,
-                        self.provider,
-                    )
-                    if provider_data:
-                        self.provider_id = provider_data["id"]
-                        # Cache the provider name for device naming
-                        self._provider_name = provider_data["name"]
 
     def _event_to_state(self, event: OutageEvent | None) -> str:
         """Map outage event to electricity state."""

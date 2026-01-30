@@ -11,7 +11,25 @@ REGIONS_ENDPOINT: Final = (
     "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/regions"
 )
 PLANNED_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages"
-PROBABLE_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages?regionId={region_id}&dsoId={dso_id}"
+PROBABLE_OUTAGES_ENDPOINT: Final = (
+    "https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages"
+)
+STREETS_ENDPOINT: Final = (
+    "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/streets"
+)
+HOUSES_ENDPOINT: Final = (
+    "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/houses"
+)
+GROUP_BY_ADDRESS_ENDPOINT: Final = (
+    "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/group"
+)
+
+# API params
+API_PARAM_REGION_ID: Final = "regionId"
+API_PARAM_DSO_ID: Final = "dsoId"
+API_PARAM_QUERY: Final = "query"
+API_PARAM_STREET_ID: Final = "streetId"
+API_PARAM_HOUSE_ID: Final = "houseId"
 
 # API Status values
 API_STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"

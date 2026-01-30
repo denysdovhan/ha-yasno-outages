@@ -12,21 +12,83 @@
         "title": "Yasno Stroomonderbrekingen Instellingen",
         "data": {
           "provider": "Selecteer je provider:"
+        },
+        "data_description": {
+          "provider": "Selecteer de netbeheerder"
+        }
+      },
+      "method": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "description": "Kies tussen instellen op groep of adres",
+        "menu_options": {
+          "group": "Op groep",
+          "address": "Op adres"
+        }
+      },
+      "street_query": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "street_query": "Voer een deel van je straatnaam in:"
+        },
+        "data_description": {
+          "street_query": "Wordt gebruikt om je straat te zoeken bij de gekozen regio en provider"
+        }
+      },
+      "street": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "street": "Selecteer je straat:"
+        },
+        "data_description": {
+          "street": "Kies een straat uit de zoekresultaten"
+        }
+      },
+      "house": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "house": "Selecteer je huis:"
+        },
+        "data_description": {
+          "house": "Kies een huisnummer voor de geselecteerde straat"
+        }
+      },
+      "house_query": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "house_query": "Voer een deel van je huisnummer in:"
+        },
+        "data_description": {
+          "house_query": "Wordt gebruikt om huizen te zoeken voor de geselecteerde straat"
+        }
+      },
+      "preferences": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "filter_probable": "Verberg waarschijnlijke onderbrekingen op geplande dagen",
+          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+        },
+        "data_description": {
+          "filter_probable": "Verbergt waarschijnlijke onderbrekingen in de kalender op dagen waarop een gepland schema beschikbaar is",
+          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven"
         }
       },
       "group": {
         "title": "Yasno Stroomonderbrekingen Instellingen",
         "data": {
-          "group": "Selecteer je groep:",
-          "filter_probable": "Verberg waarschijnlijke onderbrekingen op geplande dagen",
-          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+          "group": "Selecteer je groep:"
         },
         "data_description": {
-          "group": "Je kunt je groep vinden op: {yasno_group_url}",
-          "filter_probable": "Verbergt waarschijnlijke onderbrekingen in de kalender op dagen waarop een gepland schema beschikbaar is",
-          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven"
+          "group": "Je kunt je groep vinden op: {yasno_group_url}"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken met de Yasno API.",
+      "street_query_required": "Zoekopdracht voor straat is vereist.",
+      "house_query_required": "Zoekopdracht voor huis is vereist.",
+      "no_streets": "Geen straten gevonden voor deze zoekopdracht.",
+      "no_houses": "Geen huizen gevonden voor deze straat.",
+      "no_group": "Kan geen groep bepalen voor dit adres."
     }
   },
   "options": {
@@ -34,24 +96,11 @@
       "init": {
         "title": "Yasno Stroomonderbrekingen Instellingen",
         "data": {
-          "region": "Selecteer je regio:"
-        }
-      },
-      "provider": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
-        "data": {
-          "provider": "Selecteer je provider:"
-        }
-      },
-      "group": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
-        "data": {
-          "group": "Selecteer je groep:",
           "filter_probable": "Verberg waarschijnlijke onderbrekingen wanneer een gepland schema beschikbaar is",
           "status_all_day_events": "Toon status-evenementen voor de hele dag"
         },
         "data_description": {
-          "group": "Je kunt je groep vinden op: {yasno_group_url}",
+          "filter_probable": "Verbergt waarschijnlijke onderbrekingen als er een gepland schema is",
           "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven"
         }
       }
@@ -60,7 +109,7 @@
 
   "device": {
     "yasno_outages": {
-      "name": "Yasno {region} {provider} {group}"
+      "name": "Yasno {region} {address}"
     }
   },
   "entity": {
