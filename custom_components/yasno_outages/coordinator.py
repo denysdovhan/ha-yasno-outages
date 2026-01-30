@@ -21,9 +21,11 @@ from .api.models import OutageSource
 from .const import (
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
+    CONF_HOUSE_ID,
     CONF_PROVIDER,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
+    CONF_STREET_ID,
     DOMAIN,
     PLANNED_OUTAGE_LOOKAHEAD,
     PLANNED_OUTAGE_TEXT_FALLBACK,
@@ -130,6 +132,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             CONF_GROUP,
             config_entry.data.get(CONF_GROUP),
         )
+        self.street_id = config_entry.options.get(
+            CONF_STREET_ID,
+            config_entry.data.get(CONF_STREET_ID),
+        )
+        self.house_id = config_entry.options.get(
+            CONF_HOUSE_ID,
+            config_entry.data.get(CONF_HOUSE_ID),
+        )
         self.filter_probable = config_entry.options.get(
             CONF_FILTER_PROBABLE,
             config_entry.data.get(CONF_FILTER_PROBABLE, True),
@@ -157,7 +167,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             LOGGER.error(provider_required_msg)
             raise ValueError(provider_error)
 
-        if not self.group:
+        self._group_is_static = self.group is not None
+        if not self.group and not (self.street_id and self.house_id):
             group_required_msg = (
                 "Group not set in configuration - this should not happen "
                 "with proper config flow"
@@ -170,6 +181,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.region_id = None
         self.provider_id = None
         self._provider_name = ""  # Cache the provider name
+        self._api_region_id = None
+        self._api_provider_id = None
+        self._api_group = None
 
         # Use the provided API instance
         self.api = api
@@ -186,12 +200,18 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 msg = f"Failed to resolve IDs: {err}"
                 raise UpdateFailed(msg) from err
 
-            # Update API with resolved IDs
-            self.api = YasnoApi(
-                region_id=self.region_id,
-                provider_id=self.provider_id,
-                group=self.group,
-            )
+        if self.region_id is None or self.provider_id is None:
+            msg = "Failed to resolve region/provider IDs"
+            raise UpdateFailed(msg)
+
+        if not self._group_is_static and self.street_id and self.house_id:
+            await self._resolve_group_by_address()
+
+        if not self.group:
+            msg = "Failed to resolve group for updates"
+            raise UpdateFailed(msg)
+
+        self._sync_api_config()
 
         # Cache current data before fetching (for fallback on API failure)
         planned_cache = self.api.planned.planned_outages_data
@@ -233,6 +253,48 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                         self.provider_id = provider_data["id"]
                         # Cache the provider name for device naming
                         self._provider_name = provider_data["name"]
+
+    async def _resolve_group_by_address(self) -> None:
+        """Resolve group by street/house ids."""
+        try:
+            group = await self.api.fetch_group_by_address(
+                self.region_id,
+                self.provider_id,
+                self.street_id,
+                self.house_id,
+            )
+        except YasnoApiError as err:
+            msg = f"Failed to resolve group by address: {err}"
+            raise UpdateFailed(msg) from err
+
+        if not group:
+            msg = "Failed to resolve group by address"
+            raise UpdateFailed(msg)
+
+        if group != self.group:
+            LOGGER.debug("Resolved group by address: %s", group)
+        self.group = group
+
+    def _sync_api_config(self) -> None:
+        """Update API config and clear caches when configuration changes."""
+        if self._api_region_id is not None and (
+            self.region_id != self._api_region_id
+            or self.provider_id != self._api_provider_id
+            or self.group != self._api_group
+        ):
+            self.api.planned.planned_outages_data = None
+            self.api.probable.probable_outages_data = None
+
+        self._api_region_id = self.region_id
+        self._api_provider_id = self.provider_id
+        self._api_group = self.group
+
+        self.api.planned.region_id = self.region_id
+        self.api.planned.provider_id = self.provider_id
+        self.api.planned.group = self.group
+        self.api.probable.region_id = self.region_id
+        self.api.probable.provider_id = self.provider_id
+        self.api.probable.group = self.group
 
     def _event_to_state(self, event: OutageEvent | None) -> str:
         """Map outage event to electricity state."""

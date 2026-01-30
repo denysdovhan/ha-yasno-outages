@@ -3,10 +3,16 @@
 import datetime
 import logging
 from abc import ABC, abstractmethod
+from urllib.parse import quote_plus
 
 import aiohttp
 
-from .const import REGIONS_ENDPOINT
+from .const import (
+    GROUP_BY_ADDRESS_ENDPOINT,
+    HOUSES_ENDPOINT,
+    REGIONS_ENDPOINT,
+    STREETS_ENDPOINT,
+)
 from .models import (
     OutageEvent,
     OutageEventType,
@@ -38,7 +44,7 @@ class BaseYasnoApi(ABC):
         session: aiohttp.ClientSession,
         url: str,
         timeout_secs: int = 60,
-    ) -> dict:
+    ) -> dict | list:
         """Fetch data from the given URL."""
         try:
             async with session.get(
@@ -83,6 +89,92 @@ class BaseYasnoApi(ABC):
             if provider["name"] == provider_name:
                 return provider
         return None
+
+    async def fetch_streets(
+        self,
+        region_id: int | None,
+        provider_id: int | None,
+        query: str,
+    ) -> list[dict]:
+        """Fetch streets by query."""
+        if not region_id or not provider_id:
+            LOGGER.warning(
+                "Region ID and Provider ID must be set before fetching streets",
+            )
+            return []
+
+        url = STREETS_ENDPOINT.format(
+            region_id=region_id,
+            dso_id=provider_id,
+            query=quote_plus(query),
+        )
+
+        async with aiohttp.ClientSession() as session:
+            data = await self._get_data(session, url)
+        return data if isinstance(data, list) else []
+
+    async def fetch_houses(
+        self,
+        region_id: int | None,
+        provider_id: int | None,
+        street_id: int | None,
+        query: str,
+    ) -> list[dict]:
+        """Fetch houses by street and query."""
+        if not region_id or not provider_id or not street_id:
+            LOGGER.warning(
+                "Region ID, Provider ID, and Street ID must be set "
+                "before fetching houses",
+            )
+            return []
+
+        url = HOUSES_ENDPOINT.format(
+            region_id=region_id,
+            street_id=street_id,
+            dso_id=provider_id,
+            query=quote_plus(query),
+        )
+
+        async with aiohttp.ClientSession() as session:
+            data = await self._get_data(session, url)
+        return data if isinstance(data, list) else []
+
+    async def fetch_group_by_address(
+        self,
+        region_id: int | None,
+        provider_id: int | None,
+        street_id: int | None,
+        house_id: int | None,
+    ) -> str | None:
+        """Fetch group by address ids."""
+        if not region_id or not provider_id or not street_id or not house_id:
+            LOGGER.warning(
+                "Region ID, Provider ID, Street ID, and House ID must be set "
+                "before fetching group",
+            )
+            return None
+
+        url = GROUP_BY_ADDRESS_ENDPOINT.format(
+            region_id=region_id,
+            street_id=street_id,
+            house_id=house_id,
+            dso_id=provider_id,
+        )
+
+        async with aiohttp.ClientSession() as session:
+            data = await self._get_data(session, url)
+
+        if not isinstance(data, dict):
+            LOGGER.warning("Unexpected response for group by address: %s", data)
+            return None
+
+        group = data.get("group")
+        subgroup = data.get("subgroup")
+        if group is None or subgroup is None:
+            LOGGER.warning("Missing group data for address response: %s", data)
+            return None
+
+        return f"{group}.{subgroup}"
 
     def get_next_event(
         self,

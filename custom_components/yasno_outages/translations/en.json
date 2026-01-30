@@ -14,19 +14,57 @@
           "provider": "Please select your provider:"
         }
       },
-      "group": {
+      "method": {
         "title": "Yasno Outages Settings",
         "data": {
-          "group": "Please select your group:",
+          "setup_mode": "How do you want to select your group?"
+        }
+      },
+      "street_query": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "street_query": "Enter part of your street name:"
+        }
+      },
+      "street": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "street": "Select your street:"
+        }
+      },
+      "house": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "house": "Select your house:"
+        }
+      },
+      "address_options": {
+        "title": "Yasno Outages Settings",
+        "data": {
           "filter_probable": "Hide probable outages for planned days",
           "status_all_day_events": "Show status all-day events"
         },
         "data_description": {
-          "group": "You can find your group at: {yasno_group_url}",
           "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
           "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
         }
+      },
+      "group": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "group": "Please select your group:"
+        },
+        "data_description": {
+          "group": "You can find your group at: {yasno_group_url}"
+        }
       }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Yasno API.",
+      "street_query_required": "Street search query is required.",
+      "no_streets": "No streets found for this query.",
+      "no_houses": "No houses found for this street.",
+      "no_group": "Failed to resolve group for this address."
     }
   },
   "options": {
