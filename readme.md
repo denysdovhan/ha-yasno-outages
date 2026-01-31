@@ -46,30 +46,22 @@ If it doesn't work, adding this repository to HACS manually by adding this URL:
 
 ## Usage
 
-This integration is configurable via UI. On **Devices and Services** page, click **Add Integration** and search for **Yasno Outages**.
+This integration is configurable via UI. On **Devices and Services** page, click **Add Integration** and search for **Yasno Outages**. Go through the steps to configure the integration.
 
-Select your region:
+Here is an example of setup process with an address:
 
-![Region Selection](/media/1_region.png)
+<https://github.com/user-attachments/assets/887300f1-2abf-4a08-a476-e9200ae6f8e7>
 
-Select your Service Provider
+After setup you can see the your configured entries and corresponding entities:
 
-![Service Provider Selection](/media/2_provider.png)
+![Devices page](/media/devices.png)
 
-Select your Group
-
-![Group Selection](/media/3_group.png)
-
-Here's how the devices look
-
-![Devices page](/media/4_devices.png)
-
-![Device page](/media/5_device.png)
+![Device page](/media/device.png)
 
 Then you can add the integration to your dashboard and see the information about the next planned outages.
 Integration also provides a calendar view of planned outages. You can add it to your dashboard as well via [Calendar card][calendar-card].
 
-![Calendars view](/media/6_calendars.png)
+![Calendars view](/media/calendars.png)
 
 Examples:
 
