@@ -13,6 +13,9 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
@@ -161,9 +164,14 @@ def build_preferences_schema(
                     CONF_SCAN_INTERVAL,
                     default=15,
                 ),
-            ): vol.All(
-                vol.Coerce(int),
-                vol.Range(min=1, max=60),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=1,
+                    max=60,
+                    step=1,
+                    mode=NumberSelectorMode.BOX,
+                    unit_of_measurement="min",
+                )
             ),
             vol.Required(
                 CONF_FILTER_PROBABLE,
@@ -225,6 +233,17 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         """Get the options flow for this handler."""
         return YasnoOutagesOptionsFlow()
 
+    def _get_region_provider_ids(self) -> tuple[int | None, int | None]:
+        """Return region and provider IDs from selected names."""
+        region = self.data[CONF_REGION]
+        provider = self.data[CONF_PROVIDER]
+        region_data = self.api.get_region_by_name(region)
+        provider_data = self.api.get_provider_by_name(region, provider)
+        return (
+            region_data["id"] if region_data else None,
+            provider_data["id"] if provider_data else None,
+        )
+
     async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is not None:
@@ -275,7 +294,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle setup method selection."""
         return self.async_show_menu(
             step_id="method",
-            menu_options=[SETUP_MODE_GROUP, SETUP_MODE_ADDRESS],
+            menu_options=[SETUP_MODE_ADDRESS, SETUP_MODE_GROUP],
         )
 
     async def async_step_address(
@@ -484,17 +503,6 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="preferences",
             data_schema=build_preferences_schema(None),
-        )
-
-    def _get_region_provider_ids(self) -> tuple[int | None, int | None]:
-        """Return region and provider IDs from selected names."""
-        region = self.data[CONF_REGION]
-        provider = self.data[CONF_PROVIDER]
-        region_data = self.api.get_region_by_name(region)
-        provider_data = self.api.get_provider_by_name(region, provider)
-        return (
-            region_data["id"] if region_data else None,
-            provider_data["id"] if provider_data else None,
         )
 
     async def async_step_group(
