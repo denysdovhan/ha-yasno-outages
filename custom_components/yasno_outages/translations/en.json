@@ -3,13 +3,15 @@
   "config": {
     "step": {
       "user": {
-        "title": "Yasno Outages Settings",
+        "title": "Yasno Outages: Region",
+        "description": "Choose the region that matches your address.",
         "data": {
           "region": "Please select your region:"
         }
       },
       "provider": {
-        "title": "Yasno Outages Settings",
+        "title": "Yasno Outages: Provider",
+        "description": "Pick the distribution system operator for your region.",
         "data": {
           "provider": "Please select your provider:"
         },
@@ -18,15 +20,16 @@
         }
       },
       "method": {
-        "title": "Yasno Outages Settings",
+        "title": "Yasno Outages: Setup Method",
         "description": "Choose between group-based or address-based setup:",
         "menu_options": {
-          "group": "By group",
-          "address": "By address"
+          "address": "By address",
+          "group": "By group"
         }
       },
       "street_query": {
-        "title": "Yasno Outages Settings",
+        "title": "Yasno Outages: Street Search",
+        "description": "Type part of your street name to narrow the search.",
         "data": {
           "street_query": "Enter part of your street name:"
         },
@@ -35,7 +38,8 @@
         }
       },
       "street": {
-        "title": "Yasno Outages Settings",
+        "title": "Yasno Outages: Street Selection",
+        "description": "Select the correct street from the search results.",
         "data": {
           "street": "Select your street:"
         },
@@ -43,17 +47,9 @@
           "street": "Pick a street from the search results"
         }
       },
-      "house": {
-        "title": "Yasno Outages Settings",
-        "data": {
-          "house": "Select your house:"
-        },
-        "data_description": {
-          "house": "Pick a house number for the selected street"
-        }
-      },
       "house_query": {
-        "title": "Yasno Outages Settings",
+        "title": "Yasno Outages: House Search",
+        "description": "Enter a house number or part of it to find your address.",
         "data": {
           "house_query": "Enter your house number:"
         },
@@ -61,8 +57,19 @@
           "house_query": "Used to search houses for the selected street"
         }
       },
+      "house": {
+        "title": "Yasno Outages: House Selection",
+        "description": "Pick the exact house number for your street.",
+        "data": {
+          "house": "Select your house:"
+        },
+        "data_description": {
+          "house": "Pick a house number for the selected street"
+        }
+      },
       "preferences": {
-        "title": "Yasno Outages Settings",
+        "title": "Yasno Outages: Preferences",
+        "description": "Fine-tune integration behavior for your needs.",
         "data": {
           "scan_interval": "Update interval",
           "filter_probable": "Hide probable outages for planned days",
@@ -75,7 +82,8 @@
         }
       },
       "group": {
-        "title": "Yasno Outages Settings",
+        "title": "Yasno Outages: Group Selection",
+        "description": "Choose the outage group assigned to your address.",
         "data": {
           "group": "Please select your group:"
         },
@@ -96,7 +104,8 @@
   "options": {
     "step": {
       "init": {
-        "title": "Yasno Outages Settings",
+        "title": "Yasno Outages: Preferences",
+        "description": "Fine-tune integration behavior for your needs.",
         "data": {
           "scan_interval": "Update interval",
           "filter_probable": "Hide probable outages when planned schedule is available",

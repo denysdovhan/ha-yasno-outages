@@ -3,13 +3,15 @@
   "config": {
     "step": {
       "user": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "title": "Yasno Stroomonderbrekingen: Regio",
+        "description": "Kies de regio die bij je adres hoort.",
         "data": {
           "region": "Selecteer je regio:"
         }
       },
       "provider": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "title": "Yasno Stroomonderbrekingen: Provider",
+        "description": "Kies de netbeheerder voor je regio.",
         "data": {
           "provider": "Selecteer je provider:"
         },
@@ -18,15 +20,16 @@
         }
       },
       "method": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
-        "description": "Kies tussen instellen op groep of adres",
+        "title": "Yasno Stroomonderbrekingen: Instelmethode",
+        "description": "Kies tussen instellen op groep of adres:",
         "menu_options": {
           "group": "Op groep",
           "address": "Op adres"
         }
       },
       "street_query": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "title": "Yasno Stroomonderbrekingen: Straat zoeken",
+        "description": "Typ een deel van je straatnaam om te zoeken.",
         "data": {
           "street_query": "Voer een deel van je straatnaam in:"
         },
@@ -35,7 +38,8 @@
         }
       },
       "street": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "title": "Yasno Stroomonderbrekingen: Straat selecteren",
+        "description": "Selecteer de juiste straat uit de zoekresultaten.",
         "data": {
           "street": "Selecteer je straat:"
         },
@@ -44,7 +48,8 @@
         }
       },
       "house": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "title": "Yasno Stroomonderbrekingen: Huis selecteren",
+        "description": "Kies het juiste huisnummer voor je straat.",
         "data": {
           "house": "Selecteer je huis:"
         },
@@ -53,7 +58,8 @@
         }
       },
       "house_query": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "title": "Yasno Stroomonderbrekingen: Huis zoeken",
+        "description": "Voer een huisnummer (of deel daarvan) in om te zoeken.",
         "data": {
           "house_query": "Voer een deel van je huisnummer in:"
         },
@@ -62,7 +68,8 @@
         }
       },
       "preferences": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "title": "Yasno Stroomonderbrekingen: Voorkeuren",
+        "description": "Stem integratiegedrag af op je situatie.",
         "data": {
           "scan_interval": "Updatefrequentie",
           "filter_probable": "Verberg waarschijnlijke onderbrekingen op geplande dagen",
@@ -75,7 +82,8 @@
         }
       },
       "group": {
-        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "title": "Yasno Stroomonderbrekingen: Groep selecteren",
+        "description": "Kies de groep die bij je adres hoort.",
         "data": {
           "group": "Selecteer je groep:"
         },
@@ -97,6 +105,7 @@
     "step": {
       "init": {
         "title": "Yasno Stroomonderbrekingen Instellingen",
+        "description": "Stem integratiegedrag af op je situatie.",
         "data": {
           "scan_interval": "Updatefrequentie",
           "filter_probable": "Verberg waarschijnlijke onderbrekingen wanneer een gepland schema beschikbaar is",
