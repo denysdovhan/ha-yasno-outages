@@ -18,6 +18,40 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
+async def async_create_stale_address_issue(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> None:
+    """Create repair issue for stale address identifiers."""
+    issue_id = f"stale_address_ids_{entry.entry_id}"
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue_id,
+        is_fixable=False,
+        is_persistent=False,
+        severity=ir.IssueSeverity.ERROR,
+        translation_key="stale_address_ids",
+        translation_placeholders={
+            "entry_id": entry.entry_id,
+            "entry_title": entry.title or "Yasno Outages",
+            "edit": (
+                "/config/integrations/integration/yasno_outages"
+                f"#config_entry={entry.entry_id}"
+            ),
+        },
+    )
+
+
+async def async_delete_stale_address_issue(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> None:
+    """Delete stale-address issue if present."""
+    issue_id = f"stale_address_ids_{entry.entry_id}"
+    ir.async_delete_issue(hass, DOMAIN, issue_id)
+
+
 async def async_check_and_create_repair(
     hass: HomeAssistant,
     entry: ConfigEntry,

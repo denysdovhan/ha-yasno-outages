@@ -9,6 +9,13 @@
           "region": "Please select your region:"
         }
       },
+      "reconfigure": {
+        "title": "Yasno Outages: Reconfigure",
+        "description": "Choose the region that matches your current address.",
+        "data": {
+          "region": "Please select your region:"
+        }
+      },
       "provider": {
         "title": "Yasno Outages: Provider",
         "description": "Pick the distribution system operator for your region.",
@@ -183,6 +190,10 @@
     "missing_config": {
       "title": "{entry_title}: Configuration incomplete",
       "description": "This integration entry is missing required settings (region and/or provider).\n\nTo fix this error, [edit the integration entry]({edit}) and update your settings with the correct region and provider."
+    },
+    "stale_address_ids": {
+      "title": "{entry_title}: Address requires reconfiguration",
+      "description": "Yasno no longer recognizes saved street/house identifiers for this integration entry.\n\nTo fix this error, [edit the integration entry]({edit}) and select your address again."
     }
   }
 }

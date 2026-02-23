@@ -13,6 +13,7 @@ from custom_components.yasno_outages.api.models import (
     OutageSlot,
     OutageSource,
     YasnoApiError,
+    YasnoNotFoundError,
 )
 
 TEST_REGION_ID = 25
@@ -137,6 +138,42 @@ class TestBaseYasnoApiFetchData:
         test_url = "https://example.com/test"
         with patch("aiohttp.ClientSession.get") as mock_get:
             mock_get.return_value.__aenter__.side_effect = aiohttp.ClientError()
+
+            async with aiohttp.ClientSession() as session:
+                with pytest.raises(YasnoApiError, match=test_url):
+                    await api._get_data(session, test_url)
+
+    async def test_get_data_404_raises_not_found_error(self, api):
+        """Test 404 response raises YasnoNotFoundError."""
+        test_url = "https://example.com/not-found"
+        with patch("aiohttp.ClientSession.get") as mock_get:
+            request_info = MagicMock()
+            request_info.real_url = test_url
+            mock_get.return_value.__aenter__.side_effect = aiohttp.ClientResponseError(
+                request_info=request_info,
+                history=(),
+                status=404,
+                message="Not Found",
+                headers=None,
+            )
+
+            async with aiohttp.ClientSession() as session:
+                with pytest.raises(YasnoNotFoundError, match=test_url):
+                    await api._get_data(session, test_url)
+
+    async def test_get_data_non_404_response_error_raises_api_error(self, api):
+        """Test non-404 response error raises YasnoApiError."""
+        test_url = "https://example.com/error"
+        with patch("aiohttp.ClientSession.get") as mock_get:
+            request_info = MagicMock()
+            request_info.real_url = test_url
+            mock_get.return_value.__aenter__.side_effect = aiohttp.ClientResponseError(
+                request_info=request_info,
+                history=(),
+                status=500,
+                message="Internal Server Error",
+                headers=None,
+            )
 
             async with aiohttp.ClientSession() as session:
                 with pytest.raises(YasnoApiError, match=test_url):

@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 import aiohttp
 
 from .const import (
+    API_HTTP_STATUS_NOT_FOUND,
     API_PARAM_DSO_ID,
     API_PARAM_HOUSE_ID,
     API_PARAM_QUERY,
@@ -23,6 +24,7 @@ from .models import (
     OutageSlot,
     OutageSource,
     YasnoApiError,
+    YasnoNotFoundError,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -59,6 +61,11 @@ class BaseYasnoApi(ABC):
             ) as response:
                 response.raise_for_status()
                 return await response.json()
+        except aiohttp.ClientResponseError as err:
+            msg = f"Failed to fetch data from {url}"
+            if err.status == API_HTTP_STATUS_NOT_FOUND:
+                raise YasnoNotFoundError(msg) from err
+            raise YasnoApiError(msg) from err
         except (aiohttp.ClientError, aiohttp.ContentTypeError, ValueError) as err:
             msg = f"Failed to fetch data from {url}"
             raise YasnoApiError(msg) from err

@@ -9,6 +9,13 @@
           "region": "Selecteer je regio:"
         }
       },
+      "reconfigure": {
+        "title": "Yasno Stroomonderbrekingen: Herconfigureren",
+        "description": "Kies de regio die bij je huidige adres hoort.",
+        "data": {
+          "region": "Selecteer je regio:"
+        }
+      },
       "provider": {
         "title": "Yasno Stroomonderbrekingen: Provider",
         "description": "Kies de netbeheerder voor je regio.",
@@ -183,6 +190,10 @@
     "missing_config": {
       "title": "{entry_title}: Configuratie onvolledig",
       "description": "Deze integratie mist vereiste instellingen (regio en/of provider).\n\nOm dit op te lossen, [bewerk de integratie]({edit}) en vul de juiste regio en provider in."
+    },
+    "stale_address_ids": {
+      "title": "{entry_title}: Adres opnieuw instellen vereist",
+      "description": "Yasno herkent de opgeslagen straat-/huis-ID's voor deze integratie niet meer.\n\nOm dit op te lossen, [bewerk de integratie]({edit}) en selecteer je adres opnieuw."
     }
   }
 }
