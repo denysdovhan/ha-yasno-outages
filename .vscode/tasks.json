@@ -4,6 +4,10 @@
     {
       "label": "Run Home Assistant on port 8123",
       "type": "shell",
+      "icon": {
+        "id": "debug-start",
+        "color": "terminal.ansiBlue"
+      },
       "command": "scripts/develop",
       "problemMatcher": []
     }

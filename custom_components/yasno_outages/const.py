@@ -18,6 +18,13 @@ CONF_STATUS_ALL_DAY_EVENTS: Final = "status_all_day_events"
 CONF_CITY: Final = "city"  # Deprecated, use CONF_REGION
 CONF_SERVICE: Final = "service"  # Deprecated, use CONF_PROVIDER
 
+# Config-flow step fields
+CONF_STEP_SETUP_MODE: Final = "setup_mode"
+CONF_STEP_STREET_QUERY: Final = "street_query"
+CONF_STEP_HOUSE_QUERY: Final = "house_query"
+CONF_STEP_STREET: Final = "street"
+CONF_STEP_HOUSE: Final = "house"
+
 # Provider name simplification
 PROVIDER_DTEK_FULL: Final = "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ"
 PROVIDER_DTEK_SHORT: Final = "ДТЕК"

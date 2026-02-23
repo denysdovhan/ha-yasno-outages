@@ -9,6 +9,13 @@
           "region": "Selecteer je regio:"
         }
       },
+      "reconfigure": {
+        "title": "Yasno Stroomonderbrekingen: Herconfigureren",
+        "description": "Kies de regio die bij je huidige adres hoort.",
+        "data": {
+          "region": "Selecteer je regio:"
+        }
+      },
       "provider": {
         "title": "Yasno Stroomonderbrekingen: Provider",
         "description": "Kies de netbeheerder voor je regio.",
@@ -183,6 +190,49 @@
     "missing_config": {
       "title": "{entry_title}: Configuratie onvolledig",
       "description": "Deze integratie mist vereiste instellingen (regio en/of provider).\n\nOm dit op te lossen, [bewerk de integratie]({edit}) en vul de juiste regio en provider in."
+    },
+    "stale_address_ids": {
+      "title": "{entry_title}: Configureer adres opnieuw (Yasno-ID's gewijzigd)",
+      "fix_flow": {
+        "step": {
+          "street_query": {
+            "title": "Yasno Stroomonderbrekingen: Straat zoeken",
+            "description": "Yasno heeft straat-/huis-ID's gewijzigd. Zoek en selecteer je huidige adres om deze integratie te herstellen.\n\nOpgeslagen adres: {current_address}.",
+            "data": {
+              "street_query": "Voer een deel van je straatnaam in:"
+            }
+          },
+          "street": {
+            "title": "Yasno Stroomonderbrekingen: Straat selecteren",
+            "description": "Selecteer de juiste straat uit de zoekresultaten.",
+            "data": {
+              "street": "Selecteer je straat:"
+            }
+          },
+          "house_query": {
+            "title": "Yasno Stroomonderbrekingen: Huis zoeken",
+            "description": "Opgeslagen adres: {current_address}. Voer een huisnummer (of deel daarvan) in om te zoeken.",
+            "data": {
+              "house_query": "Voer een deel van je huisnummer in:"
+            }
+          },
+          "house": {
+            "title": "Yasno Stroomonderbrekingen: Huis selecteren",
+            "description": "Kies het juiste huisnummer voor je straat.",
+            "data": {
+              "house": "Selecteer je huis:"
+            }
+          }
+        },
+        "error": {
+          "cannot_connect": "Kan geen verbinding maken met de Yasno API.",
+          "street_query_required": "Zoekopdracht voor straat is vereist.",
+          "house_query_required": "Zoekopdracht voor huis is vereist.",
+          "no_streets": "Geen straten gevonden voor deze zoekopdracht.",
+          "no_houses": "Geen huizen gevonden voor deze straat.",
+          "no_group": "Kan geen groep bepalen voor dit adres."
+        }
+      }
     }
   }
 }

@@ -9,6 +9,10 @@ class YasnoApiError(Exception):
     """Raised when Yasno API request fails."""
 
 
+class YasnoNotFoundError(YasnoApiError):
+    """Raised when Yasno API returns 404."""
+
+
 class OutageEventType(StrEnum):
     """Outage event types."""
 

@@ -9,6 +9,13 @@
           "region": "Please select your region:"
         }
       },
+      "reconfigure": {
+        "title": "Yasno Outages: Reconfigure",
+        "description": "Choose the region that matches your current address.",
+        "data": {
+          "region": "Please select your region:"
+        }
+      },
       "provider": {
         "title": "Yasno Outages: Provider",
         "description": "Pick the distribution system operator for your region.",
@@ -183,6 +190,49 @@
     "missing_config": {
       "title": "{entry_title}: Configuration incomplete",
       "description": "This integration entry is missing required settings (region and/or provider).\n\nTo fix this error, [edit the integration entry]({edit}) and update your settings with the correct region and provider."
+    },
+    "stale_address_ids": {
+      "title": "{entry_title}: Reconfigure address (Yasno changed IDs)",
+      "fix_flow": {
+        "step": {
+          "street_query": {
+            "title": "Yasno Outages: Street Search",
+            "description": "Yasno changed street/house identifiers. Search and select your current address to repair this entry.\n\nSaved address: {current_address}.",
+            "data": {
+              "street_query": "Enter part of your street name:"
+            }
+          },
+          "street": {
+            "title": "Yasno Outages: Street Selection",
+            "description": "Select the correct street from the search results.",
+            "data": {
+              "street": "Select your street:"
+            }
+          },
+          "house_query": {
+            "title": "Yasno Outages: House Search",
+            "description": "Saved address: {current_address}. Enter a house number or part of it to find your address.",
+            "data": {
+              "house_query": "Enter your house number:"
+            }
+          },
+          "house": {
+            "title": "Yasno Outages: House Selection",
+            "description": "Pick the exact house number for your street.",
+            "data": {
+              "house": "Select your house:"
+            }
+          }
+        },
+        "error": {
+          "cannot_connect": "Failed to connect to Yasno API.",
+          "street_query_required": "Street search query is required.",
+          "house_query_required": "House search query is required.",
+          "no_streets": "No streets found for this query.",
+          "no_houses": "No houses found for this street.",
+          "no_group": "Failed to resolve group for this address."
+        }
+      }
     }
   }
 }

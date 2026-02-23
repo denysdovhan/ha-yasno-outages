@@ -5,6 +5,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import (
+    SOURCE_RECONFIGURE,
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
@@ -30,18 +31,16 @@ from .const import (
     CONF_PROVIDER,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
+    CONF_STEP_HOUSE,
+    CONF_STEP_HOUSE_QUERY,
+    CONF_STEP_STREET,
+    CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
     DOMAIN,
     YASNO_GROUP_URL,
 )
 
 LOGGER = logging.getLogger(__name__)
-
-CONF_SETUP_MODE = "setup_mode"
-CONF_STREET_QUERY = "street_query"
-CONF_HOUSE_QUERY = "house_query"
-CONF_STREET = "street"
-CONF_HOUSE = "house"
 
 SETUP_MODE_GROUP = "group"
 SETUP_MODE_ADDRESS = "address"
@@ -151,6 +150,43 @@ def build_select_options(options: dict[str, str]) -> list[SelectOptionDict]:
     ]
 
 
+def build_lookup_options(items: list[dict[str, Any]]) -> dict[str, str]:
+    """Build selector options map from API lookup items."""
+    return {str(item["id"]): item["value"] for item in items}
+
+
+def build_street_query_schema() -> vol.Schema:
+    """Build the schema for street search query."""
+    return vol.Schema({vol.Required(CONF_STEP_STREET_QUERY): str})
+
+
+def build_street_schema(options: dict[str, str]) -> vol.Schema:
+    """Build the schema for street selection."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_STEP_STREET): SelectSelector(
+                SelectSelectorConfig(options=build_select_options(options)),
+            ),
+        }
+    )
+
+
+def build_house_query_schema() -> vol.Schema:
+    """Build the schema for house search query."""
+    return vol.Schema({vol.Required(CONF_STEP_HOUSE_QUERY): str})
+
+
+def build_house_schema(options: dict[str, str]) -> vol.Schema:
+    """Build the schema for house selection."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_STEP_HOUSE): SelectSelector(
+                SelectSelectorConfig(options=build_select_options(options)),
+            ),
+        }
+    )
+
+
 def build_preferences_schema(
     config_entry: ConfigEntry | None,
 ) -> vol.Schema:
@@ -226,6 +262,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         self._house_options: dict[str, str] = {}
         self._street_name = ""
         self._house_name = ""
+        self._is_reconfigure = False
 
     @staticmethod
     @callback
@@ -244,6 +281,89 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             provider_data["id"] if provider_data else None,
         )
 
+    def _active_config_entry(self) -> ConfigEntry | None:
+        """Return config entry for reconfigure source."""
+        if self._is_reconfigure:
+            return self._get_reconfigure_entry()
+        return None
+
+    def _build_entry_data(self) -> dict[str, Any]:
+        """Build config-entry data from current flow data."""
+        common_data: dict[str, Any] = {
+            CONF_REGION: self.data[CONF_REGION],
+            CONF_PROVIDER: self.data[CONF_PROVIDER],
+            CONF_FILTER_PROBABLE: self.data[CONF_FILTER_PROBABLE],
+            CONF_STATUS_ALL_DAY_EVENTS: self.data[CONF_STATUS_ALL_DAY_EVENTS],
+        }
+        if self.data.get(CONF_GROUP):
+            return {**common_data, CONF_GROUP: self.data[CONF_GROUP]}
+        return {
+            **common_data,
+            CONF_STREET_ID: self.data[CONF_STREET_ID],
+            CONF_HOUSE_ID: self.data[CONF_HOUSE_ID],
+            CONF_ADDRESS_NAME: f"{self._street_name} {self._house_name}",
+        }
+
+    def _build_entry_title(self) -> str:
+        """Build config-entry title from current flow data."""
+        if self.data.get(CONF_GROUP):
+            return build_entry_title(
+                region=self.data[CONF_REGION],
+                provider=self.data[CONF_PROVIDER],
+                group=self.data[CONF_GROUP],
+            )
+        return build_address_entry_title(
+            region=self.data[CONF_REGION],
+            street=self._street_name,
+            house=self._house_name,
+        )
+
+    def _build_reconfigure_options(self, config_entry: ConfigEntry) -> dict[str, Any]:
+        """Build options map preserving existing preferences."""
+        options = dict(config_entry.options)
+        scan_interval = self.data.get(
+            CONF_SCAN_INTERVAL,
+            get_config_value(config_entry, CONF_SCAN_INTERVAL, default=15),
+        )
+        options.update(
+            {
+                CONF_SCAN_INTERVAL: scan_interval,
+                CONF_FILTER_PROBABLE: self.data[CONF_FILTER_PROBABLE],
+                CONF_STATUS_ALL_DAY_EVENTS: self.data[CONF_STATUS_ALL_DAY_EVENTS],
+            }
+        )
+        return options
+
+    async def async_step_reconfigure(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle reconfiguration of an existing entry."""
+        errors: dict[str, str] = {}
+        self._is_reconfigure = True
+        config_entry = self._active_config_entry()
+        if config_entry is None:
+            return self.async_abort(reason="unknown")
+
+        if not self.data:
+            self.data = dict(config_entry.data)
+            self.data.update(config_entry.options)
+
+        if user_input is not None:
+            self.data.update(user_input)
+            return await self.async_step_provider()
+
+        try:
+            await self.api.fetch_regions()
+        except Exception:  # noqa: BLE001
+            errors["base"] = "cannot_connect"
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=build_region_schema(api=self.api, config_entry=config_entry),
+            errors=errors,
+        )
+
     async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is not None:
@@ -255,7 +375,10 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=build_region_schema(api=self.api, config_entry=None),
+            data_schema=build_region_schema(
+                api=self.api,
+                config_entry=self._active_config_entry(),
+            ),
         )
 
     async def async_step_provider(
@@ -282,7 +405,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="provider",
             data_schema=build_provider_schema(
                 api=self.api,
-                config_entry=None,
+                config_entry=self._active_config_entry(),
                 data=self.data,
             ),
         )
@@ -302,6 +425,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         user_input: dict | None = None,  # noqa: ARG002
     ) -> ConfigFlowResult:
         """Handle address setup method."""
+        self.data.pop(CONF_GROUP, None)
         return await self.async_step_street_query()
 
     async def async_step_street_query(
@@ -312,7 +436,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            query = user_input[CONF_STREET_QUERY].strip()
+            query = user_input[CONF_STEP_STREET_QUERY].strip()
             if not query:
                 errors["base"] = "street_query_required"
             else:
@@ -334,14 +458,12 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                             self.data[CONF_STREET_ID] = street["id"]
                             self._street_name = street["value"]
                             return await self.async_step_house_query()
-                        self._street_options = {
-                            str(item["id"]): item["value"] for item in streets
-                        }
+                        self._street_options = build_lookup_options(streets)
                         return await self.async_step_street()
 
         return self.async_show_form(
             step_id="street_query",
-            data_schema=vol.Schema({vol.Required(CONF_STREET_QUERY): str}),
+            data_schema=build_street_query_schema(),
             errors=errors,
         )
 
@@ -353,7 +475,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            street_id = user_input[CONF_STREET]
+            street_id = user_input[CONF_STEP_STREET]
             street_name = self._street_options.get(street_id)
             if not street_name:
                 errors["base"] = "no_streets"
@@ -364,15 +486,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="street",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_STREET): SelectSelector(
-                        SelectSelectorConfig(
-                            options=build_select_options(self._street_options)
-                        ),
-                    ),
-                }
-            ),
+            data_schema=build_street_schema(self._street_options),
             errors=errors,
         )
 
@@ -384,7 +498,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            house_id = user_input[CONF_HOUSE]
+            house_id = user_input[CONF_STEP_HOUSE]
             house_name = self._house_options.get(house_id)
             if not house_name:
                 errors["base"] = "no_houses"
@@ -409,15 +523,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                         return await self.async_step_preferences()
         return self.async_show_form(
             step_id="house",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_HOUSE): SelectSelector(
-                        SelectSelectorConfig(
-                            options=build_select_options(self._house_options)
-                        ),
-                    ),
-                }
-            ),
+            data_schema=build_house_schema(self._house_options),
             errors=errors,
         )
 
@@ -429,7 +535,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            query = user_input[CONF_HOUSE_QUERY].strip()
+            query = user_input[CONF_STEP_HOUSE_QUERY].strip()
             if not query:
                 errors["base"] = "house_query_required"
             else:
@@ -448,14 +554,12 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     if not houses:
                         errors["base"] = "no_houses"
                     else:
-                        self._house_options = {
-                            str(item["id"]): item["value"] for item in houses
-                        }
+                        self._house_options = build_lookup_options(houses)
                         return await self.async_step_house()
 
         return self.async_show_form(
             step_id="house_query",
-            data_schema=vol.Schema({vol.Required(CONF_HOUSE_QUERY): str}),
+            data_schema=build_house_query_schema(),
             errors=errors,
         )
 
@@ -466,43 +570,23 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle preferences before entry creation."""
         if user_input is not None:
             self.data.update(user_input)
-            if self.data.get(CONF_GROUP):
-                title = build_entry_title(
-                    region=self.data[CONF_REGION],
-                    provider=self.data[CONF_PROVIDER],
-                    group=self.data[CONF_GROUP],
+            data = self._build_entry_data()
+            title = self._build_entry_title()
+            if self.source == SOURCE_RECONFIGURE:
+                config_entry = self._active_config_entry()
+                if config_entry is None:
+                    return self.async_abort(reason="unknown")
+                return self.async_update_reload_and_abort(
+                    config_entry,
+                    title=title,
+                    data=data,
+                    options=self._build_reconfigure_options(config_entry),
                 )
-                data = {
-                    CONF_REGION: self.data[CONF_REGION],
-                    CONF_PROVIDER: self.data[CONF_PROVIDER],
-                    CONF_GROUP: self.data[CONF_GROUP],
-                }
-            else:
-                title = build_address_entry_title(
-                    region=self.data[CONF_REGION],
-                    street=self._street_name,
-                    house=self._house_name,
-                )
-                data = {
-                    CONF_REGION: self.data[CONF_REGION],
-                    CONF_PROVIDER: self.data[CONF_PROVIDER],
-                    CONF_STREET_ID: self.data[CONF_STREET_ID],
-                    CONF_HOUSE_ID: self.data[CONF_HOUSE_ID],
-                    CONF_ADDRESS_NAME: f"{self._street_name} {self._house_name}",
-                }
-
-            data.update(
-                {
-                    CONF_FILTER_PROBABLE: self.data[CONF_FILTER_PROBABLE],
-                    CONF_STATUS_ALL_DAY_EVENTS: self.data[CONF_STATUS_ALL_DAY_EVENTS],
-                }
-            )
-
             return self.async_create_entry(title=title, data=data)
 
         return self.async_show_form(
             step_id="preferences",
-            data_schema=build_preferences_schema(None),
+            data_schema=build_preferences_schema(self._active_config_entry()),
         )
 
     async def async_step_group(
@@ -510,6 +594,13 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         user_input: dict | None = None,
     ) -> ConfigFlowResult:
         """Handle the group step."""
+        self.data.update(
+            {
+                CONF_STREET_ID: None,
+                CONF_HOUSE_ID: None,
+                CONF_ADDRESS_NAME: None,
+            }
+        )
         if user_input is not None:
             LOGGER.debug("User input: %s", user_input)
             self.data.update(user_input)
@@ -532,6 +623,6 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="group",
-            data_schema=build_group_schema(groups, None),
+            data_schema=build_group_schema(groups, self._active_config_entry()),
             description_placeholders={"yasno_group_url": YASNO_GROUP_URL},
         )

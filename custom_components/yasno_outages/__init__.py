@@ -6,9 +6,10 @@ import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
+from homeassistant.exceptions import ConfigEntryError
 from homeassistant.loader import async_get_loaded_integration
 
-from .api import YasnoApi
+from .api import YasnoApi, YasnoNotFoundError
 from .const import (
     CONF_GROUP,
     CONF_HOUSE_ID,
@@ -19,7 +20,11 @@ from .const import (
 )
 from .coordinator import YasnoOutagesCoordinator
 from .data import YasnoOutagesData
-from .repairs import async_check_and_create_repair
+from .repairs import (
+    async_check_and_create_repair,
+    async_create_stale_address_issue,
+    async_delete_stale_address_issue,
+)
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -110,12 +115,17 @@ async def async_setup_entry(
     street_id = entry.options.get(CONF_STREET_ID, entry.data.get(CONF_STREET_ID))
     house_id = entry.options.get(CONF_HOUSE_ID, entry.data.get(CONF_HOUSE_ID))
     if not group and street_id and house_id:
-        group = await bootstrap_api.fetch_group_by_address(
-            region_id=region_data["id"],
-            provider_id=provider_data["id"],
-            street_id=street_id,
-            house_id=house_id,
-        )
+        try:
+            group = await bootstrap_api.fetch_group_by_address(
+                region_id=region_data["id"],
+                provider_id=provider_data["id"],
+                street_id=street_id,
+                house_id=house_id,
+            )
+        except YasnoNotFoundError as err:
+            await async_create_stale_address_issue(hass, entry)
+            msg = "Address no longer found; reconfigure integration entry"
+            raise ConfigEntryError(msg) from err
 
     # If group is not resolved, return error
     if not group:
@@ -142,6 +152,7 @@ async def async_setup_entry(
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+    await async_delete_stale_address_issue(hass, entry)
     return True
 
 
