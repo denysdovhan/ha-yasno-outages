@@ -31,18 +31,16 @@ from .const import (
     CONF_PROVIDER,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
+    CONF_STEP_HOUSE,
+    CONF_STEP_HOUSE_QUERY,
+    CONF_STEP_STREET,
+    CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
     DOMAIN,
     YASNO_GROUP_URL,
 )
 
 LOGGER = logging.getLogger(__name__)
-
-CONF_SETUP_MODE = "setup_mode"
-CONF_STREET_QUERY = "street_query"
-CONF_HOUSE_QUERY = "house_query"
-CONF_STREET = "street"
-CONF_HOUSE = "house"
 
 SETUP_MODE_GROUP = "group"
 SETUP_MODE_ADDRESS = "address"
@@ -150,6 +148,43 @@ def build_select_options(options: dict[str, str]) -> list[SelectOptionDict]:
         )
         for key, value in options.items()
     ]
+
+
+def build_lookup_options(items: list[dict[str, Any]]) -> dict[str, str]:
+    """Build selector options map from API lookup items."""
+    return {str(item["id"]): item["value"] for item in items}
+
+
+def build_street_query_schema() -> vol.Schema:
+    """Build the schema for street search query."""
+    return vol.Schema({vol.Required(CONF_STEP_STREET_QUERY): str})
+
+
+def build_street_schema(options: dict[str, str]) -> vol.Schema:
+    """Build the schema for street selection."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_STEP_STREET): SelectSelector(
+                SelectSelectorConfig(options=build_select_options(options)),
+            ),
+        }
+    )
+
+
+def build_house_query_schema() -> vol.Schema:
+    """Build the schema for house search query."""
+    return vol.Schema({vol.Required(CONF_STEP_HOUSE_QUERY): str})
+
+
+def build_house_schema(options: dict[str, str]) -> vol.Schema:
+    """Build the schema for house selection."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_STEP_HOUSE): SelectSelector(
+                SelectSelectorConfig(options=build_select_options(options)),
+            ),
+        }
+    )
 
 
 def build_preferences_schema(
@@ -401,7 +436,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            query = user_input[CONF_STREET_QUERY].strip()
+            query = user_input[CONF_STEP_STREET_QUERY].strip()
             if not query:
                 errors["base"] = "street_query_required"
             else:
@@ -423,14 +458,12 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                             self.data[CONF_STREET_ID] = street["id"]
                             self._street_name = street["value"]
                             return await self.async_step_house_query()
-                        self._street_options = {
-                            str(item["id"]): item["value"] for item in streets
-                        }
+                        self._street_options = build_lookup_options(streets)
                         return await self.async_step_street()
 
         return self.async_show_form(
             step_id="street_query",
-            data_schema=vol.Schema({vol.Required(CONF_STREET_QUERY): str}),
+            data_schema=build_street_query_schema(),
             errors=errors,
         )
 
@@ -442,7 +475,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            street_id = user_input[CONF_STREET]
+            street_id = user_input[CONF_STEP_STREET]
             street_name = self._street_options.get(street_id)
             if not street_name:
                 errors["base"] = "no_streets"
@@ -453,15 +486,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="street",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_STREET): SelectSelector(
-                        SelectSelectorConfig(
-                            options=build_select_options(self._street_options)
-                        ),
-                    ),
-                }
-            ),
+            data_schema=build_street_schema(self._street_options),
             errors=errors,
         )
 
@@ -473,7 +498,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            house_id = user_input[CONF_HOUSE]
+            house_id = user_input[CONF_STEP_HOUSE]
             house_name = self._house_options.get(house_id)
             if not house_name:
                 errors["base"] = "no_houses"
@@ -498,15 +523,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                         return await self.async_step_preferences()
         return self.async_show_form(
             step_id="house",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_HOUSE): SelectSelector(
-                        SelectSelectorConfig(
-                            options=build_select_options(self._house_options)
-                        ),
-                    ),
-                }
-            ),
+            data_schema=build_house_schema(self._house_options),
             errors=errors,
         )
 
@@ -518,7 +535,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            query = user_input[CONF_HOUSE_QUERY].strip()
+            query = user_input[CONF_STEP_HOUSE_QUERY].strip()
             if not query:
                 errors["base"] = "house_query_required"
             else:
@@ -537,14 +554,12 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     if not houses:
                         errors["base"] = "no_houses"
                     else:
-                        self._house_options = {
-                            str(item["id"]): item["value"] for item in houses
-                        }
+                        self._house_options = build_lookup_options(houses)
                         return await self.async_step_house()
 
         return self.async_show_form(
             step_id="house_query",
-            data_schema=vol.Schema({vol.Required(CONF_HOUSE_QUERY): str}),
+            data_schema=build_house_query_schema(),
             errors=errors,
         )
 
