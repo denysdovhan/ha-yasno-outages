@@ -53,6 +53,7 @@ class StaleAddressRepairFlow(RepairsFlow):
         self._street_name = ""
         self._house_name = ""
         self._street_id: int | None = None
+        self._current_address = self._get_config_value(CONF_ADDRESS_NAME) or ""
 
     def _get_config_value(self, key: str) -> Any:
         """Read value from options first, then data."""
@@ -85,6 +86,13 @@ class StaleAddressRepairFlow(RepairsFlow):
         """Handle the first step of repair flow."""
         return await self.async_step_street_query()
 
+    def _description_placeholders(self) -> dict[str, str]:
+        """Return placeholders for repair flow step descriptions."""
+        return {
+            "entry_title": self._entry.title,
+            "current_address": self._current_address or "-",
+        }
+
     async def async_step_street_query(
         self,
         user_input: dict[str, Any] | None = None,
@@ -102,7 +110,7 @@ class StaleAddressRepairFlow(RepairsFlow):
                 step_id="street_query",
                 data_schema=build_street_query_schema(),
                 errors=errors,
-                description_placeholders={"entry_title": self._entry.title},
+                description_placeholders=self._description_placeholders(),
             )
 
         if user_input is not None:
@@ -134,7 +142,7 @@ class StaleAddressRepairFlow(RepairsFlow):
             step_id="street_query",
             data_schema=build_street_query_schema(),
             errors=errors,
-            description_placeholders={"entry_title": self._entry.title},
+            description_placeholders=self._description_placeholders(),
         )
 
     async def async_step_street(
@@ -158,7 +166,7 @@ class StaleAddressRepairFlow(RepairsFlow):
             step_id="street",
             data_schema=build_street_schema(self._street_options),
             errors=errors,
-            description_placeholders={"entry_title": self._entry.title},
+            description_placeholders=self._description_placeholders(),
         )
 
     async def async_step_house_query(
@@ -193,7 +201,7 @@ class StaleAddressRepairFlow(RepairsFlow):
             step_id="house_query",
             data_schema=build_house_query_schema(),
             errors=errors,
-            description_placeholders={"entry_title": self._entry.title},
+            description_placeholders=self._description_placeholders(),
         )
 
     async def async_step_house(
@@ -267,7 +275,7 @@ class StaleAddressRepairFlow(RepairsFlow):
             step_id="house",
             data_schema=build_house_schema(self._house_options),
             errors=errors,
-            description_placeholders={"entry_title": self._entry.title},
+            description_placeholders=self._description_placeholders(),
         )
 
 

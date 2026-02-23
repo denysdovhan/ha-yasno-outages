@@ -197,7 +197,7 @@
         "step": {
           "street_query": {
             "title": "Yasno Stroomonderbrekingen: Straat zoeken",
-            "description": "Yasno heeft straat-/huis-ID's gewijzigd. Zoek en selecteer je huidige adres om deze integratie te herstellen.",
+            "description": "Yasno heeft straat-/huis-ID's gewijzigd. Zoek en selecteer je huidige adres om deze integratie te herstellen.\n\nOpgeslagen adres: {current_address}.",
             "data": {
               "street_query": "Voer een deel van je straatnaam in:"
             }
@@ -211,7 +211,7 @@
           },
           "house_query": {
             "title": "Yasno Stroomonderbrekingen: Huis zoeken",
-            "description": "Voer een huisnummer (of deel daarvan) in om te zoeken.",
+            "description": "Opgeslagen adres: {current_address}. Voer een huisnummer (of deel daarvan) in om te zoeken.",
             "data": {
               "house_query": "Voer een deel van je huisnummer in:"
             }

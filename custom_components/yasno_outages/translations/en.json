@@ -197,7 +197,7 @@
         "step": {
           "street_query": {
             "title": "Yasno Outages: Street Search",
-            "description": "Yasno changed street/house identifiers. Search and select your current address to repair this entry.",
+            "description": "Yasno changed street/house identifiers. Search and select your current address to repair this entry.\n\nSaved address: {current_address}.",
             "data": {
               "street_query": "Enter part of your street name:"
             }
@@ -211,7 +211,7 @@
           },
           "house_query": {
             "title": "Yasno Outages: House Search",
-            "description": "Enter a house number or part of it to find your address.",
+            "description": "Saved address: {current_address}. Enter a house number or part of it to find your address.",
             "data": {
               "house_query": "Enter your house number:"
             }

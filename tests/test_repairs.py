@@ -114,3 +114,19 @@ async def test_house_step_updates_entry_and_schedules_reload():
     flow.hass.config_entries.async_schedule_reload.assert_called_once_with(
         entry.entry_id
     )
+
+
+async def test_repair_street_query_uses_legacy_address_fallback():
+    """Repair street query description includes current address_name."""
+    entry = _build_entry()
+    entry.data[CONF_ADDRESS_NAME] = "Хрещатик 10Б"
+    flow = StaleAddressRepairFlow(entry)
+    flow.handler = DOMAIN
+    flow.flow_id = "flow-1"
+    flow._resolve_region_provider_ids = AsyncMock(return_value=True)
+
+    result = await flow.async_step_street_query()
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "street_query"
+    assert result["description_placeholders"]["current_address"] == "Хрещатик 10Б"
