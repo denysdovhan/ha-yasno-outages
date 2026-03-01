@@ -28,6 +28,8 @@ from .const import (
 
 LOGGER = logging.getLogger(__name__)
 
+GROUP_LINK = "https://static.yasno.ua/kyiv/outages"
+
 
 def get_config_value(
     entry: ConfigEntry | None,
@@ -205,6 +207,7 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
         return self.async_show_form(
             step_id="group",
             data_schema=build_group_schema(groups, self.config_entry),
+            description_placeholders={"group_link": GROUP_LINK},
         )
 
 
@@ -297,4 +300,5 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="group",
             data_schema=build_group_schema(groups, None),
+            description_placeholders={"group_link": GROUP_LINK},
         )
