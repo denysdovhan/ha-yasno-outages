@@ -97,7 +97,8 @@
         "state": {
           "schedule_applies": "Schema van Toepassing",
           "waiting_for_schedule": "Wachten op Schema",
-          "emergency_shutdowns": "Noodafschakelingen"
+          "emergency_shutdowns": "Noodafschakelingen",
+          "no_outages": "Geen Onderbrekingen"
         }
       },
       "status_tomorrow": {
@@ -105,7 +106,8 @@
         "state": {
           "schedule_applies": "Schema van Toepassing",
           "waiting_for_schedule": "Wachten op Schema",
-          "emergency_shutdowns": "Noodafschakelingen"
+          "emergency_shutdowns": "Noodafschakelingen",
+          "no_outages": "Geen Onderbrekingen"
         }
       }
     }
@@ -115,7 +117,8 @@
     "probable_electricity_outage": "Waarschijnlijke Onderbreking",
     "status_schedule_applies": "Schema van Toepassing",
     "status_waiting_for_schedule": "Wachten op Schema",
-    "status_emergency_shutdowns": "Noodafschakelingen"
+    "status_emergency_shutdowns": "Noodafschakelingen",
+    "status_no_outages": "Geen Onderbrekingen"
   },
   "issues": {
     "missing_config": {

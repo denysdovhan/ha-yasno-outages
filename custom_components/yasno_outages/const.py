@@ -38,6 +38,7 @@ ATTR_EVENT_END: Final = "event_end"
 STATE_STATUS_SCHEDULE_APPLIES: Final = "schedule_applies"
 STATE_STATUS_WAITING_FOR_SCHEDULE: Final = "waiting_for_schedule"
 STATE_STATUS_EMERGENCY_SHUTDOWNS: Final = "emergency_shutdowns"
+STATE_STATUS_NO_OUTAGES: Final = "no_outages"
 
 # Keys
 TRANSLATION_KEY_EVENT_PLANNED_OUTAGE: Final = (
@@ -55,9 +56,13 @@ TRANSLATION_KEY_STATUS_WAITING_FOR_SCHEDULE: Final = (
 TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS: Final = (
     f"component.{DOMAIN}.common.status_emergency_shutdowns"
 )
+TRANSLATION_KEY_STATUS_NO_OUTAGES: Final = (
+    f"component.{DOMAIN}.common.status_no_outages"
+)
 # Text fallbacks
 PLANNED_OUTAGE_TEXT_FALLBACK: Final = "Planned Outage"
 PROBABLE_OUTAGE_TEXT_FALLBACK: Final = "Probable Outage"
 STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK: Final = "Schedule Applies"
 STATUS_WAITING_FOR_SCHEDULE_TEXT_FALLBACK: Final = "Waiting for Schedule"
 STATUS_EMERGENCY_SHUTDOWNS_TEXT_FALLBACK: Final = "Emergency Shutdowns"
+STATUS_NO_OUTAGES_TEXT_FALLBACK: Final = "No Outages"

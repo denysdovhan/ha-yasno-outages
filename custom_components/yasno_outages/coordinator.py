@@ -14,6 +14,7 @@ from homeassistant.util import dt as dt_utils
 from .api import OutageEvent, OutageEventType, YasnoApi
 from .api.const import (
     API_STATUS_EMERGENCY_SHUTDOWNS,
+    API_STATUS_NO_OUTAGES,
     API_STATUS_SCHEDULE_APPLIES,
     API_STATUS_WAITING_FOR_SCHEDULE,
 )
@@ -34,14 +35,17 @@ from .const import (
     STATE_NORMAL,
     STATE_OUTAGE,
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
+    STATE_STATUS_NO_OUTAGES,
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
     STATUS_EMERGENCY_SHUTDOWNS_TEXT_FALLBACK,
+    STATUS_NO_OUTAGES_TEXT_FALLBACK,
     STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK,
     STATUS_WAITING_FOR_SCHEDULE_TEXT_FALLBACK,
     TRANSLATION_KEY_EVENT_PLANNED_OUTAGE,
     TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE,
     TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS,
+    TRANSLATION_KEY_STATUS_NO_OUTAGES,
     TRANSLATION_KEY_STATUS_SCHEDULE_APPLIES,
     TRANSLATION_KEY_STATUS_WAITING_FOR_SCHEDULE,
     UPDATE_INTERVAL,
@@ -65,6 +69,7 @@ STATUS_STATE_MAP: dict[str, str] = {
     API_STATUS_SCHEDULE_APPLIES: STATE_STATUS_SCHEDULE_APPLIES,
     API_STATUS_WAITING_FOR_SCHEDULE: STATE_STATUS_WAITING_FOR_SCHEDULE,
     API_STATUS_EMERGENCY_SHUTDOWNS: STATE_STATUS_EMERGENCY_SHUTDOWNS,
+    API_STATUS_NO_OUTAGES: STATE_STATUS_NO_OUTAGES,
 }
 
 
@@ -270,6 +275,10 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS,
                 STATUS_EMERGENCY_SHUTDOWNS_TEXT_FALLBACK,
             ),
+            STATE_STATUS_NO_OUTAGES: self.translations.get(
+                TRANSLATION_KEY_STATUS_NO_OUTAGES,
+                STATUS_NO_OUTAGES_TEXT_FALLBACK,
+            ),
         }
 
     @property
@@ -421,7 +430,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
     def get_planned_outage_at(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the planned outage event at a given time."""
-        if self._is_waiting_for_schedule(at.date()):
+        if self._is_schedule_inactive(at.date()):
             return None
         return self.get_outage_at(self.api.planned, at)
 
@@ -460,7 +469,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         return [
             event
             for event in events
-            if not self._is_waiting_for_schedule(event.start.date())
+            if not self._is_schedule_inactive(event.start.date())
         ]
 
     def _planned_status_for_date(self, date: datetime.date) -> str | None:
@@ -475,9 +484,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         return None
 
-    def _is_waiting_for_schedule(self, date: datetime.date) -> bool:
-        """Return True when planned schedule status is waiting for schedule."""
-        return self._planned_status_for_date(date) == API_STATUS_WAITING_FOR_SCHEDULE
+    def _is_schedule_inactive(self, date: datetime.date) -> bool:
+        """Return True when planned schedule should not be applied."""
+        return self._planned_status_for_date(date) in {
+            API_STATUS_WAITING_FOR_SCHEDULE,
+            API_STATUS_NO_OUTAGES,
+        }
 
     def get_probable_events_between(
         self,

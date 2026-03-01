@@ -21,6 +21,7 @@ from .const import (
     STATE_NORMAL,
     STATE_OUTAGE,
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
+    STATE_STATUS_NO_OUTAGES,
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
 )
@@ -85,6 +86,7 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
             STATE_STATUS_SCHEDULE_APPLIES,
             STATE_STATUS_WAITING_FOR_SCHEDULE,
             STATE_STATUS_EMERGENCY_SHUTDOWNS,
+            STATE_STATUS_NO_OUTAGES,
             STATE_UNKNOWN,
         ],
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -99,6 +101,7 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
             STATE_STATUS_SCHEDULE_APPLIES,
             STATE_STATUS_WAITING_FOR_SCHEDULE,
             STATE_STATUS_EMERGENCY_SHUTDOWNS,
+            STATE_STATUS_NO_OUTAGES,
             STATE_UNKNOWN,
         ],
         entity_category=EntityCategory.DIAGNOSTIC,

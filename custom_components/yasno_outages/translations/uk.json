@@ -97,7 +97,8 @@
         "state": {
           "schedule_applies": "Графік діє",
           "waiting_for_schedule": "Очікування графіка",
-          "emergency_shutdowns": "Аварійні відключення"
+          "emergency_shutdowns": "Аварійні відключення",
+          "no_outages": "Відключень немає"
         }
       },
       "status_tomorrow": {
@@ -105,7 +106,8 @@
         "state": {
           "schedule_applies": "Графік діє",
           "waiting_for_schedule": "Очікування графіка",
-          "emergency_shutdowns": "Аварійні відключення"
+          "emergency_shutdowns": "Аварійні відключення",
+          "no_outages": "Відключень немає"
         }
       }
     }
@@ -115,7 +117,8 @@
     "probable_electricity_outage": "Імовірне відключення",
     "status_schedule_applies": "Графік діє",
     "status_waiting_for_schedule": "Очікування графіка",
-    "status_emergency_shutdowns": "Аварійні відключення"
+    "status_emergency_shutdowns": "Аварійні відключення",
+    "status_no_outages": "Відключень немає"
   },
   "issues": {
     "missing_config": {

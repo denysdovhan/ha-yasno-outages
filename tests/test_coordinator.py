@@ -10,6 +10,7 @@ from homeassistant.const import STATE_UNKNOWN
 from custom_components.yasno_outages.api import OutageEvent, OutageEventType
 from custom_components.yasno_outages.api.const import (
     API_STATUS_EMERGENCY_SHUTDOWNS,
+    API_STATUS_NO_OUTAGES,
     API_STATUS_SCHEDULE_APPLIES,
     API_STATUS_WAITING_FOR_SCHEDULE,
 )
@@ -18,6 +19,7 @@ from custom_components.yasno_outages.const import (
     STATE_NORMAL,
     STATE_OUTAGE,
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
+    STATE_STATUS_NO_OUTAGES,
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
 )
@@ -88,6 +90,7 @@ def coordinator(config_entry, mock_api):
             "component.yasno_outages.common.status_emergency_shutdowns": (
                 "Emergency Shutdowns"
             ),
+            "component.yasno_outages.common.status_no_outages": "No Outages",
         }
         coord = YasnoOutagesCoordinator(hass, config_entry, mock_api)
         coord.translations = mock_translations.return_value
@@ -380,6 +383,51 @@ class TestCoordinatorPlannedEventFiltering:
 
         assert events == []
 
+    def test_planned_outage_at_skips_no_outages_status(self, coordinator, today):
+        """Test planned outage is skipped when status is no outages."""
+        now = today + timedelta(hours=11)
+        outage_event = OutageEvent(
+            start=today + timedelta(hours=10),
+            end=today + timedelta(hours=12),
+            event_type=OutageEventType.DEFINITE,
+            source=OutageSource.PLANNED,
+        )
+
+        coordinator.api.planned.get_current_event = MagicMock(return_value=outage_event)
+        coordinator.api.planned.get_today_date = MagicMock(return_value=now.date())
+        coordinator.api.planned.get_status_today = MagicMock(
+            return_value=API_STATUS_NO_OUTAGES
+        )
+
+        result = coordinator.get_planned_outage_at(now)
+
+        assert result is None
+
+    def test_planned_events_between_skips_no_outages_status(self, coordinator, today):
+        """Test planned events are skipped when status is no outages."""
+        start_date = today
+        end_date = today + timedelta(days=1)
+        outage_event = OutageEvent(
+            start=today + timedelta(hours=10),
+            end=today + timedelta(hours=12),
+            event_type=OutageEventType.DEFINITE,
+            source=OutageSource.PLANNED,
+        )
+
+        coordinator.api.planned.get_events_between = MagicMock(
+            return_value=[outage_event]
+        )
+        coordinator.api.planned.get_today_date = MagicMock(
+            return_value=start_date.date()
+        )
+        coordinator.api.planned.get_status_today = MagicMock(
+            return_value=API_STATUS_NO_OUTAGES
+        )
+
+        events = coordinator.get_planned_events_between(start_date, end_date)
+
+        assert events == []
+
     def test_planned_events_between_keeps_schedule_applies(self, coordinator, today):
         """Test planned events remain when schedule applies."""
         start_date = today
@@ -627,6 +675,16 @@ class TestCoordinatorStatusMapping:
         status = coordinator.status_today
 
         assert status == STATE_STATUS_EMERGENCY_SHUTDOWNS
+
+    def test_status_today_maps_no_outages(self, coordinator):
+        """Test maps no outages status."""
+        coordinator.api.planned.get_status_today = MagicMock(
+            return_value=API_STATUS_NO_OUTAGES
+        )
+
+        status = coordinator.status_today
+
+        assert status == STATE_STATUS_NO_OUTAGES
 
     def test_status_today_returns_unknown_for_unknown_status(self, coordinator):
         """Test returns STATE_UNKNOWN for unknown API status."""

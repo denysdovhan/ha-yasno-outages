@@ -17,6 +17,7 @@ PROBABLE_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/pu
 API_STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
 API_STATUS_WAITING_FOR_SCHEDULE: Final = "WaitingForSchedule"
 API_STATUS_EMERGENCY_SHUTDOWNS: Final = "EmergencyShutdowns"
+API_STATUS_NO_OUTAGES: Final = "NoOutages"
 
 # API Block names
 API_KEY_TODAY: Final = "today"

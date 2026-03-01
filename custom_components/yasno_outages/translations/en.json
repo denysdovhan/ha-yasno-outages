@@ -97,7 +97,8 @@
         "state": {
           "schedule_applies": "Schedule Applies",
           "waiting_for_schedule": "Waiting for Schedule",
-          "emergency_shutdowns": "Emergency Shutdowns"
+          "emergency_shutdowns": "Emergency Shutdowns",
+          "no_outages": "No Outages"
         }
       },
       "status_tomorrow": {
@@ -105,7 +106,8 @@
         "state": {
           "schedule_applies": "Schedule Applies",
           "waiting_for_schedule": "Waiting for Schedule",
-          "emergency_shutdowns": "Emergency Shutdowns"
+          "emergency_shutdowns": "Emergency Shutdowns",
+          "no_outages": "No Outages"
         }
       }
     }
@@ -115,7 +117,8 @@
     "probable_electricity_outage": "Probable Outage",
     "status_schedule_applies": "Schedule Applies",
     "status_waiting_for_schedule": "Waiting for Schedule",
-    "status_emergency_shutdowns": "Emergency Shutdowns"
+    "status_emergency_shutdowns": "Emergency Shutdowns",
+    "status_no_outages": "No Outages"
   },
   "issues": {
     "missing_config": {
