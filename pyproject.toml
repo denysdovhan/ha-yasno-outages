@@ -17,7 +17,7 @@ dev = [
   "pytest-asyncio>=0.23.0",
   "pytest-cov>=3.0.0",
   "pytest-homeassistant-custom-component>=0.13.0",
-  "ruff==0.14.14",
+  "ruff==0.15.4",
 ]
 
 [tool.ruff]
