@@ -1,6 +1,6 @@
 {
   "name": "ha-yasno-outages",
-  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14",
   "postCreateCommand": "scripts/setup",
   "updateContentCommand": "uv sync --extra cli",
   "forwardPorts": [8123],

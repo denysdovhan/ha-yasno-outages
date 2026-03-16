@@ -1,9 +1,10 @@
 """Calendar platform for Yasno outages integration."""
 
+from __future__ import annotations
+
 import logging
-from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import (
     SensorEntity,
@@ -11,8 +12,6 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.components.sensor.const import SensorDeviceClass
 from homeassistant.const import STATE_UNKNOWN, EntityCategory
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     ATTR_EVENT_END,
@@ -24,9 +23,16 @@ from .const import (
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
 )
-from .coordinator import YasnoOutagesCoordinator
-from .data import YasnoOutagesConfigEntry
 from .entity import YasnoOutagesEntity
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .coordinator import YasnoOutagesCoordinator
+    from .data import YasnoOutagesConfigEntry
 
 LOGGER = logging.getLogger(__name__)
 

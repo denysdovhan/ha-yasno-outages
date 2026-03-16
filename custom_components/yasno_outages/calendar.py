@@ -1,24 +1,30 @@
 """Calendar platform for Yasno outages integration."""
 
+from __future__ import annotations
+
 import datetime
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from homeassistant.components.calendar import (
     CalendarEntity,
     CalendarEntityDescription,
     CalendarEvent,
 )
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_utils
 
-from .api import OutageEvent
 from .api.models import OutageSource
-from .coordinator import YasnoOutagesCoordinator
-from .data import YasnoOutagesConfigEntry
 from .entity import YasnoOutagesEntity
 from .helpers import merge_consecutive_outages
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .api import OutageEvent
+    from .coordinator import YasnoOutagesCoordinator
+    from .data import YasnoOutagesConfigEntry
 
 LOGGER = logging.getLogger(__name__)
 
