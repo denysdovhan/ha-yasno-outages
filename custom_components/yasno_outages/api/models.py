@@ -1,8 +1,13 @@
 """Data models for Yasno outages API."""
 
-import datetime
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 class YasnoApiError(Exception):
@@ -32,8 +37,8 @@ class OutageEvent:
     """Represents an outage event."""
 
     event_type: OutageEventType
-    start: datetime.datetime
-    end: datetime.datetime
+    start: datetime
+    end: datetime
     source: OutageSource
 
 

@@ -1,6 +1,8 @@
 """Tests for Base Yasno API."""
 
-import datetime
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
@@ -15,6 +17,9 @@ from custom_components.yasno_outages.api.models import (
     YasnoApiError,
     YasnoNotFoundError,
 )
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 TEST_REGION_ID = 25
 TEST_PROVIDER_ID = 902
@@ -35,7 +40,7 @@ class ConcreteYasnoApi(BaseYasnoApi):
         super().__init__(region_id, provider_id, group)
         self._events = []
 
-    def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
+    def get_current_event(self, at: datetime) -> OutageEvent | None:
         """Return outage event that is active at provided time."""
         for event in self._events:
             if event.start <= at < event.end:
@@ -44,8 +49,8 @@ class ConcreteYasnoApi(BaseYasnoApi):
 
     def get_events_between(
         self,
-        start_date: datetime.datetime,
-        end_date: datetime.datetime,
+        start_date: datetime,
+        end_date: datetime,
     ) -> list[OutageEvent]:
         """Return outage events that intersect provided range."""
         return [
