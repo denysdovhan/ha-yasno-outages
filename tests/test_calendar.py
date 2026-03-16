@@ -5,12 +5,13 @@ from unittest.mock import MagicMock
 from zoneinfo import ZoneInfo
 
 import pytest
-from homeassistant.helpers.entity import EntityDescription
+from homeassistant.components.calendar import CalendarEntityDescription
 
 from custom_components.yasno_outages.api import OutageEvent, OutageEventType
 from custom_components.yasno_outages.api.models import OutageSource
 from custom_components.yasno_outages.calendar import (
     YasnoPlannedOutagesCalendar,
+    YasnoProbableOutagesCalendar,
     async_setup_entry,
     to_all_day_calendar_event,
     to_calendar_event,
@@ -145,26 +146,28 @@ class TestToAllDayCalendarEvent:
         assert calendar_event.description == "UnknownStatus"
 
 
-class TestYasnoPlannedOutagesCalendar:
-    """Test YasnoPlannedOutagesCalendar entity.
+class TestYasnoCalendarEntities:
+    """Test calendar entity descriptions."""
 
-    Note: Full entity tests are skipped due to complex Home Assistant
-    mocking requirements. Entity behavior is tested through integration
-    tests with real HA environment.
-    """
+    def test_planned_calendar_uses_calendar_entity_description(self, coordinator):
+        """Test planned calendar uses calendar-specific entity description."""
+        calendar = YasnoPlannedOutagesCalendar(coordinator)
 
-    def test_entity_description_properties(self):
-        """Test entity description has correct properties."""
-        # Test we can create entity description
-        desc = EntityDescription(
-            key="planned_outages",
-            name="Planned Outages",
-            translation_key="planned_outages",
-        )
+        assert isinstance(calendar.entity_description, CalendarEntityDescription)
+        assert calendar.entity_description.key == "planned_outages"
+        assert calendar.entity_description.name == "Planned Outages"
+        assert calendar.entity_description.translation_key == "planned_outages"
+        assert calendar.entity_description.initial_color == "yellow"
 
-        assert desc.key == "planned_outages"
-        assert desc.name == "Planned Outages"
-        assert desc.translation_key == "planned_outages"
+    def test_probable_calendar_uses_calendar_entity_description(self, coordinator):
+        """Test probable calendar uses calendar-specific entity description."""
+        calendar = YasnoProbableOutagesCalendar(coordinator)
+
+        assert isinstance(calendar.entity_description, CalendarEntityDescription)
+        assert calendar.entity_description.key == "probable_outages"
+        assert calendar.entity_description.name == "Probable Outages"
+        assert calendar.entity_description.translation_key == "probable_outages"
+        assert calendar.entity_description.initial_color == "lightgrey"
 
 
 class TestCalendarSetup:
