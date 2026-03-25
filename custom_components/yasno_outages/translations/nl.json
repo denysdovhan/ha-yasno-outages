@@ -164,6 +164,7 @@
       "status_today": {
         "name": "Status Vandaag",
         "state": {
+          "no_outages": "Geen Onderbrekingen",
           "schedule_applies": "Schema van Toepassing",
           "waiting_for_schedule": "Wachten op Schema",
           "emergency_shutdowns": "Noodafschakelingen"
@@ -172,6 +173,7 @@
       "status_tomorrow": {
         "name": "Status Morgen",
         "state": {
+          "no_outages": "Geen Onderbrekingen",
           "schedule_applies": "Schema van Toepassing",
           "waiting_for_schedule": "Wachten op Schema",
           "emergency_shutdowns": "Noodafschakelingen"
@@ -182,6 +184,7 @@
   "common": {
     "planned_electricity_outage": "Onderbreking",
     "probable_electricity_outage": "Waarschijnlijke Onderbreking",
+    "status_no_outages": "Geen Onderbrekingen",
     "status_schedule_applies": "Schema van Toepassing",
     "status_waiting_for_schedule": "Wachten op Schema",
     "status_emergency_shutdowns": "Noodafschakelingen"

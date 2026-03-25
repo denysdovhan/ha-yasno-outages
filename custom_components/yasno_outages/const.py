@@ -43,6 +43,7 @@ ATTR_EVENT_START: Final = "event_start"
 ATTR_EVENT_END: Final = "event_end"
 
 # Status states
+STATE_STATUS_NO_OUTAGES: Final = "no_outages"
 STATE_STATUS_SCHEDULE_APPLIES: Final = "schedule_applies"
 STATE_STATUS_WAITING_FOR_SCHEDULE: Final = "waiting_for_schedule"
 STATE_STATUS_EMERGENCY_SHUTDOWNS: Final = "emergency_shutdowns"
@@ -53,6 +54,9 @@ TRANSLATION_KEY_EVENT_PLANNED_OUTAGE: Final = (
 )
 TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE: Final = (
     f"component.{DOMAIN}.common.probable_electricity_outage"
+)
+TRANSLATION_KEY_STATUS_NO_OUTAGES: Final = (
+    f"component.{DOMAIN}.common.status_no_outages"
 )
 TRANSLATION_KEY_STATUS_SCHEDULE_APPLIES: Final = (
     f"component.{DOMAIN}.common.status_schedule_applies"
@@ -66,6 +70,7 @@ TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS: Final = (
 # Text fallbacks
 PLANNED_OUTAGE_TEXT_FALLBACK: Final = "Planned Outage"
 PROBABLE_OUTAGE_TEXT_FALLBACK: Final = "Probable Outage"
+STATUS_NO_OUTAGES_TEXT_FALLBACK: Final = "No Outages"
 STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK: Final = "Schedule Applies"
 STATUS_WAITING_FOR_SCHEDULE_TEXT_FALLBACK: Final = "Waiting for Schedule"
 STATUS_EMERGENCY_SHUTDOWNS_TEXT_FALLBACK: Final = "Emergency Shutdowns"
