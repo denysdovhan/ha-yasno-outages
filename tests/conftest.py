@@ -51,7 +51,7 @@ def planned_outage_data(today, tomorrow):
                     {"start": 1200, "end": 1440, "type": "NotPlanned"},
                 ],
                 "date": today.isoformat(),
-                "status": "ScheduleApplies",
+                "status": "NoOutages",
             },
             "tomorrow": {
                 "slots": [

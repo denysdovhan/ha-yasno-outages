@@ -33,6 +33,7 @@ API_PARAM_HOUSE_ID: Final = "houseId"
 API_HTTP_STATUS_NOT_FOUND: Final = 404
 
 # API Status values
+API_STATUS_NO_OUTAGES: Final = "NoOutages"
 API_STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
 API_STATUS_WAITING_FOR_SCHEDULE: Final = "WaitingForSchedule"
 API_STATUS_EMERGENCY_SHUTDOWNS: Final = "EmergencyShutdowns"

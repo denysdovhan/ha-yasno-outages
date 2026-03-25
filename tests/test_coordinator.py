@@ -14,6 +14,7 @@ from custom_components.yasno_outages.api import (
 )
 from custom_components.yasno_outages.api.const import (
     API_STATUS_EMERGENCY_SHUTDOWNS,
+    API_STATUS_NO_OUTAGES,
     API_STATUS_SCHEDULE_APPLIES,
     API_STATUS_WAITING_FOR_SCHEDULE,
 )
@@ -22,6 +23,7 @@ from custom_components.yasno_outages.const import (
     STATE_NORMAL,
     STATE_OUTAGE,
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
+    STATE_STATUS_NO_OUTAGES,
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
 )
@@ -83,6 +85,7 @@ def coordinator(config_entry, mock_api):
             "component.yasno_outages.common.probable_electricity_outage": (
                 "Probable Outage"
             ),
+            "component.yasno_outages.common.status_no_outages": "No Outages",
             "component.yasno_outages.common.status_schedule_applies": (
                 "Schedule Applies"
             ),
@@ -527,6 +530,16 @@ class TestCoordinatorNextConnectivity:
 
 class TestCoordinatorStatusMapping:
     """Test status_today and status_tomorrow properties."""
+
+    def test_status_today_maps_no_outages(self, coordinator):
+        """Test maps no outages status."""
+        coordinator.api.planned.get_status_today = MagicMock(
+            return_value=API_STATUS_NO_OUTAGES
+        )
+
+        status = coordinator.status_today
+
+        assert status == STATE_STATUS_NO_OUTAGES
 
     def test_status_today_maps_schedule_applies(self, coordinator):
         """Test maps API status to state."""

@@ -164,6 +164,7 @@
       "status_today": {
         "name": "Статус сьогодні",
         "state": {
+          "no_outages": "Без відключень",
           "schedule_applies": "Графік діє",
           "waiting_for_schedule": "Очікування графіка",
           "emergency_shutdowns": "Аварійні відключення"
@@ -172,6 +173,7 @@
       "status_tomorrow": {
         "name": "Статус завтра",
         "state": {
+          "no_outages": "Без відключень",
           "schedule_applies": "Графік діє",
           "waiting_for_schedule": "Очікування графіка",
           "emergency_shutdowns": "Аварійні відключення"
@@ -182,6 +184,7 @@
   "common": {
     "planned_electricity_outage": "Відключення",
     "probable_electricity_outage": "Імовірне відключення",
+    "status_no_outages": "Без відключень",
     "status_schedule_applies": "Графік діє",
     "status_waiting_for_schedule": "Очікування графіка",
     "status_emergency_shutdowns": "Аварійні відключення"

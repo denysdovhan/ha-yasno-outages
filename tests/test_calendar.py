@@ -40,8 +40,9 @@ def coordinator():
         OutageSource.PROBABLE: "Probable Outage",
     }
     coordinator.status_event_summary_map = {
-        "ScheduleApplies": "Schedule Applies",
-        "EmergencyShutdowns": "Emergency Shutdowns",
+        "no_outages": "No Outages",
+        "schedule_applies": "Schedule Applies",
+        "emergency_shutdowns": "Emergency Shutdowns",
     }
     coordinator.status_all_day_events_enabled = False
 
@@ -125,11 +126,11 @@ class TestToAllDayCalendarEvent:
     def test_convert_status_to_all_day_event(self, coordinator):
         """Test converting status to all-day calendar event."""
         date = datetime.date(2025, 1, 27)
-        status = "ScheduleApplies"
+        status = "no_outages"
 
         calendar_event = to_all_day_calendar_event(coordinator, date, status)
 
-        assert calendar_event.summary == "Schedule Applies"
+        assert calendar_event.summary == "No Outages"
         assert calendar_event.start == date
         assert calendar_event.end == date + datetime.timedelta(days=1)
         assert calendar_event.description == status

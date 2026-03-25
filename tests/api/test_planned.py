@@ -162,7 +162,7 @@ class TestPlannedOutagesApiStatus:
         """Test getting today's status."""
         api.planned_outages_data = planned_outage_data
         status = api.get_status_today()
-        assert status == "ScheduleApplies"
+        assert status == "NoOutages"
 
     def test_get_status_tomorrow(self, api, planned_outage_data):
         """Test getting tomorrow's status."""
@@ -174,7 +174,7 @@ class TestPlannedOutagesApiStatus:
         """Test getting status by day key."""
         api.planned_outages_data = planned_outage_data
         status = api.get_status_by_day("today")
-        assert status == "ScheduleApplies"
+        assert status == "NoOutages"
 
     def test_get_status_no_data(self, api):
         """Test getting status when no data."""

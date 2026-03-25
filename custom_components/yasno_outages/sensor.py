@@ -20,6 +20,7 @@ from .const import (
     STATE_NORMAL,
     STATE_OUTAGE,
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
+    STATE_STATUS_NO_OUTAGES,
     STATE_STATUS_SCHEDULE_APPLIES,
     STATE_STATUS_WAITING_FOR_SCHEDULE,
 )
@@ -88,6 +89,7 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         icon="mdi:calendar-today",
         device_class=SensorDeviceClass.ENUM,
         options=[
+            STATE_STATUS_NO_OUTAGES,
             STATE_STATUS_SCHEDULE_APPLIES,
             STATE_STATUS_WAITING_FOR_SCHEDULE,
             STATE_STATUS_EMERGENCY_SHUTDOWNS,
@@ -102,6 +104,7 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         icon="mdi:calendar",
         device_class=SensorDeviceClass.ENUM,
         options=[
+            STATE_STATUS_NO_OUTAGES,
             STATE_STATUS_SCHEDULE_APPLIES,
             STATE_STATUS_WAITING_FOR_SCHEDULE,
             STATE_STATUS_EMERGENCY_SHUTDOWNS,
