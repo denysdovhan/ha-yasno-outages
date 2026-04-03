@@ -396,15 +396,30 @@ class TestCoordinatorCurrentState:
         assert state == STATE_OUTAGE
 
     def test_returns_normal_when_no_outage(self, coordinator, today):
-        """Test returns STATE_NORMAL when no outage."""
+        """Test returns STATE_NORMAL when status says no outages."""
         now = today + timedelta(hours=8)
 
         coordinator.api.planned.get_current_event = MagicMock(return_value=None)
+        coordinator.api.planned.get_status_today = MagicMock(
+            return_value=API_STATUS_NO_OUTAGES
+        )
 
         with patch("homeassistant.util.dt.now", return_value=now):
             state = coordinator.current_state
 
-        assert state == STATE_UNKNOWN  # None event -> UNKNOWN
+        assert state == STATE_NORMAL
+
+    def test_returns_unknown_without_current_event_or_status(self, coordinator, today):
+        """Test returns STATE_UNKNOWN when current event and status are missing."""
+        now = today + timedelta(hours=8)
+
+        coordinator.api.planned.get_current_event = MagicMock(return_value=None)
+        coordinator.api.planned.get_status_today = MagicMock(return_value=None)
+
+        with patch("homeassistant.util.dt.now", return_value=now):
+            state = coordinator.current_state
+
+        assert state == STATE_UNKNOWN
 
     def test_returns_unknown_on_api_error(self, coordinator, today):
         """Test returns STATE_UNKNOWN on API error."""

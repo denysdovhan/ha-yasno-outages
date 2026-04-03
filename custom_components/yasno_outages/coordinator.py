@@ -303,7 +303,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def current_state(self) -> str:
         """Get the current state."""
-        return self._event_to_state(self.current_event)
+        if event := self.current_event:
+            return self._event_to_state(event)
+
+        # Yasno omits a current slot when the day status is "No Outages".
+        if self.status_today == STATE_STATUS_NO_OUTAGES:
+            return STATE_NORMAL
+
+        return STATE_UNKNOWN
 
     @property
     def schedule_updated_on(self) -> datetime.datetime | None:
