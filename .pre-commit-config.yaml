@@ -27,7 +27,9 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v4.0.0-alpha.8"
+  - repo: https://github.com/oxc-project/mirrors-oxfmt
+    rev: v0.58.0
     hooks:
-      - id: prettier
+      - id: oxfmt
+        args: [--no-error-on-unmatched-pattern]
+        types_or: [text]
