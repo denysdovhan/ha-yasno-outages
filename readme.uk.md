@@ -1,6 +1,6 @@
 [![SWUbanner](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner-direct-single.svg)](https://stand-with-ukraine.pp.ua/)
 
-![HA Yasno Outages Logo](./icons/logo.png)
+![HA Yasno Outages Logo](./custom_components/yasno_outages/brand/logo.png)
 
 # ⚡️ HA Yasno Outages
 
