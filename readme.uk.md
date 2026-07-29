@@ -33,7 +33,8 @@
 
 [![Add to HACS via My Home Assistant][hacs-install-image]][hasc-install-url]
 
-Якщо це не працює, додайте цей репозиторій в HACS вручну, додавши цей URL:
+<details>
+  <summary>Якщо кнопка не працює, додайте репозиторій вручну</summary>
 
 1. Відвідайте **HACS** → **Інтеграції** → **...** (вгорі праворуч) → **Користувацькі репозиторії**
 2. Натисніть **Додати**
@@ -41,9 +42,22 @@
 4. Виберіть **Інтеграція** як **Категорію**
 5. **Yasno Outages** з'явиться у списку доступних інтеграцій. Встановіть її звичайним способом.
 
+</details>
+
 ## Використання
 
-Ця інтеграція налаштовується через інтерфейс користувача. На сторінці **Пристрої та сервіси** натисніть **Додати інтеграцію** і знайдіть **Yasno Відключення**. Пройдіть кроки налаштування інтеграції.
+Ця інтеграція налаштовується через інтерфейс користувача. Натисніть кнопку нижче, щоб додати її:
+
+[![Додати Yasno Відключення][install-image]][install-url]
+
+<details>
+  <summary>Якщо кнопка не працює, додайте інтеграцію вручну</summary>
+
+1. На сторінці **Пристрої та сервіси** натисніть **Додати інтеграцію**.
+2. Знайдіть **Yasno Відключення**.
+3. Пройдіть кроки налаштування інтеграції.
+
+</details>
 
 Приклад процесу налаштування за адресою:
 
@@ -103,3 +117,5 @@ MIT © [Денис Довгань][denysdovhan]
 [hacs-install-image]: https://my.home-assistant.io/badges/hacs_repository.svg
 [add-translation]: https://github.com/denysdovhan/ha-yasno-outages/blob/master/contributing.md#how-to-add-translation
 [calendar-card]: https://www.home-assistant.io/dashboards/calendar/
+[install-image]: https://my.home-assistant.io/badges/config_flow_start.svg
+[install-url]: https://my.home-assistant.io/redirect/config_flow_start/?domain=yasno_outages

@@ -36,7 +36,8 @@ The quickest way to install this integration is via [HACS][hacs-url] by clicking
 
 [![Add to HACS via My Home Assistant][hacs-install-image]][hasc-install-url]
 
-If it doesn't work, adding this repository to HACS manually by adding this URL:
+<details>
+  <summary>If the button doesn't work, add the repository manually</summary>
 
 1. Visit **HACS** → **Integrations** → **...** (in the top right) → **Custom repositories**
 2. Click **Add**
@@ -44,9 +45,22 @@ If it doesn't work, adding this repository to HACS manually by adding this URL:
 4. Chose **Integration** as a **Category**
 5. **Yasno Outages** will appear in the list of available integrations. Install it normally.
 
+</details>
+
 ## Usage
 
-This integration is configurable via UI. On **Devices and Services** page, click **Add Integration** and search for **Yasno Outages**. Go through the steps to configure the integration.
+This integration is configurable via UI. Click a button below to add:
+
+[![Add Yasno Outages][install-image]][install-url]
+
+<details>
+  <summary>If the button doesn't work, add the integration manually</summary>
+
+1. On **Devices and Services** page, click **Add Integration**
+2. Search for **Yasno Outages**.
+3. Go through the steps to configure the integration.
+
+</details>
 
 Here is an example of setup process with an address:
 
@@ -106,3 +120,5 @@ MIT © [Denys Dovhan][denysdovhan]
 [hacs-install-image]: https://my.home-assistant.io/badges/hacs_repository.svg
 [add-translation]: https://github.com/denysdovhan/ha-yasno-outages/blob/master/contributing.md#how-to-add-translation
 [calendar-card]: https://www.home-assistant.io/dashboards/calendar/
+[install-image]: https://my.home-assistant.io/badges/config_flow_start.svg
+[install-url]: https://my.home-assistant.io/redirect/config_flow_start/?domain=yasno_outages
