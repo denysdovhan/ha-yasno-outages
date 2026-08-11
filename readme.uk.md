@@ -2,7 +2,7 @@
 
 ![HA Yasno Outages Logo](./custom_components/yasno_outages/brand/logo.png)
 
-# ⚡️ HA Yasno Outages
+# ⚡️ Yasno Outages for Home Assistant
 
 [![GitHub Release][gh-release-image]][gh-release-url]
 [![GitHub Downloads][gh-downloads-image]][gh-downloads-url]
@@ -10,6 +10,8 @@
 [![GitHub Sponsors][gh-sponsors-image]][gh-sponsors-url]
 [![Buy Me A Coffee][buymeacoffee-image]][buymeacoffee-url]
 [![Twitter][twitter-image]][twitter-url]
+
+[English](./readme.md) | [**Українською**](./readme.uk.md)
 
 > [!NOTE]
 > Інтеграція для графіків відключень електроенергії від [Yasno][yasno].
@@ -31,7 +33,7 @@
 
 Найшвидший спосіб встановити цю інтеграцію — через [HACS][hacs-url], натиснувши кнопку нижче:
 
-[![Add to HACS via My Home Assistant][hacs-install-image]][hasc-install-url]
+[![Додати до HACS через My Home Assistant][hacs-install-image]][hacs-install-url]
 
 <details>
   <summary>Якщо кнопка не працює, додайте репозиторій вручну</summary>
@@ -113,7 +115,7 @@ MIT © [Денис Довгань][denysdovhan]
 [yasno]: https://yasno.com.ua/
 [home-assistant]: https://www.home-assistant.io/
 [denysdovhan]: https://github.com/denysdovhan
-[hasc-install-url]: https://my.home-assistant.io/redirect/hacs_repository/?owner=denysdovhan&repository=ha-yasno-outages&category=integration
+[hacs-install-url]: https://my.home-assistant.io/redirect/hacs_repository/?owner=denysdovhan&repository=ha-yasno-outages&category=integration
 [hacs-install-image]: https://my.home-assistant.io/badges/hacs_repository.svg
 [add-translation]: https://github.com/denysdovhan/ha-yasno-outages/blob/master/contributing.md#how-to-add-translation
 [calendar-card]: https://www.home-assistant.io/dashboards/calendar/

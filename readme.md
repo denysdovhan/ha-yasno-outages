@@ -2,7 +2,7 @@
 
 ![HA Yasno Outages Logo](./custom_components/yasno_outages/brand/logo.png)
 
-# ⚡️ HA Yasno Outages
+# ⚡️ Yasno Outages for Home Assistant
 
 [![GitHub Release][gh-release-image]][gh-release-url]
 [![GitHub Downloads][gh-downloads-image]][gh-downloads-url]
@@ -11,15 +11,14 @@
 [![Buy Me A Coffee][buymeacoffee-image]][buymeacoffee-url]
 [![Twitter][twitter-image]][twitter-url]
 
+[**English**](./readme.md) | [Українською](./readme.uk.md)
+
 > [!NOTE]
 > An integration for electricity outages plans by [Yasno][yasno].
 >
 > This is not affiliated with [Yasno][yasno] in any way. This integration is developed by an individual. Information may vary from their official website.
 
 This integration for [Home Assistant][home-assistant] provides information about electricity outages plans by [Yasno][yasno]: calendar of planned outages, time sensors for the next planned outages, and more.
-
-> [!TIP]
-> Документація доступна [**українською мовою 🇺🇦**](./readme.uk.md)
 
 ## Sponsorship
 
@@ -34,7 +33,7 @@ Your generosity will help me maintain and develop more projects like this one.
 
 The quickest way to install this integration is via [HACS][hacs-url] by clicking the button below:
 
-[![Add to HACS via My Home Assistant][hacs-install-image]][hasc-install-url]
+[![Add to HACS via My Home Assistant][hacs-install-image]][hacs-install-url]
 
 <details>
   <summary>If the button doesn't work, add the repository manually</summary>
@@ -90,7 +89,7 @@ Here's an example of a dashboard using this integration:
 
 Want to contribute to the project?
 
-First, thanks! Check [contributing guideline](/contributing.md) for more information.
+First, thanks! Check [contributing guideline](./contributing.md) for more information.
 
 ## License
 
@@ -116,7 +115,7 @@ MIT © [Denys Dovhan][denysdovhan]
 [yasno]: https://yasno.com.ua/
 [home-assistant]: https://www.home-assistant.io/
 [denysdovhan]: https://github.com/denysdovhan
-[hasc-install-url]: https://my.home-assistant.io/redirect/hacs_repository/?owner=denysdovhan&repository=ha-yasno-outages&category=integration
+[hacs-install-url]: https://my.home-assistant.io/redirect/hacs_repository/?owner=denysdovhan&repository=ha-yasno-outages&category=integration
 [hacs-install-image]: https://my.home-assistant.io/badges/hacs_repository.svg
 [add-translation]: https://github.com/denysdovhan/ha-yasno-outages/blob/master/contributing.md#how-to-add-translation
 [calendar-card]: https://www.home-assistant.io/dashboards/calendar/
