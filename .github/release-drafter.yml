@@ -8,42 +8,80 @@ exclude-contributors:
 categories:
   - title: ❗️ Breaking Changes
     when:
-      labels:
-        - breaking
+      - conventional:
+          breaking: true
+      - labels:
+          - breaking
   - title: 🚀 Features
     when:
-      labels:
-        - feature
-        - enhancement
+      - conventional:
+          type: feat
+          breaking: false
+      - labels:
+          - feature
+          - enhancement
   - title: 🐛 Bug Fixes
     when:
-      labels:
-        - fix
-        - bug
+      - conventional:
+          type: fix
+          breaking: false
+      - labels:
+          - fix
+          - bug
   - title: 🧰 Maintenance
     when:
-      labels:
-        - chore
-        - dependencies
+      - conventional:
+          types:
+            - build
+            - chore
+            - ci
+            - docs
+            - perf
+            - refactor
+            - revert
+            - style
+            - test
+          breaking: false
+      - labels:
+          - chore
+          - dependencies
   - type: version-resolver
     semver-increment: major
     when:
-      labels:
-        - major
-        - breaking
+      - conventional:
+          breaking: true
+      - labels:
+          - major
+          - breaking
   - type: version-resolver
     semver-increment: minor
     when:
-      labels:
-        - minor
-        - feature
-        - enhancement
+      - conventional:
+          type: feat
+          breaking: false
+      - labels:
+          - minor
+          - feature
+          - enhancement
   - type: version-resolver
     semver-increment: patch
     when:
-      labels:
-        - patch
-        - dependencies
+      - conventional:
+          types:
+            - build
+            - chore
+            - ci
+            - docs
+            - fix
+            - perf
+            - refactor
+            - revert
+            - style
+            - test
+          breaking: false
+      - labels:
+          - patch
+          - dependencies
   - type: version-resolver
     semver-increment: patch
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
