@@ -3,15 +3,24 @@
   "config": {
     "step": {
       "user": {
-        "title": "Yasno Outages: Region",
-        "description": "Choose the region that matches your address.",
+        "title": "Yasno Outages: Login Mode",
+        "description": "Choose how to set up the integration.",
         "data": {
-          "region": "Please select your region:"
+          "login_mode": "Login mode:"
+        },
+        "data_description": {
+          "login_mode": "Choose 'Public' to select region/provider/group manually, or 'Account' to log in with your Yasno account (phone number) and auto-detect these from your linked address."
         }
       },
       "reconfigure": {
         "title": "Yasno Outages: Reconfigure",
         "description": "Choose the region that matches your current address.",
+        "data": {
+          "region": "Please select your region:"
+        }
+      },
+      "region": {
+        "title": "Yasno Outages Settings",
         "data": {
           "region": "Please select your region:"
         }
@@ -97,6 +106,32 @@
         "data_description": {
           "group": "You can find your group at: {yasno_group_url}"
         }
+      },
+      "phone": {
+        "title": "Log in to your Yasno account",
+        "data": {
+          "phone_number": "Phone number",
+          "message_type": "Send code via"
+        },
+        "data_description": {
+          "phone_number": "Format: +380XXXXXXXXX",
+          "message_type": "Choose how you want to receive the one-time login code"
+        }
+      },
+      "otp": {
+        "title": "Enter the login code",
+        "data": {
+          "otp_code": "Verification code"
+        },
+        "data_description": {
+          "otp_code": "The code that was sent to your phone via SMS or Viber"
+        }
+      },
+      "account": {
+        "title": "Select your Yasno account",
+        "data": {
+          "account_id": "Account"
+        }
       }
     },
     "error": {
@@ -105,7 +140,12 @@
       "house_query_required": "House search query is required.",
       "no_streets": "No streets found for this query.",
       "no_houses": "No houses found for this street.",
-      "no_group": "Failed to resolve group for this address."
+      "no_group": "Failed to resolve group for this address.",
+      "login_failed": "Could not start the login. Check the phone number and try again.",
+      "login_blocked": "Yasno temporarily blocked this request. Please wait a while and try again, or try from a different network.",
+      "invalid_code": "The verification code is invalid or expired.",
+      "no_accounts": "No Yasno account was found for this phone number.",
+      "no_address": "No address is linked to this Yasno account."
     }
   },
   "options": {
@@ -123,6 +163,63 @@
           "filter_probable": "Hides probable outages when planned schedule exists for a day",
           "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status"
         }
+      },
+      "phone": {
+        "title": "Log in to your Yasno account",
+        "data": {
+          "phone_number": "Phone number",
+          "message_type": "Send code via"
+        },
+        "data_description": {
+          "phone_number": "Format: +380XXXXXXXXX",
+          "message_type": "Choose how you want to receive the one-time login code"
+        }
+      },
+      "otp": {
+        "title": "Enter the login code",
+        "data": {
+          "otp_code": "Verification code"
+        },
+        "data_description": {
+          "otp_code": "The code that was sent to your phone via SMS or Viber"
+        }
+      },
+      "account": {
+        "title": "Select your Yasno account",
+        "data": {
+          "account_id": "Account"
+        }
+      },
+      "account_settings": {
+        "title": "Yasno Outages Settings",
+        "data": {
+          "filter_probable": "Hide probable outages when planned schedule is available",
+          "status_all_day_events": "Show status all-day events"
+        },
+        "data_description": {
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status"
+        }
+      }
+    },
+    "error": {
+      "login_failed": "Could not start the login. Check the phone number and try again.",
+      "login_blocked": "Yasno temporarily blocked this request. Please wait a while and try again, or try from a different network.",
+      "invalid_code": "The verification code is invalid or expired.",
+      "no_accounts": "No Yasno account was found for this phone number.",
+      "no_address": "No address is linked to this Yasno account."
+    }
+  },
+  "selector": {
+    "login_mode": {
+      "options": {
+        "public": "Public (manual region/provider/group)",
+        "account": "Yasno account login"
+      }
+    },
+    "message_type": {
+      "options": {
+        "sms": "SMS",
+        "viber": "Viber"
       }
     }
   },
@@ -178,6 +275,36 @@
           "waiting_for_schedule": "Waiting for Schedule",
           "emergency_shutdowns": "Emergency Shutdowns"
         }
+      },
+      "account_balance": {
+        "name": "Account Balance"
+      },
+      "account_address": {
+        "name": "Account Address"
+      },
+      "account_last_meter_reading_day": {
+        "name": "Last Meter Reading (Day)"
+      },
+      "account_last_meter_reading_night": {
+        "name": "Last Meter Reading (Night)"
+      },
+      "account_last_meter_reading_on": {
+        "name": "Last Meter Reading Submitted On"
+      },
+      "tariff_name": {
+        "name": "Tariff Plan"
+      },
+      "tariff_price_day": {
+        "name": "Tariff Price (Day)"
+      },
+      "tariff_price_night": {
+        "name": "Tariff Price (Night)"
+      },
+      "tariff_distribution_price": {
+        "name": "Tariff Distribution Price"
+      },
+      "tariff_transfer_price": {
+        "name": "Tariff Transfer Price"
       }
     }
   },
@@ -187,7 +314,8 @@
     "status_no_outages": "No Outages",
     "status_schedule_applies": "Schedule Applies",
     "status_waiting_for_schedule": "Waiting for Schedule",
-    "status_emergency_shutdowns": "Emergency Shutdowns"
+    "status_emergency_shutdowns": "Emergency Shutdowns",
+    "tariff_plan_with_electric_heating": "With Electric Heating"
   },
   "issues": {
     "missing_config": {

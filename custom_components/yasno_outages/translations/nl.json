@@ -3,15 +3,24 @@
   "config": {
     "step": {
       "user": {
-        "title": "Yasno Stroomonderbrekingen: Regio",
-        "description": "Kies de regio die bij je adres hoort.",
+        "title": "Yasno Stroomonderbrekingen: Inlogmodus",
+        "description": "Kies hoe je de integratie wilt instellen.",
         "data": {
-          "region": "Selecteer je regio:"
+          "login_mode": "Inlogmodus:"
+        },
+        "data_description": {
+          "login_mode": "Kies 'Publiek' om regio/provider/groep handmatig te selecteren, of 'Account' om in te loggen met je Yasno-account (telefoonnummer) en deze automatisch te laten bepalen op basis van je gekoppelde adres."
         }
       },
       "reconfigure": {
         "title": "Yasno Stroomonderbrekingen: Herconfigureren",
         "description": "Kies de regio die bij je huidige adres hoort.",
+        "data": {
+          "region": "Selecteer je regio:"
+        }
+      },
+      "region": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
         "data": {
           "region": "Selecteer je regio:"
         }
@@ -97,6 +106,32 @@
         "data_description": {
           "group": "Je kunt je groep vinden op: {yasno_group_url}"
         }
+      },
+      "phone": {
+        "title": "Log in op je Yasno-account",
+        "data": {
+          "phone_number": "Telefoonnummer",
+          "message_type": "Verstuur code via"
+        },
+        "data_description": {
+          "phone_number": "Formaat: +380XXXXXXXXX",
+          "message_type": "Kies hoe je de eenmalige inlogcode wilt ontvangen"
+        }
+      },
+      "otp": {
+        "title": "Voer de inlogcode in",
+        "data": {
+          "otp_code": "Verificatiecode"
+        },
+        "data_description": {
+          "otp_code": "De code die via SMS of Viber naar je telefoon is gestuurd"
+        }
+      },
+      "account": {
+        "title": "Selecteer je Yasno-account",
+        "data": {
+          "account_id": "Account"
+        }
       }
     },
     "error": {
@@ -105,7 +140,12 @@
       "house_query_required": "Zoekopdracht voor huis is vereist.",
       "no_streets": "Geen straten gevonden voor deze zoekopdracht.",
       "no_houses": "Geen huizen gevonden voor deze straat.",
-      "no_group": "Kan geen groep bepalen voor dit adres."
+      "no_group": "Kan geen groep bepalen voor dit adres.",
+      "login_failed": "Kon niet inloggen. Controleer het telefoonnummer en probeer het opnieuw.",
+      "login_blocked": "Yasno heeft dit verzoek tijdelijk geblokkeerd. Wacht even en probeer het opnieuw, of probeer het vanaf een ander netwerk.",
+      "invalid_code": "De verificatiecode is ongeldig of verlopen.",
+      "no_accounts": "Er is geen Yasno-account gevonden voor dit telefoonnummer.",
+      "no_address": "Er is geen adres gekoppeld aan dit Yasno-account."
     }
   },
   "options": {
@@ -123,6 +163,63 @@
           "filter_probable": "Verbergt waarschijnlijke onderbrekingen als er een gepland schema is",
           "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven"
         }
+      },
+      "phone": {
+        "title": "Log in op je Yasno-account",
+        "data": {
+          "phone_number": "Telefoonnummer",
+          "message_type": "Verstuur code via"
+        },
+        "data_description": {
+          "phone_number": "Formaat: +380XXXXXXXXX",
+          "message_type": "Kies hoe je de eenmalige inlogcode wilt ontvangen"
+        }
+      },
+      "otp": {
+        "title": "Voer de inlogcode in",
+        "data": {
+          "otp_code": "Verificatiecode"
+        },
+        "data_description": {
+          "otp_code": "De code die via SMS of Viber naar je telefoon is gestuurd"
+        }
+      },
+      "account": {
+        "title": "Selecteer je Yasno-account",
+        "data": {
+          "account_id": "Account"
+        }
+      },
+      "account_settings": {
+        "title": "Yasno Stroomonderbrekingen Instellingen",
+        "data": {
+          "filter_probable": "Verberg waarschijnlijke onderbrekingen wanneer een gepland schema beschikbaar is",
+          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+        },
+        "data_description": {
+          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven"
+        }
+      }
+    },
+    "error": {
+      "login_failed": "Kon niet inloggen. Controleer het telefoonnummer en probeer het opnieuw.",
+      "login_blocked": "Yasno heeft dit verzoek tijdelijk geblokkeerd. Wacht even en probeer het opnieuw, of probeer het vanaf een ander netwerk.",
+      "invalid_code": "De verificatiecode is ongeldig of verlopen.",
+      "no_accounts": "Er is geen Yasno-account gevonden voor dit telefoonnummer.",
+      "no_address": "Er is geen adres gekoppeld aan dit Yasno-account."
+    }
+  },
+  "selector": {
+    "login_mode": {
+      "options": {
+        "public": "Publiek (handmatige regio/provider/groep)",
+        "account": "Yasno-accountlogin"
+      }
+    },
+    "message_type": {
+      "options": {
+        "sms": "SMS",
+        "viber": "Viber"
       }
     }
   },
@@ -178,6 +275,36 @@
           "waiting_for_schedule": "Wachten op Schema",
           "emergency_shutdowns": "Noodafschakelingen"
         }
+      },
+      "account_balance": {
+        "name": "Accountsaldo"
+      },
+      "account_address": {
+        "name": "Accountadres"
+      },
+      "account_last_meter_reading_day": {
+        "name": "Laatste Meterstand (Dag)"
+      },
+      "account_last_meter_reading_night": {
+        "name": "Laatste Meterstand (Nacht)"
+      },
+      "account_last_meter_reading_on": {
+        "name": "Laatste Meterstand Ingediend Op"
+      },
+      "tariff_name": {
+        "name": "Tariefplan"
+      },
+      "tariff_price_day": {
+        "name": "Tarief (Dag)"
+      },
+      "tariff_price_night": {
+        "name": "Tarief (Nacht)"
+      },
+      "tariff_distribution_price": {
+        "name": "Distributietarief"
+      },
+      "tariff_transfer_price": {
+        "name": "Transporttarief"
       }
     }
   },
@@ -187,7 +314,8 @@
     "status_no_outages": "Geen Onderbrekingen",
     "status_schedule_applies": "Schema van Toepassing",
     "status_waiting_for_schedule": "Wachten op Schema",
-    "status_emergency_shutdowns": "Noodafschakelingen"
+    "status_emergency_shutdowns": "Noodafschakelingen",
+    "tariff_plan_with_electric_heating": "Met Elektrische Verwarming"
   },
   "issues": {
     "missing_config": {

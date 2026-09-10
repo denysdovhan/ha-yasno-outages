@@ -17,6 +17,9 @@ from .const import (
     ATTR_EVENT_END,
     ATTR_EVENT_START,
     ATTR_EVENT_TYPE,
+    ATTR_METER_READING_METHOD,
+    ATTR_METER_READING_OWNER,
+    LOGIN_MODE_ACCOUNT,
     STATE_NORMAL,
     STATE_OUTAGE,
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
@@ -43,6 +46,7 @@ class YasnoOutagesSensorDescription(SensorEntityDescription):
     """Yasno Outages entity description."""
 
     val_func: Callable[[YasnoOutagesCoordinator], Any]
+    attr_func: Callable[[YasnoOutagesCoordinator], dict[str, Any]] | None = None
 
 
 SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
@@ -93,6 +97,7 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
             STATE_STATUS_SCHEDULE_APPLIES,
             STATE_STATUS_WAITING_FOR_SCHEDULE,
             STATE_STATUS_EMERGENCY_SHUTDOWNS,
+            STATE_STATUS_NO_OUTAGES,
             STATE_UNKNOWN,
         ],
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -108,10 +113,107 @@ SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
             STATE_STATUS_SCHEDULE_APPLIES,
             STATE_STATUS_WAITING_FOR_SCHEDULE,
             STATE_STATUS_EMERGENCY_SHUTDOWNS,
+            STATE_STATUS_NO_OUTAGES,
             STATE_UNKNOWN,
         ],
         entity_category=EntityCategory.DIAGNOSTIC,
         val_func=lambda coordinator: coordinator.status_tomorrow,
+    ),
+)
+
+# Sensors only available when the entry is set up with authenticated account login
+ACCOUNT_SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
+    YasnoOutagesSensorDescription(
+        key="account_balance",
+        translation_key="account_balance",
+        icon="mdi:cash",
+        native_unit_of_measurement="UAH",
+        suggested_display_precision=2,
+        val_func=lambda coordinator: coordinator.account_balance,
+    ),
+    YasnoOutagesSensorDescription(
+        key="account_address",
+        translation_key="account_address",
+        icon="mdi:map-marker",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.account_address,
+    ),
+    YasnoOutagesSensorDescription(
+        key="account_last_meter_reading_day",
+        translation_key="account_last_meter_reading_day",
+        icon="mdi:counter",
+        state_class="measurement",
+        native_unit_of_measurement="kWh",
+        val_func=lambda coordinator: coordinator.account_last_meter_reading_day,
+        attr_func=lambda coordinator: {
+            ATTR_METER_READING_OWNER: coordinator.account_last_meter_reading_owner,
+            ATTR_METER_READING_METHOD: coordinator.account_last_meter_reading_method,
+        },
+    ),
+    YasnoOutagesSensorDescription(
+        key="account_last_meter_reading_night",
+        translation_key="account_last_meter_reading_night",
+        icon="mdi:counter",
+        state_class="measurement",
+        native_unit_of_measurement="kWh",
+        val_func=lambda coordinator: coordinator.account_last_meter_reading_night,
+        attr_func=lambda coordinator: {
+            ATTR_METER_READING_OWNER: coordinator.account_last_meter_reading_owner,
+            ATTR_METER_READING_METHOD: coordinator.account_last_meter_reading_method,
+        },
+    ),
+    YasnoOutagesSensorDescription(
+        key="account_last_meter_reading_on",
+        translation_key="account_last_meter_reading_on",
+        icon="mdi:update",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.account_last_meter_reading_on,
+    ),
+    YasnoOutagesSensorDescription(
+        key="tariff_name",
+        translation_key="tariff_name",
+        icon="mdi:file-document-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.tariff_name,
+    ),
+    YasnoOutagesSensorDescription(
+        key="tariff_price_day",
+        translation_key="tariff_price_day",
+        icon="mdi:cash",
+        state_class="measurement",
+        native_unit_of_measurement="UAH/kWh",
+        suggested_display_precision=2,
+        val_func=lambda coordinator: coordinator.tariff_price_day,
+    ),
+    YasnoOutagesSensorDescription(
+        key="tariff_price_night",
+        translation_key="tariff_price_night",
+        icon="mdi:cash",
+        state_class="measurement",
+        native_unit_of_measurement="UAH/kWh",
+        suggested_display_precision=2,
+        val_func=lambda coordinator: coordinator.tariff_price_night,
+    ),
+    YasnoOutagesSensorDescription(
+        key="tariff_distribution_price",
+        translation_key="tariff_distribution_price",
+        icon="mdi:transmission-tower-export",
+        state_class="measurement",
+        native_unit_of_measurement="UAH/kWh",
+        suggested_display_precision=5,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.tariff_distribution_price,
+    ),
+    YasnoOutagesSensorDescription(
+        key="tariff_transfer_price",
+        translation_key="tariff_transfer_price",
+        icon="mdi:transmission-tower",
+        state_class="measurement",
+        native_unit_of_measurement="UAH/kWh",
+        suggested_display_precision=4,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.tariff_transfer_price,
     ),
 )
 
@@ -124,8 +226,11 @@ async def async_setup_entry(
     """Set up the Yasno outages calendar platform."""
     LOGGER.debug("Setup new entry: %s", config_entry)
     coordinator = config_entry.runtime_data.coordinator
+    descriptions = list(SENSOR_TYPES)
+    if coordinator.login_mode == LOGIN_MODE_ACCOUNT:
+        descriptions.extend(ACCOUNT_SENSOR_TYPES)
     async_add_entities(
-        YasnoOutagesSensor(coordinator, description) for description in SENSOR_TYPES
+        YasnoOutagesSensor(coordinator, description) for description in descriptions
     )
 
 
@@ -155,13 +260,15 @@ class YasnoOutagesSensor(YasnoOutagesEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return additional attributes for the electricity sensor."""
-        if self.entity_description.key != "electricity":
-            return None
-        # Get the current event to provide additional context
-        event = self.coordinator.current_event
-        return {
-            ATTR_EVENT_TYPE: event.event_type.value if event else STATE_UNKNOWN,
-            ATTR_EVENT_START: event.start.isoformat() if event else None,
-            ATTR_EVENT_END: event.end.isoformat() if event else None,
-        }
+        """Return additional attributes for the sensor, if any are defined."""
+        if self.entity_description.key == "electricity":
+            # Get the current event to provide additional context
+            event = self.coordinator.current_event
+            return {
+                ATTR_EVENT_TYPE: event.event_type.value if event else STATE_UNKNOWN,
+                ATTR_EVENT_START: event.start.isoformat() if event else None,
+                ATTR_EVENT_END: event.end.isoformat() if event else None,
+            }
+        if self.entity_description.attr_func:
+            return self.entity_description.attr_func(self.coordinator)
+        return None

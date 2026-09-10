@@ -11,22 +11,44 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
 
-from .api import OutageEvent, OutageEventType, YasnoApi, YasnoApiError
+from .api import (
+    AccountApi,
+    OutageEvent,
+    OutageEventType,
+    YasnoApi,
+    YasnoApiError,
+    YasnoAuthApi,
+)
 from .api.const import (
     API_STATUS_EMERGENCY_SHUTDOWNS,
     API_STATUS_NO_OUTAGES,
     API_STATUS_SCHEDULE_APPLIES,
     API_STATUS_WAITING_FOR_SCHEDULE,
+    TARIFF_ZONE_DAY,
+    TARIFF_ZONE_NIGHT,
 )
-from .api.models import OutageSource
+from .api.models import (
+    OutageSource,
+    YasnoAccount,
+    YasnoAccountDebt,
+    YasnoContract,
+    YasnoTariff,
+)
 from .const import (
+    AUTH_TOKEN_REFRESH_MARGIN,
+    CONF_ACCESS_TOKEN,
+    CONF_ACCOUNT_ID,
     CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
+    CONF_LOGIN_MODE,
     CONF_PROVIDER,
+    CONF_REFRESH_TOKEN,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
+    CONF_TOKEN_EXPIRES_AT,
     DOMAIN,
+    LOGIN_MODE_ACCOUNT,
     PLANNED_OUTAGE_LOOKAHEAD,
     PLANNED_OUTAGE_TEXT_FALLBACK,
     PROBABLE_OUTAGE_LOOKAHEAD,
@@ -43,6 +65,8 @@ from .const import (
     STATUS_NO_OUTAGES_TEXT_FALLBACK,
     STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK,
     STATUS_WAITING_FOR_SCHEDULE_TEXT_FALLBACK,
+    TARIFF_PLAN_NAME_TEXT_FALLBACKS,
+    TARIFF_PLAN_NAME_TRANSLATION_KEYS,
     TRANSLATION_KEY_EVENT_PLANNED_OUTAGE,
     TRANSLATION_KEY_EVENT_PROBABLE_OUTAGE,
     TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS,
@@ -182,6 +206,20 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         # Use the provided API instance
         self.api = api
 
+        # Account login mode (optional authenticated account data)
+        self.login_mode = config_entry.options.get(
+            CONF_LOGIN_MODE,
+            config_entry.data.get(CONF_LOGIN_MODE),
+        )
+        self.account_id = config_entry.options.get(
+            CONF_ACCOUNT_ID,
+            config_entry.data.get(CONF_ACCOUNT_ID),
+        )
+        self._account: YasnoAccount | None = None
+        self._contract: YasnoContract | None = None
+        self._debt: YasnoAccountDebt | None = None
+        self._tariff: YasnoTariff | None = None
+
     async def _async_update_data(self) -> None:
         """Fetch data from new Yasno API."""
         await self.async_fetch_translations()
@@ -207,6 +245,83 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 "Failed to fetch probable outages, using cached data", exc_info=True
             )
             self.api.probable.probable_outages_data = probable_cache
+
+        # Fetch authenticated account data (balance/debt/meter readings)
+        if self.login_mode == LOGIN_MODE_ACCOUNT:
+            try:
+                await self._async_update_account_data()
+            except Exception:  # noqa: BLE001
+                LOGGER.warning("Failed to fetch Yasno account data", exc_info=True)
+
+    async def _async_ensure_valid_token(self) -> str | None:
+        """Refresh the access token if it is close to expiry, persisting it."""
+        access_token = self.config_entry.data.get(CONF_ACCESS_TOKEN)
+        refresh_token = self.config_entry.data.get(CONF_REFRESH_TOKEN)
+        expires_at_raw = self.config_entry.data.get(CONF_TOKEN_EXPIRES_AT)
+        if not access_token or not refresh_token:
+            return None
+
+        expires_at = (
+            datetime.datetime.fromisoformat(expires_at_raw) if expires_at_raw else None
+        )
+        margin = datetime.timedelta(minutes=AUTH_TOKEN_REFRESH_MARGIN)
+        if expires_at and dt_utils.utcnow() < expires_at - margin:
+            return access_token
+
+        auth_api = YasnoAuthApi()
+        try:
+            tokens = await auth_api.refresh(refresh_token)
+        except Exception:  # noqa: BLE001
+            LOGGER.warning("Failed to refresh Yasno account token", exc_info=True)
+            return access_token
+        finally:
+            await auth_api.close()
+
+        new_expires_at = dt_utils.utcnow() + datetime.timedelta(
+            seconds=tokens.expires_in,
+        )
+        new_data = dict(self.config_entry.data)
+        new_data[CONF_ACCESS_TOKEN] = tokens.access_token
+        new_data[CONF_REFRESH_TOKEN] = tokens.refresh_token
+        new_data[CONF_TOKEN_EXPIRES_AT] = new_expires_at.isoformat()
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data=new_data,
+        )
+        return tokens.access_token
+
+    async def _async_update_account_data(self) -> None:
+        """Fetch account/contract/debt data for the logged-in Yasno account."""
+        access_token = await self._async_ensure_valid_token()
+        if not access_token:
+            return
+
+        account_api = AccountApi(access_token)
+        accounts = await account_api.fetch_accounts()
+        contracts = await account_api.fetch_contracts()
+
+        account = None
+        if self.account_id is not None:
+            account = next((a for a in accounts if a.id == self.account_id), None)
+        if account is None and accounts:
+            account = accounts[0]
+        self._account = account
+
+        contract = None
+        if account:
+            contract = next(
+                (c for c in contracts if c.id == account.id),
+                contracts[0] if contracts else None,
+            )
+        self._contract = contract
+
+        if account:
+            debts = await account_api.fetch_debt([account.id])
+            self._debt = debts.get(account.id)
+            self._tariff = await account_api.fetch_tariff(account.id)
+        else:
+            self._debt = None
+            self._tariff = None
 
     def _event_to_state(self, event: OutageEvent | None) -> str:
         """Map outage event to electricity state."""
@@ -397,6 +512,107 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             return event.end
 
         return None
+
+    @property
+    def has_account_data(self) -> bool:
+        """Return True if this entry is logged in and account data was fetched."""
+        return self.login_mode == LOGIN_MODE_ACCOUNT and self._account is not None
+
+    @property
+    def account_number(self) -> str | None:
+        """Get the account number of the logged-in Yasno account."""
+        return self._account.account_number if self._account else None
+
+    @property
+    def account_address(self) -> str | None:
+        """Get the address linked to the logged-in Yasno account."""
+        return self._account.address if self._account else None
+
+    @property
+    def account_balance(self) -> float | None:
+        """Get the current balance/debt for the logged-in Yasno account."""
+        if self._debt is not None:
+            return self._debt.balance
+        if self._contract is not None:
+            return self._contract.debt
+        return None
+
+    @property
+    def account_last_meter_reading_day(self) -> float | None:
+        """Get the last submitted day-zone meter reading value."""
+        if self._debt and self._debt.last_meter_reading:
+            return self._debt.last_meter_reading.day_value
+        return None
+
+    @property
+    def account_last_meter_reading_night(self) -> float | None:
+        """Get the last submitted night-zone meter reading value."""
+        if self._debt and self._debt.last_meter_reading:
+            return self._debt.last_meter_reading.night_value
+        return None
+
+    @property
+    def account_last_meter_reading_on(self) -> datetime.datetime | None:
+        """Get the timestamp of the last submitted meter reading."""
+        if self._debt and self._debt.last_meter_reading:
+            return self._debt.last_meter_reading.created_on
+        return None
+
+    @property
+    def account_last_meter_reading_owner(self) -> str | None:
+        """Get who submitted the last meter reading (e.g. Client/Company)."""
+        if self._debt and self._debt.last_meter_reading:
+            return self._debt.last_meter_reading.owner
+        return None
+
+    @property
+    def account_last_meter_reading_method(self) -> str | None:
+        """Get how the last meter reading was submitted (as reported by Yasno)."""
+        if self._debt and self._debt.last_meter_reading:
+            return self._debt.last_meter_reading.reading_method
+        return None
+
+    @property
+    def tariff_name(self) -> str | None:
+        """
+        Get the name of the account's current tariff plan.
+
+        Translates known plan names via the "common" translation keys;
+        falls back to the raw name as returned by Yasno's API for any
+        plan name not in TARIFF_PLAN_NAME_TRANSLATION_KEYS.
+        """
+        if not self._tariff:
+            return None
+        raw_name = self._tariff.name
+        translation_key = TARIFF_PLAN_NAME_TRANSLATION_KEYS.get(raw_name)
+        if not translation_key:
+            return raw_name
+        fallback = TARIFF_PLAN_NAME_TEXT_FALLBACKS.get(raw_name, raw_name)
+        return self.translations.get(translation_key, fallback)
+
+    @property
+    def tariff_price_day(self) -> float | None:
+        """Get the current day-zone price per kWh (UAH) for the account."""
+        if not self._tariff:
+            return None
+        return self._tariff.price_for_zone(dt_utils.now(), TARIFF_ZONE_DAY)
+
+    @property
+    def tariff_price_night(self) -> float | None:
+        """Get the current night-zone price per kWh (UAH) for the account."""
+        if not self._tariff:
+            return None
+        return self._tariff.price_for_zone(dt_utils.now(), TARIFF_ZONE_NIGHT)
+
+    @property
+    def tariff_distribution_price(self) -> float | None:
+        """Get the DSO's distribution (transmission grid) price per kWh (UAH)."""
+        return self._tariff.distribution_price if self._tariff else None
+
+    @property
+    def tariff_transfer_price(self) -> float | None:
+        """Get the DSO's transfer (transport) price per kWh (UAH)."""
+        return self._tariff.transfer_price if self._tariff else None
 
     def get_outage_at(
         self,

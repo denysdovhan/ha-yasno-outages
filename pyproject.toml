@@ -5,7 +5,7 @@ description = "Home Assistant custom component: Yasno Outages"
 readme = "readme.md"
 requires-python = ">=3.14.2"
 authors = [{ name = "Denys Dovhan", email = "denysdovhan@gmail.com" }]
-dependencies = ["homeassistant==2026.8.3", "python-dateutil>=2.8.2"]
+dependencies = ["homeassistant==2026.8.3", "python-dateutil>=2.8.2", "curl_cffi>=0.7.0"]
 
 [dependency-groups]
 dev = [

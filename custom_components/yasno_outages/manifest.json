@@ -6,6 +6,6 @@
   "documentation": "https://github.com/denysdovhan/ha-yasno-outages",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/denysdovhan/ha-yasno-outages",
-  "requirements": ["python-dateutil>=2.8.2"],
+  "requirements": ["python-dateutil>=2.8.2", "curl_cffi>=0.7.0"],
   "version": "0.0.0-unreleased"
 }
