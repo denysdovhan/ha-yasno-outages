@@ -2,17 +2,14 @@
   "title": "Svitlo Yeah!",
   "config": {
     "abort": {
-      "already_configured": "The integration already has an entry for this group of this provider, or for this E-Svitlo account.",
+      "already_configured": "The integration already has an entry for this group of this provider.",
       "reconfigure_successful": "The entry now uses the new group. To update the entity IDs, open the device and select Recreate entity IDs.",
       "reconfigure_unchanged": "The entry already uses this group. Nothing changed.",
-      "reconfigure_e_svitlo": "E-Svitlo takes the group from your account. To select another account, delete this integration entry and add it again.",
-      "no_accounts_found": "No accounts found",
-      "e_svitlo_connection_error": "Failed to get the accounts from E-Svitlo.\nThe E-Svitlo server is unreachable, or it answered with an error.\nMake sure that Home Assistant can connect to the Internet, and try again later.",
       "yasno_connection_error": "Failed to get the Yasno groups.\nThe Yasno API is unreachable, or it has no groups for this provider now.\nMake sure that Home Assistant can connect to the Internet, and try again later.\n{url}",
       "dtek_json_unavailable": "No data source gave a schedule that the integration can read.\nThe source is unreachable, or its data has a format that the integration does not know.\nMake sure that Home Assistant can connect to the Internet, and try again later.\n{urls}",
       "dtek_json_empty_data": "The data source answered, but its schedule has no groups now.\nThis can happen when the provider publishes no outages.\nTry again later.\n{urls}",
-      "reauth_successful": "The entry now uses the new login.",
-      "wrong_account": "This login has no access to the personal account of this entry. Sign in with the login that owns this personal account."
+      "alerts_energy_connection_error": "Failed to get the Sumyoblenergo subgroups from Alerts Energy. Make sure that Home Assistant can connect to the Internet, and try again later.\n{url}",
+      "reauth_not_required": "The Sumy schedule source no longer requires authentication."
     },
     "step": {
       "user": {
@@ -33,28 +30,6 @@
           "group": "Find your group at: {yasno_url} / {dtek_url}"
         }
       },
-      "esvitlo_auth": {
-        "title": "E-Svitlo Authentication",
-        "description": "Enter your E-Svitlo credentials",
-        "data": {
-          "username": "Username",
-          "password": "Password"
-        },
-        "data_description": {
-          "username": "Use login and password from E-Svitlo personal cabinet: {esvitlo_url}",
-          "password": "The password of your E-Svitlo personal cabinet."
-        }
-      },
-      "esvitlo_account": {
-        "title": "Select Account",
-        "description": "Select the account (address) to monitor",
-        "data": {
-          "account_id": "Account"
-        },
-        "data_description": {
-          "account_id": "The personal account (address) whose outage schedule the integration shows. For another address, add one more integration entry."
-        }
-      },
       "stale_confirm": {
         "title": "Outdated schedule data",
         "description": "No fresh outage data is available right now. The source last updated the schedule on {updated}.\n\nYou can pick a group from this outdated schedule, but once outages resume please double-check that your group assignment has not changed.",
@@ -65,22 +40,17 @@
           "acknowledge": "To continue with the outdated schedule, select this checkbox."
         }
       },
-      "reauth_confirm": {
-        "title": "Sign in to E-Svitlo again",
-        "description": "E-Svitlo refused the login of this entry. Enter the current login and password of your E-Svitlo personal cabinet. Until then, the entities show the last schedule. If E-Svitlo has maintenance now, you can also wait: the integration tries the old login at each update.",
+      "alerts_energy_group": {
+        "title": "Sumyoblenergo schedule",
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "group": "Select your subgroup:"
         },
         "data_description": {
-          "username": "The login of your E-Svitlo personal cabinet: {esvitlo_url}",
-          "password": "The current password of your E-Svitlo personal cabinet."
+          "group": "Your Sumyoblenergo subgroup, for example 4.1. Schedule: https://alerts.energy/sumska-oblast"
         }
       }
     },
     "error": {
-      "invalid_auth": "Invalid username or password",
-      "cannot_connect": "Failed to connect to E-Svitlo. Make sure that Home Assistant can connect to the Internet, and try again.",
       "acknowledge_required": "The checkbox is not selected. To continue with the outdated schedule, select it."
     }
   },
@@ -91,7 +61,7 @@
     "device_name_dtek": {
       "name": "{provider_name} {group}"
     },
-    "device_name_e_svitlo": {
+    "device_name_alerts_energy": {
       "name": "{region_name} {provider_name} {group}"
     }
   },
@@ -115,7 +85,7 @@
         "yasnoprovider_25_902": "Yasno — Kyiv — DTEK",
         "yasnoprovider_3_301": "Yasno — Dnipro — DnEM",
         "yasnoprovider_3_303": "Yasno — Dnipro — CEK",
-        "esvitloprovider_sumy": "E-Svitlo — Sumy and Oblast — SOE"
+        "alertsenergyprovider_sumy": "Sumy and Oblast — Alerts Energy"
       }
     }
   },
@@ -163,6 +133,10 @@
     "group_not_listed": {
       "title": "No outage schedule for group {group}",
       "description": "The source {provider} has no outage schedule for group {group}. Until the source has it, the Electricity sensor shows Unknown, and the calendars show no outages for this group.\n\nThe provider can renumber or remove groups. Find your group on the website of the provider. To change the group, go to Settings > Devices & services > {integration}, open the menu of this entry, and select Reconfigure.\n\nThis message disappears when the source has group {group} again."
+    },
+    "alerts_energy_group_required": {
+      "title": "Select your Sumyoblenergo subgroup",
+      "description": "The subgroup could not be determined from the old E-Svitlo entry. Go to Settings > Devices & services > {integration}, open this entry’s menu > Reconfigure, and select your subgroup. The entry and entities are kept; until then the Electricity sensor shows Unknown."
     }
   },
   "exceptions": {
@@ -186,9 +160,6 @@
     },
     "entry_without_group": {
       "message": "This entry has no group. Delete the entry and add it again."
-    },
-    "entry_without_login": {
-      "message": "This E-Svitlo entry has no login or password. Delete the entry and add it again."
     }
   },
   "common": {

@@ -8,8 +8,8 @@ from typing import Self
 from custom_components.svitlo_yeah.const import (
     PROVIDER_DTEK_FULL,
     PROVIDER_DTEK_SHORT,
+    PROVIDER_TYPE_ALERTS_ENERGY,
     PROVIDER_TYPE_DTEK_JSON,
-    PROVIDER_TYPE_E_SVITLO,
     PROVIDER_TYPE_YASNO,
 )
 
@@ -46,24 +46,21 @@ class BaseProvider(ABC):
 
 
 @dataclass(frozen=True, kw_only=True)
-class ESvitloProvider(BaseProvider):
-    """E-Svitlo provider model."""
+class AlertsEnergyProvider(BaseProvider):
+    """Alerts Energy schedules for Sumy Oblast."""
 
-    user_name: str
-    password: str
     region_name: str = "sumy"
-    account_id: int | str | None = None
-    provider_type: str = PROVIDER_TYPE_E_SVITLO
+    provider_type: str = PROVIDER_TYPE_ALERTS_ENERGY
 
     @cached_property
     def unique_key(self) -> str:
-        """Generate unique key for this provider."""
+        """Return the provider option key."""
         return f"{self.__class__.__name__.lower()}_{self.region_name}"
 
     @cached_property
     def provider_id(self) -> str:
-        """Provider ID."""
-        return self.user_name
+        """Return the region-specific source id."""
+        return self.region_name
 
 
 @dataclass(frozen=True, kw_only=True)

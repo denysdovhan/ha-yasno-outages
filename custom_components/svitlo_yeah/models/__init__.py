@@ -4,14 +4,14 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from .providers import ESvitloProvider, YasnoProvider
+from .providers import AlertsEnergyProvider, YasnoProvider
 
 if TYPE_CHECKING:
     import datetime
 
 __all__ = [
+    "AlertsEnergyProvider",
     "ConnectivityState",
-    "ESvitloProvider",
     "PlannedOutageEvent",
     "PlannedOutageEventType",
     "YasnoPlannedOutageDayStatus",

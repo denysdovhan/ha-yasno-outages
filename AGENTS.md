@@ -10,7 +10,7 @@ custom integration (HACS) that tracks electricity-outage schedules from Ukrainia
 energy providers. It exposes outage calendars, an `Electricity` status sensor,
 "next outage / next connectivity" timestamp sensors, a force-refresh button, and
 a `svitlo_yeah_data_changed` event. It supports many regions/providers (DTEK,
-Yasno, E-Svitlo, and community JSON feeds) with per-group configuration, all set
+Yasno, Alerts Energy for Sumy, and community JSON feeds) with per-group configuration, all set
 up through the Home Assistant UI. See `README.md` for the full region list and
 entity reference.
 
@@ -21,7 +21,7 @@ require a running Home Assistant instance (`hass`).
 
 - `custom_components/svitlo_yeah/` — the integration package (domain: `svitlo_yeah`).
   - `api/` — provider clients that fetch and parse raw outage data
-    (`yasno.py`, `e_svitlo.py`, `dtek/`), plus `common_tools.py`.
+    (`yasno.py`, `alerts_energy.py`, `dtek/`), plus `common_tools.py`.
   - `coordinator/` — `DataUpdateCoordinator` subclasses per provider that own
     fetch/refresh scheduling and expose events to the entities.
   - `entity.py`, `sensor.py`, `calendar.py`, `button.py` — HA entity platforms.
@@ -102,7 +102,7 @@ Keep `--headless` for the checks. A browser with a window draws no frames while 
   (usually via `homeassistant.util.dt`), and treat provider-local times as
   Europe/Kyiv. `DTZ*` ruff rules enforce this.
 - **`# fmt: skip  # remove in 2027` on multi-line `except (...)` tuples**: these
-  exist in `api/common_tools.py` and `api/e_svitlo.py` to stop the formatter from
+  exist in `api/common_tools.py` to stop the formatter from
   reflowing the exception tuple onto one line. Keep the comment intact when you
   touch those lines; the marker signals it can be revisited in 2027.
 
@@ -124,7 +124,7 @@ Keep `--headless` for the checks. A browser with a window draws no frames while 
 
 ### Providers & data sources
 
-Outage data comes from several providers, each with its own `api/` client and `coordinator/`: Yasno, E-Svitlo, and DTEK. DTEK and several oblasts are served by **JSON feeds** (community GitHub raw files) via `api/dtek/json.py`. All HTTP uses `aiohttp` through the session helpers of Home Assistant, and there is no bespoke HTTP stack. The DTEK and Yasno clients use the shared session of `async_get_clientsession(hass)`. Each E-Svitlo client creates its own session with `async_create_clientsession(hass)`, because the server knows the login from the cookies, and the shared session keeps the cookies of all integrations (rule `inject-websession`). See `README.md` for the authoritative region → provider → source table.
+Outage data comes from several providers, each with its own `api/` client and `coordinator/`: Yasno, Alerts Energy for Sumy, and DTEK. DTEK and several oblasts are served by **JSON feeds** (community GitHub raw files) via `api/dtek/json.py`. All HTTP uses `aiohttp` through the session helpers of Home Assistant, and there is no bespoke HTTP stack. All current clients use the shared session of `async_get_clientsession(hass)`. Sumy uses only the public Alerts Energy hourly schedule endpoint, filtered to Sumyoblenergo; no login, emergency endpoint, possible-outage events or E-Svitlo fallback. See `README.md` for the authoritative region → provider → source table.
 
 ### Old states until new data
 
@@ -132,9 +132,9 @@ The entities must not become unavailable without need. Until a coordinator gets 
 
 After each fetch, each coordinator calls `_set_last_fetch_failed`, which keeps `last_fetch_failed`. An outdated DTEK schedule is an answer, not a failure. The method writes one `info` line when the source stops answering, and one when it answers again (Silver rule `log-when-unavailable`). Thus the API clients log a failed request only at the debug level. The refresh button reads this flag and then raises a translated `HomeAssistantError`, so that the user sees the failure (Silver rule `action-exceptions`). The button never sets `last_update_success` to `False`, because that makes each entity of the entry unavailable.
 
-When E-Svitlo refuses the login, the coordinator calls `config_entry.async_start_reauth` and logs one warning. It never raises `ConfigEntryAuthFailed`, because that makes each entity unavailable and stops the polls. The polls go on with the old login, so that a refusal for a while, for example during maintenance, heals without the user. When the login works again, the coordinator aborts the open reauthentication flow of its entry. The refresh button raises the `login_rejected` error when the server refused the login of that press, and `refresh_failed` when the server did not answer, also while an earlier refusal waits for the new login.
+Sumy has no authentication. Config entry migration from version 1.1 to 2.1 is local: take a concrete subgroup from the entry or consistent legacy Store group fields, remove account credentials, and close old reauthentication flows. Preserve entry/device/entity identifiers and user names. Missing or conflicting groups produce an Unknown state and a repair message pointing to Reconfigure, without deleting the entry. Existing accounts of the same subgroup stay separate; new duplicates are rejected.
 
-The old states also stay across a restart. `IntegrationCoordinator` keeps the last data of the source in a `Store` with the key `svitlo_yeah.<entry_id>`. `_async_setup` loads it before the first fetch, `_async_store_last_data` saves it when it changed, and `async_remove_entry` in `__init__.py` deletes it. Each provider coordinator implements `_source_data` and `_restore_source_data`. DTEK keeps `fact` and `preset`, Yasno keeps the planned outages and the region of the entry, and E-Svitlo keeps the raw answer of the disconnections request, its update time and the group. A kept Yasno region and a kept E-Svitlo group only name the device: the clients still ask the source for them, so that a change at the source comes through. The kept answer about the group (`group_listed`) counts only when the kept group is the configured group, because a Reconfigure changes the group.
+The old states also stay across a restart. `IntegrationCoordinator` keeps the last data of the source in a `Store` with the key `svitlo_yeah.<entry_id>`. `_async_setup` loads it before the first fetch, `_async_store_last_data` saves it when it changed, and `async_remove_entry` in `__init__.py` deletes it. Each provider coordinator implements `_source_data` and `_restore_source_data`. DTEK keeps `fact` and `preset`, Yasno keeps the planned outages and the region of the entry, and Alerts Energy keeps a normalized dated Sumy snapshot with the configured group, completeness and source update time. A kept Yasno region only names the device: the client still asks the source for it. The kept answer about the group (`group_listed`) counts only when the kept group is the configured group, because a Reconfigure changes the group. Sumy converts legacy E-Svitlo cache locally with exact dates and boundaries, never using another subgroup's cache. A valid unknown day clears old intervals, while a failed request retains the last snapshot. Unknown/partial days do not claim normal electricity outside confirmed outages; expired dates never repeat on a new day.
 
 ### DTEK JSON freshness
 

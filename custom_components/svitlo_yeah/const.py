@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 DOMAIN: Final = "svitlo_yeah"
 NAME: Final = "Svitlo Yeah | Світло Є"
+CONFIG_ENTRY_VERSION: Final = 2
 
 # Configuration option
 CONF_REGION: Final = "region"
@@ -18,6 +19,7 @@ CONF_PROVIDER_TYPE: Final = "provider_type"
 PROVIDER_TYPE_YASNO: Final = "yasno"
 PROVIDER_TYPE_DTEK_JSON: Final = "dtek_json"
 PROVIDER_TYPE_E_SVITLO: Final = "e-svitlo"
+PROVIDER_TYPE_ALERTS_ENERGY: Final = "alerts_energy"
 
 # Provider name simplification
 PROVIDER_DTEK_FULL: Final = "ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ"
@@ -48,11 +50,11 @@ BLOCK_KEY_STATUS: Final = "status"
 DEVICE_NAME_YASNO_TRANSLATION_KEY = "device_name_yasno"
 DEVICE_NAME_DTEK_TRANSLATION_KEY = "device_name_dtek"
 DEVICE_MANUFACTURER = NAME
-DEVICE_NAME_E_SVITLO_TRANSLATION_KEY = "device_name_e_svitlo"
+DEVICE_NAME_ALERTS_ENERGY_TRANSLATION_KEY = "device_name_alerts_energy"
 PROVIDER_TO_DEVICE_NAME_MAP: Final = {
     PROVIDER_TYPE_YASNO: DEVICE_NAME_YASNO_TRANSLATION_KEY,
     PROVIDER_TYPE_DTEK_JSON: DEVICE_NAME_DTEK_TRANSLATION_KEY,
-    PROVIDER_TYPE_E_SVITLO: DEVICE_NAME_E_SVITLO_TRANSLATION_KEY,
+    PROVIDER_TYPE_ALERTS_ENERGY: DEVICE_NAME_ALERTS_ENERGY_TRANSLATION_KEY,
 }
 
 
@@ -72,15 +74,12 @@ TRANSLATION_KEY_EVENT_EMERGENCY_OUTAGE: Final = common_translation_key(
 )
 # Repair issue: the translation key, and the prefix of the issue id
 ISSUE_GROUP_NOT_LISTED: Final = "group_not_listed"
+ISSUE_ALERTS_ENERGY_GROUP_REQUIRED: Final = "alerts_energy_group_required"
 
-# E-Svitlo Constants
-# The site of the personal cabinet, which the login forms name
-E_SVITLO_URL: Final = "https://sm.e-svitlo.com.ua/"
-E_SVITLO_SUMY_BASE_URL: Final = (
-    "https://sm.e-svitlo.com.ua/ip_cabinet/restfull_api/improvise/"
+ALERTS_ENERGY_URL: Final = (
+    "https://alerts.energy/api/v1/source-registry/areas/sumska-oblast/shutdowns"
 )
-E_SVITLO_ERROR_NOT_LOGGED_IN: Final = "Ви не увійшли до кабінету"
-
+ALERTS_ENERGY_INITIATOR: Final = "sumska_oblast_oblenergo"
 
 EVENT_DATA_CHANGED: Final = f"{DOMAIN}_data_changed"
 
