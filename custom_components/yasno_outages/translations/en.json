@@ -197,10 +197,13 @@
     "stale_address_ids": {
       "title": "{entry_title}: Reconfigure address (Yasno changed IDs)",
       "fix_flow": {
+        "abort": {
+          "configuration_changed": "The configuration changed while this repair was open. Start the repair again if the address still needs validation."
+        },
         "step": {
           "street_query": {
             "title": "Yasno Outages: Street Search",
-            "description": "Yasno changed street/house identifiers. Search and select your current address to repair this entry.\n\nSaved address: {current_address}.",
+            "description": "The saved address could not be validated. Monitoring can continue using the last group validated for this address, if it is still available. Reselect your address to confirm its current group.\n\nSaved address: {current_address}.",
             "data": {
               "street_query": "Enter part of your street name:"
             }

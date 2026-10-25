@@ -24,6 +24,7 @@ from homeassistant.helpers.selector import (
 
 from .api import YasnoApi
 from .const import (
+    CONF_ADDRESS_GROUP,
     CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
@@ -37,8 +38,10 @@ from .const import (
     CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
     DOMAIN,
+    LOCATION_CONFIG_KEYS,
     YASNO_GROUP_URL,
 )
+from .helpers import build_address_data
 
 LOGGER = logging.getLogger(__name__)
 
@@ -295,10 +298,12 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             CONF_FILTER_PROBABLE: self.data[CONF_FILTER_PROBABLE],
             CONF_STATUS_ALL_DAY_EVENTS: self.data[CONF_STATUS_ALL_DAY_EVENTS],
         }
-        if self.data.get(CONF_GROUP):
+        if not self.data.get(CONF_STREET_ID):
             return {**common_data, CONF_GROUP: self.data[CONF_GROUP]}
         return {
             **common_data,
+            CONF_GROUP: self.data.get(CONF_GROUP),
+            CONF_ADDRESS_GROUP: self.data.get(CONF_ADDRESS_GROUP),
             CONF_STREET_ID: self.data[CONF_STREET_ID],
             CONF_HOUSE_ID: self.data[CONF_HOUSE_ID],
             CONF_ADDRESS_NAME: f"{self._street_name} {self._house_name}",
@@ -306,7 +311,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def _build_entry_title(self) -> str:
         """Build config-entry title from current flow data."""
-        if self.data.get(CONF_GROUP):
+        if not self.data.get(CONF_STREET_ID):
             return build_entry_title(
                 region=self.data[CONF_REGION],
                 provider=self.data[CONF_PROVIDER],
@@ -320,7 +325,11 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def _build_reconfigure_options(self, config_entry: ConfigEntry) -> dict[str, Any]:
         """Build options map preserving existing preferences."""
-        options = dict(config_entry.options)
+        options = {
+            key: value
+            for key, value in config_entry.options.items()
+            if key not in LOCATION_CONFIG_KEYS
+        }
         scan_interval = self.data.get(
             CONF_SCAN_INTERVAL,
             get_config_value(config_entry, CONF_SCAN_INTERVAL, default=15),
@@ -426,6 +435,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle address setup method."""
         self.data.pop(CONF_GROUP, None)
+        self.data.pop(CONF_ADDRESS_GROUP, None)
         return await self.async_step_street_query()
 
     async def async_step_street_query(
@@ -520,6 +530,14 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                     if not group:
                         errors["base"] = "no_group"
                     else:
+                        self.data.update(
+                            build_address_data(
+                                self.data,
+                                region_id=region_id,
+                                provider_id=provider_id,
+                                group=group,
+                            )
+                        )
                         return await self.async_step_preferences()
         return self.async_show_form(
             step_id="house",
@@ -594,6 +612,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         user_input: dict | None = None,
     ) -> ConfigFlowResult:
         """Handle the group step."""
+        self.data.pop(CONF_ADDRESS_GROUP, None)
         self.data.update(
             {
                 CONF_STREET_ID: None,

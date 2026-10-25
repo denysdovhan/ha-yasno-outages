@@ -19,7 +19,6 @@ from .config_flow import (
 )
 from .const import (
     CONF_ADDRESS_NAME,
-    CONF_GROUP,
     CONF_HOUSE_ID,
     CONF_PROVIDER,
     CONF_REGION,
@@ -29,7 +28,9 @@ from .const import (
     CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
     DOMAIN,
+    LOCATION_CONFIG_KEYS,
 )
+from .helpers import build_address_data
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -54,6 +55,9 @@ class StaleAddressRepairFlow(RepairsFlow):
         self._house_name = ""
         self._street_id: int | None = None
         self._current_address = self._get_config_value(CONF_ADDRESS_NAME) or ""
+        self._original_location = {
+            key: self._get_config_value(key) for key in LOCATION_CONFIG_KEYS
+        }
 
     def _get_config_value(self, key: str) -> Any:
         """Read value from options first, then data."""
@@ -232,16 +236,27 @@ class StaleAddressRepairFlow(RepairsFlow):
                     if not group:
                         errors["base"] = "no_group"
                     else:
+                        if any(
+                            self._get_config_value(key) != value
+                            for key, value in self._original_location.items()
+                        ):
+                            return self.async_abort(reason="configuration_changed")
                         updated_data = dict(self._entry.data)
                         updated_data.update(
-                            {
-                                CONF_STREET_ID: self._street_id,
-                                CONF_HOUSE_ID: resolved_house_id,
-                                CONF_ADDRESS_NAME: (
-                                    f"{self._street_name} {self._house_name}"
-                                ),
-                                CONF_GROUP: None,
-                            }
+                            build_address_data(
+                                {
+                                    **self._entry.data,
+                                    **self._entry.options,
+                                    CONF_STREET_ID: self._street_id,
+                                    CONF_HOUSE_ID: resolved_house_id,
+                                    CONF_ADDRESS_NAME: (
+                                        f"{self._street_name} {self._house_name}"
+                                    ),
+                                },
+                                region_id=self._region_id,
+                                provider_id=self._provider_id,
+                                group=group,
+                            )
                         )
                         region = self._get_config_value(CONF_REGION)
                         title = build_address_entry_title(
@@ -249,26 +264,21 @@ class StaleAddressRepairFlow(RepairsFlow):
                             street=self._street_name,
                             house=self._house_name,
                         )
-                        updated_options = dict(self._entry.options)
-                        updated_options.update(
-                            {
-                                CONF_STREET_ID: self._street_id,
-                                CONF_HOUSE_ID: resolved_house_id,
-                                CONF_ADDRESS_NAME: (
-                                    f"{self._street_name} {self._house_name}"
-                                ),
-                                CONF_GROUP: None,
-                            }
-                        )
-                        self.hass.config_entries.async_update_entry(
+                        updated_options = {
+                            key: value
+                            for key, value in self._entry.options.items()
+                            if key not in LOCATION_CONFIG_KEYS
+                        }
+                        changed = self.hass.config_entries.async_update_entry(
                             self._entry,
                             data=updated_data,
                             options=updated_options,
                             title=title,
                         )
-                        self.hass.config_entries.async_schedule_reload(
-                            self._entry.entry_id
-                        )
+                        if not changed or not self._entry.update_listeners:
+                            self.hass.config_entries.async_schedule_reload(
+                                self._entry.entry_id
+                            )
                         return self.async_create_entry(data={})
 
         return self.async_show_form(
@@ -282,6 +292,8 @@ class StaleAddressRepairFlow(RepairsFlow):
 async def async_create_stale_address_issue(
     hass: HomeAssistant,
     entry: ConfigEntry,
+    *,
+    using_cached_group: bool = False,
 ) -> None:
     """Create repair issue for stale address identifiers."""
     issue_id = f"stale_address_ids_{entry.entry_id}"
@@ -291,7 +303,9 @@ async def async_create_stale_address_issue(
         issue_id,
         is_fixable=True,
         is_persistent=False,
-        severity=ir.IssueSeverity.ERROR,
+        severity=(
+            ir.IssueSeverity.WARNING if using_cached_group else ir.IssueSeverity.ERROR
+        ),
         translation_key="stale_address_ids",
         translation_placeholders={
             "entry_title": entry.title or "Yasno Outages",
