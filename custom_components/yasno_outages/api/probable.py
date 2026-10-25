@@ -7,7 +7,12 @@ import aiohttp
 from dateutil.rrule import WEEKLY, rrule
 
 from .base import BaseYasnoApi
-from .const import API_PARAM_DSO_ID, API_PARAM_REGION_ID, PROBABLE_OUTAGES_ENDPOINT
+from .const import (
+    API_PARAM_DSO_ID,
+    API_PARAM_REGION_ID,
+    PROBABLE_OUTAGES_ENDPOINT,
+    UA_TZ,
+)
 from .models import OutageEvent, OutageSlot, OutageSource, YasnoApiError
 
 LOGGER = logging.getLogger(__name__)
@@ -70,6 +75,7 @@ class ProbableOutagesApi(BaseYasnoApi):
 
     def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the probable outage event at a given time."""
+        at = at.astimezone(UA_TZ)
         weekday = at.weekday()  # 0=Monday, 6=Sunday
         slots = self.get_probable_slots_for_weekday(weekday)
 
@@ -99,6 +105,8 @@ class ProbableOutagesApi(BaseYasnoApi):
     ) -> list[OutageEvent]:
         """Get all probable outage events within the date range using rrule."""
         events = []
+        start_date = start_date.astimezone(UA_TZ)
+        end_date = end_date.astimezone(UA_TZ)
 
         # Iterate through each day of the week (0=Monday, 6=Sunday)
         for weekday in range(7):

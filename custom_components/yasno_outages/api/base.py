@@ -17,6 +17,7 @@ from .const import (
     HOUSES_ENDPOINT,
     REGIONS_ENDPOINT,
     STREETS_ENDPOINT,
+    UA_TZ,
 )
 from .models import (
     OutageEvent,
@@ -229,21 +230,17 @@ class BaseYasnoApi(ABC):
     @staticmethod
     def minutes_to_time(
         minutes: int,
-        date: datetime.datetime,
+        date: datetime.date,
     ) -> datetime.datetime:
-        """Convert minutes from start of day to datetime."""
-        hours = minutes // 60
-        mins = minutes % 60
-        # Handle end of day (24:00) - use midnight of next day
-        if hours == 24:  # noqa: PLR2004
-            tomorrow = date + datetime.timedelta(days=1)
-            return tomorrow.replace(
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0,
-            )
-        return date.replace(hour=hours, minute=mins, second=0, microsecond=0)
+        """Convert wall-clock minutes from local midnight to an aware datetime."""
+        if isinstance(date, datetime.datetime):
+            date = date.date()
+        days, mins = divmod(minutes, 24 * 60)
+        return datetime.datetime.combine(
+            date + datetime.timedelta(days=days),
+            datetime.time(mins // 60, mins % 60),
+            tzinfo=UA_TZ,
+        )
 
     @staticmethod
     def _parse_raw_slots(slots: list[dict]) -> list[OutageSlot]:
