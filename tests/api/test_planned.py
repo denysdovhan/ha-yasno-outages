@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import aiohttp
 import pytest
 
+from custom_components.yasno_outages.api.const import UA_TZ
 from custom_components.yasno_outages.api.models import (
     OutageEventType,
     OutageSource,
@@ -367,7 +368,45 @@ class TestPlannedOutagesApiEdgeCases:
             }
         }
 
-        # Check at exactly midnight of tomorrow
-        event = api.get_current_event(tomorrow)
+        # Schedule days start at Kyiv midnight, whatever offset the date string carries
+        kyiv_midnight = datetime.datetime.combine(
+            tomorrow.date(), datetime.time(0), tzinfo=UA_TZ
+        )
+        event = api.get_current_event(kyiv_midnight)
         assert event is not None
         assert event.event_type == OutageEventType.DEFINITE
+
+
+class TestPlannedOutagesApiDst:
+    """Events must follow real Kyiv offsets, not the fixed offset in the API date."""
+
+    def test_fall_back_day_and_next_day(self, api):
+        api.planned_outages_data = {
+            TEST_GROUP: {
+                "today": {
+                    "slots": [{"start": 360, "end": 570, "type": "Definite"}],
+                    "date": "2026-10-25T00:00:00+03:00",
+                    "status": "ScheduleApplies",
+                },
+                "tomorrow": {
+                    "slots": [{"start": 360, "end": 570, "type": "Definite"}],
+                    "date": "2026-10-26T00:00:00+03:00",
+                    "status": "ScheduleApplies",
+                },
+                "updatedOn": "2026-10-24T18:00:01+00:00",
+            }
+        }
+
+        events = api.get_events_between(
+            datetime.datetime(2026, 10, 25, tzinfo=UA_TZ),
+            datetime.datetime(2026, 10, 27, tzinfo=UA_TZ),
+        )
+
+        assert [e.start.isoformat() for e in events] == [
+            "2026-10-25T06:00:00+02:00",
+            "2026-10-26T06:00:00+02:00",
+        ]
+        assert [e.end.isoformat() for e in events] == [
+            "2026-10-25T09:30:00+02:00",
+            "2026-10-26T09:30:00+02:00",
+        ]

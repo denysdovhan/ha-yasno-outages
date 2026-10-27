@@ -228,6 +228,13 @@ class BaseYasnoApi(ABC):
         return None
 
     @staticmethod
+    def to_ua_time(value: datetime.datetime) -> datetime.datetime:
+        """Convert to Kyiv time; naive values are treated as Kyiv local."""
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UA_TZ)
+        return value.astimezone(UA_TZ)
+
+    @staticmethod
     def minutes_to_time(
         minutes: int,
         date: datetime.date,
