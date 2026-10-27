@@ -213,6 +213,7 @@ class BaseYasnoApi(ABC):
         lookahead_days: int = 1,
     ) -> OutageEvent | None:
         """Return outage event that starts after provided time."""
+        at = self.to_ua_time(at)
         horizon = at + datetime.timedelta(days=lookahead_days)
         events = sorted(
             self.get_events_between(at, horizon),
@@ -222,7 +223,7 @@ class BaseYasnoApi(ABC):
         for event in events:
             if event.event_type != event_type:
                 continue
-            if event.start > at:
+            if event.start.timestamp() > at.timestamp():
                 return event
 
         return None

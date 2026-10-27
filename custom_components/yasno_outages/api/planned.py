@@ -161,9 +161,11 @@ class PlannedOutagesApi(BaseYasnoApi):
 
     def get_current_event(self, at: datetime.datetime) -> OutageEvent | None:
         """Get the current event."""
+        at = self.to_ua_time(at)
         all_events = self.get_events_between(at, at + datetime.timedelta(days=1))
+        at_timestamp = at.timestamp()
         for event in all_events:
-            if event.start <= at < event.end:
+            if event.start.timestamp() <= at_timestamp < event.end.timestamp():
                 return event
         return None
 
@@ -189,14 +191,14 @@ class PlannedOutagesApi(BaseYasnoApi):
         events = sorted(events, key=lambda event: event.start)
 
         # Filter events that intersect with the requested range
+        start_timestamp = self.to_ua_time(start_date).timestamp()
+        end_timestamp = self.to_ua_time(end_date).timestamp()
         return [
             event
             for event in events
             if (
-                start_date <= event.start <= end_date
-                or start_date <= event.end <= end_date
-                or event.start <= start_date <= event.end
-                or event.start <= end_date <= event.end
+                event.start.timestamp() <= end_timestamp
+                and event.end.timestamp() >= start_timestamp
             )
         ]
 

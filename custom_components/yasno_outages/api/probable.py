@@ -79,15 +79,14 @@ class ProbableOutagesApi(BaseYasnoApi):
         slots = self.get_probable_slots_for_weekday(weekday)
 
         # Find slot that contains the current time
-        minutes_since_midnight = at.hour * 60 + at.minute
+        at_timestamp = at.timestamp()
+        date = at.date()
 
         for slot in slots:
-            if slot.start <= minutes_since_midnight < slot.end:
+            event_start = self.minutes_to_time(slot.start, date)
+            event_end = self.minutes_to_time(slot.end, date)
+            if event_start.timestamp() <= at_timestamp < event_end.timestamp():
                 # Found matching slot, create event for today
-                date = at.replace(hour=0, minute=0, second=0, microsecond=0)
-                event_start = self.minutes_to_time(slot.start, date)
-                event_end = self.minutes_to_time(slot.end, date)
-
                 return OutageEvent(
                     start=event_start,
                     end=event_end,
@@ -106,6 +105,8 @@ class ProbableOutagesApi(BaseYasnoApi):
         events = []
         start_date = self.to_ua_time(start_date)
         end_date = self.to_ua_time(end_date)
+        start_timestamp = start_date.timestamp()
+        end_timestamp = end_date.timestamp()
 
         # Iterate through each day of the week (0=Monday, 6=Sunday)
         for weekday in range(7):
@@ -133,7 +134,10 @@ class ProbableOutagesApi(BaseYasnoApi):
                     event_end = self.minutes_to_time(slot.end, dt)
 
                     # Skip if event is completely outside the requested range
-                    if event_end < start_date or event_start > end_date:
+                    if (
+                        event_end.timestamp() < start_timestamp
+                        or event_start.timestamp() > end_timestamp
+                    ):
                         continue
 
                     events.append(
