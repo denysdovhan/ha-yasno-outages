@@ -1,17 +1,15 @@
 """Pytest configuration and fixtures."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
-from homeassistant.util import dt as dt_utils
 
 
 @pytest.fixture(name="today")
 def _today():
     """Create a today datetime fixture."""
-    return dt_utils.as_local(dt_utils.now()).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    return datetime(2026, 10, 27, tzinfo=ZoneInfo("Europe/Kyiv"))
 
 
 @pytest.fixture(name="tomorrow")

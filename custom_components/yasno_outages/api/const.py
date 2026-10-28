@@ -1,6 +1,7 @@
 """API constants for Yasno outages."""
 
 from typing import Final
+from zoneinfo import ZoneInfo
 
 # Event names
 EVENT_NAME_OUTAGE: Final = "Definite"
@@ -44,3 +45,6 @@ API_KEY_TOMORROW: Final = "tomorrow"
 API_KEY_STATUS: Final = "status"
 API_KEY_DATE: Final = "date"
 API_KEY_UPDATED_ON: Final = "updatedOn"
+
+# Schedules are published in Ukrainian wall-clock time
+UA_TZ: Final = ZoneInfo("Europe/Kyiv")

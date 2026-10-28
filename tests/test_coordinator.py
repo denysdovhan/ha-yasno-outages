@@ -3,6 +3,7 @@
 import datetime
 from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 from homeassistant.const import STATE_UNKNOWN
@@ -136,6 +137,17 @@ class TestFindNextOutage:
         """Test empty events list returns None."""
         now = datetime.datetime(2025, 1, 27, 10, 0)
         assert find_next_outage([], now) is None
+
+    def test_skips_outage_started_in_first_repeated_hour(self):
+        kyiv = ZoneInfo("Europe/Kyiv")
+        event = OutageEvent(
+            start=datetime.datetime(2026, 10, 25, 3, 30, tzinfo=kyiv),
+            end=datetime.datetime(2026, 10, 25, 4, tzinfo=kyiv),
+            event_type=OutageEventType.DEFINITE,
+            source=OutageSource.PLANNED,
+        )
+        now = datetime.datetime(2026, 10, 25, 3, 15, tzinfo=kyiv, fold=1)
+        assert find_next_outage([event], now) is None
 
     def test_finds_next_outage_after_now(self):
         """Test finds next outage that starts after now."""
@@ -490,6 +502,19 @@ class TestCoordinatorNextOutage:
 
 class TestCoordinatorNextConnectivity:
     """Test next_connectivity property."""
+
+    def test_does_not_restore_connectivity_in_the_past(self, coordinator):
+        kyiv = ZoneInfo("Europe/Kyiv")
+        event = OutageEvent(
+            start=datetime.datetime(2026, 10, 25, 2, tzinfo=kyiv),
+            end=datetime.datetime(2026, 10, 25, 3, 30, tzinfo=kyiv),
+            event_type=OutageEventType.DEFINITE,
+            source=OutageSource.PLANNED,
+        )
+        coordinator.api.planned.get_events_between.return_value = [event]
+        now = datetime.datetime(2026, 10, 25, 3, 15, tzinfo=kyiv, fold=1)
+        with patch("homeassistant.util.dt.now", return_value=now):
+            assert coordinator.next_connectivity is None
 
     def test_returns_end_time_during_outage(self, coordinator, today):
         """Test returns event end time when currently in outage."""

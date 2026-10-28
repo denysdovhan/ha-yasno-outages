@@ -2,6 +2,7 @@
 
 import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from zoneinfo import ZoneInfo
 
 import aiohttp
 import pytest
@@ -12,6 +13,8 @@ from custom_components.yasno_outages.api.models import (
     YasnoApiError,
 )
 from custom_components.yasno_outages.api.probable import ProbableOutagesApi
+
+KYIV = ZoneInfo("Europe/Kyiv")
 
 TEST_REGION_ID = 25
 TEST_PROVIDER_ID = 902
@@ -149,7 +152,9 @@ class TestProbableOutagesApiCurrentEvent:
         """Test getting current event on Monday morning during outage."""
         api.probable_outages_data = probable_outage_data
         # Create a Monday at 9:00 (540 minutes) - should be in 480-720 slot
-        monday = datetime.datetime(2025, 1, 27, 9, 0, 0)  # This is a Monday
+        monday = datetime.datetime(
+            2025, 1, 27, 9, 0, 0, tzinfo=KYIV
+        )  # This is a Monday
         # Adjust to ensure it's Monday
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
@@ -165,7 +170,7 @@ class TestProbableOutagesApiCurrentEvent:
         """Test getting current event outside any slot."""
         api.probable_outages_data = probable_outage_data
         # Monday at 14:00 - no slot at this time
-        monday = datetime.datetime(2025, 1, 27, 14, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 14, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -176,7 +181,7 @@ class TestProbableOutagesApiCurrentEvent:
         """Test getting current event on Tuesday."""
         api.probable_outages_data = probable_outage_data
         # Tuesday at 11:00 (660 minutes) - should be in 600-900 slot
-        tuesday = datetime.datetime(2025, 1, 28, 11, 0, 0)
+        tuesday = datetime.datetime(2025, 1, 28, 11, 0, 0, tzinfo=KYIV)
         while tuesday.weekday() != 1:
             tuesday += datetime.timedelta(days=1)
 
@@ -188,7 +193,7 @@ class TestProbableOutagesApiCurrentEvent:
 
     def test_get_current_event_no_data(self, api):
         """Test getting current event with no data."""
-        monday = datetime.datetime(2025, 1, 27, 9, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 9, 0, 0, tzinfo=KYIV)
         event = api.get_current_event(monday)
         assert event is None
 
@@ -196,7 +201,7 @@ class TestProbableOutagesApiCurrentEvent:
         """Test getting current event on weekday with no slots."""
         api.probable_outages_data = probable_outage_data
         # Wednesday (2) has no slots
-        wednesday = datetime.datetime(2025, 1, 29, 10, 0, 0)
+        wednesday = datetime.datetime(2025, 1, 29, 10, 0, 0, tzinfo=KYIV)
         while wednesday.weekday() != 2:
             wednesday += datetime.timedelta(days=1)
 
@@ -211,7 +216,7 @@ class TestProbableOutagesApiEventsBetween:
         """Test getting events for a single week."""
         api.probable_outages_data = probable_outage_data
         # Get a full week starting from Monday
-        monday = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 0, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -226,7 +231,7 @@ class TestProbableOutagesApiEventsBetween:
         """Test getting events across multiple weeks."""
         api.probable_outages_data = probable_outage_data
         # Get 3 weeks
-        monday = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 0, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -240,7 +245,7 @@ class TestProbableOutagesApiEventsBetween:
         """Test getting events for a single day."""
         api.probable_outages_data = probable_outage_data
         # Monday only
-        monday = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 0, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -253,7 +258,7 @@ class TestProbableOutagesApiEventsBetween:
 
     def test_get_events_between_no_data(self, api):
         """Test getting events with no data."""
-        start = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        start = datetime.datetime(2025, 1, 27, 0, 0, 0, tzinfo=KYIV)
         end = start + datetime.timedelta(days=7)
         events = api.get_events_between(start, end)
         assert events == []
@@ -261,7 +266,7 @@ class TestProbableOutagesApiEventsBetween:
     def test_get_events_between_sorted(self, api, probable_outage_data):
         """Test that events are sorted by start time."""
         api.probable_outages_data = probable_outage_data
-        monday = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 0, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -276,7 +281,7 @@ class TestProbableOutagesApiEventsBetween:
         """Test getting events for partial week (Wednesday to Friday)."""
         api.probable_outages_data = probable_outage_data
         # Start from Wednesday
-        wednesday = datetime.datetime(2025, 1, 29, 0, 0, 0)
+        wednesday = datetime.datetime(2025, 1, 29, 0, 0, 0, tzinfo=KYIV)
         while wednesday.weekday() != 2:
             wednesday += datetime.timedelta(days=1)
 
@@ -292,7 +297,7 @@ class TestProbableOutagesApiEventsBetween:
         """Test that events on Monday and Tuesday are included."""
         api.probable_outages_data = probable_outage_data
         # Start from Monday
-        monday = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 0, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -313,7 +318,7 @@ class TestProbableOutagesApiEdgeCases:
         """Test event at weekday boundary."""
         api.probable_outages_data = probable_outage_data
         # Monday at 23:59
-        monday = datetime.datetime(2025, 1, 27, 23, 59, 59)
+        monday = datetime.datetime(2025, 1, 27, 23, 59, 59, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -325,7 +330,7 @@ class TestProbableOutagesApiEdgeCases:
         """Test event at exact slot start time."""
         api.probable_outages_data = probable_outage_data
         # Monday at exactly 8:00 (480 minutes)
-        monday = datetime.datetime(2025, 1, 27, 8, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 8, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -337,7 +342,7 @@ class TestProbableOutagesApiEdgeCases:
         """Test event at exact slot end time."""
         api.probable_outages_data = probable_outage_data
         # Monday at exactly 12:00 (720 minutes) - should NOT be in slot (exclusive end)
-        monday = datetime.datetime(2025, 1, 27, 12, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 12, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -348,7 +353,7 @@ class TestProbableOutagesApiEdgeCases:
         """Test time before slot starts."""
         api.probable_outages_data = probable_outage_data
         # Monday at 7:00 (420 minutes) - before 480
-        monday = datetime.datetime(2025, 1, 27, 7, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 7, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -359,7 +364,7 @@ class TestProbableOutagesApiEdgeCases:
         """Test time after slot ends."""
         api.probable_outages_data = probable_outage_data
         # Monday at 13:00 (780 minutes) - after 720
-        monday = datetime.datetime(2025, 1, 27, 13, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 13, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -387,7 +392,7 @@ class TestProbableOutagesApiEdgeCases:
             }
         }
 
-        monday = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 0, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 
@@ -404,7 +409,7 @@ class TestProbableOutagesApiRecurrence:
         """Test that events recur weekly."""
         api.probable_outages_data = probable_outage_data
         # Get 2 weeks
-        monday1 = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        monday1 = datetime.datetime(2025, 1, 27, 0, 0, 0, tzinfo=KYIV)
         while monday1.weekday() != 0:
             monday1 += datetime.timedelta(days=1)
 
@@ -422,7 +427,7 @@ class TestProbableOutagesApiRecurrence:
     def test_event_times_consistent_across_weeks(self, api, probable_outage_data):
         """Test that event times are consistent across weeks."""
         api.probable_outages_data = probable_outage_data
-        monday = datetime.datetime(2025, 1, 27, 0, 0, 0)
+        monday = datetime.datetime(2025, 1, 27, 0, 0, 0, tzinfo=KYIV)
         while monday.weekday() != 0:
             monday += datetime.timedelta(days=1)
 

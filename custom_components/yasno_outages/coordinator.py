@@ -85,7 +85,7 @@ def find_next_outage(
 ) -> OutageEvent | None:
     """Find the next outage event that starts after the given time."""
     for event in events:
-        if event.start > now:
+        if event.start.timestamp() > now.timestamp():
             return event
     return None
 
@@ -388,7 +388,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
 
         # Check if we are in an outage
         for event in events:
-            if event.start <= now < event.end:
+            if event.start.timestamp() <= now.timestamp() < event.end.timestamp():
                 return event.end
 
         # Find next outage
