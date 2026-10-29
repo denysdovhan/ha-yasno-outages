@@ -162,6 +162,41 @@ async def async_setup_entry(
     """Set up a new entry."""
     LOGGER.info("Setup entry: %s", entry)
 
+    # Legacy repairs saved group=None in data and options; reconfigure replaced
+    # data with either a group and no address, or an address and no group key
+    # Only remove those stale options; never reinterpret a validated cache
+    if (
+        entry.options.get(CONF_STREET_ID)
+        and entry.options.get(CONF_HOUSE_ID)
+        and CONF_GROUP in entry.options
+        and entry.options[CONF_GROUP] is None
+        and CONF_ADDRESS_GROUP not in entry.data
+        and CONF_ADDRESS_GROUP not in entry.options
+        and entry.data.get(CONF_REGION)
+        and entry.data.get(CONF_PROVIDER)
+        and (
+            (
+                isinstance(entry.data.get(CONF_GROUP), str)
+                and entry.data[CONF_GROUP].strip()
+                and CONF_STREET_ID not in entry.data
+                and CONF_HOUSE_ID not in entry.data
+            )
+            or (
+                CONF_GROUP not in entry.data
+                and entry.data.get(CONF_STREET_ID)
+                and entry.data.get(CONF_HOUSE_ID)
+            )
+        )
+    ):
+        hass.config_entries.async_update_entry(
+            entry,
+            options={
+                key: value
+                for key, value in entry.options.items()
+                if key not in LOCATION_CONFIG_KEYS
+            },
+        )
+
     # Validate required keys are present
     config = {**entry.data, **entry.options}
     region = config.get(CONF_REGION)

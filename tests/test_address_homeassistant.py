@@ -214,6 +214,80 @@ async def test_real_storage_reload_preserves_entities_and_warning(runtime):
         await restored_entry._async_process_on_unload(hass)
 
 
+@pytest.mark.parametrize(
+    ("mode", "address_found"),
+    [("group", False), ("address", True), ("address", False)],
+)
+async def test_legacy_reconfigure_survives_storage(runtime, mode, address_found):
+    hass, entry, address_response = runtime
+    preferences = {
+        "scan_interval": 10,
+        "filter_probable": False,
+        "status_all_day_events": False,
+    }
+    location = (
+        {"group": "3.1"}
+        if mode == "group"
+        else {"street_id": 31, "house_id": 40, "address_name": "Another Street 1"}
+    )
+    # Produced by 2687549's repair followed by reconfigure to either mode
+    hass.config_entries.async_update_entry(
+        entry,
+        data={
+            "region": entry.data["region"],
+            "provider": entry.data["provider"],
+            "filter_probable": False,
+            "status_all_day_events": False,
+            **location,
+        },
+        options={
+            **preferences,
+            "street_id": 30,
+            "house_id": 40,
+            "address_name": "Test Street 1",
+            "group": None,
+        },
+    )
+
+    async def lookup(**kwargs):
+        if address_found and kwargs["params"]["streetId"] == 31:
+            return {"group": 3, "subgroup": 1}
+        raise YasnoNotFoundError
+
+    address_response.side_effect = lookup
+    for _ in range(2):
+        await hass.config_entries._store.async_save(hass.config_entries._data_to_save())
+        hass.config_entries = ConfigEntries(hass, {})
+        await hass.config_entries.async_initialize()
+        restored = hass.config_entries.async_get_entry(entry.entry_id)
+        address_response.reset_mock()
+        if mode == "address" and not address_found:
+            with pytest.raises(ConfigEntryError):
+                await setup_entry(hass, restored)
+            assert restored.data.get("address_group") is None
+            assert restored.data.get("group") is None
+        else:
+            assert await setup_entry(hass, restored)
+            assert restored.runtime_data.coordinator.group == "3.1"
+        assert restored.options == preferences
+        if mode == "group":
+            address_response.assert_not_awaited()
+            assert restored.data.get("address_group") is None
+        else:
+            address_response.assert_awaited_once_with(
+                params={"regionId": 25, "dsoId": 902, "streetId": 31, "houseId": 40}
+            )
+            if address_found:
+                assert restored.data["address_group"] == {
+                    "region_id": 25,
+                    "provider_id": 902,
+                    "street_id": 31,
+                    "house_id": 40,
+                    "group": "3.1",
+                }
+        await restored._async_process_on_unload(hass)
+
+
 async def test_ignored_repair_survives_storage_until_successful_revalidation(
     lifecycle_runtime,
 ):

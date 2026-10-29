@@ -287,8 +287,27 @@ async def test_group_configuration_uses_options_without_address_lookup(
     issue.assert_not_called()
 
 
+@pytest.mark.parametrize("cache_location", ["data", "options"])
+async def test_legacy_cleanup_does_not_reinterpret_cached_entries(
+    entry, setup_environment, cache_location
+):
+    hass, api, _, _ = setup_environment
+    assert await async_setup_entry(hass, entry)
+    cache = entry.data["address_group"]
+    entry.data = {"region": "Test Region", "provider": "Test Provider", "group": "2.2"}
+    entry.options.update({"street_id": 10, "house_id": 20, "group": None})
+    getattr(entry, cache_location)["address_group"] = cache
+    original_options = dict(entry.options)
+    api.fetch_group_by_address.side_effect = YasnoNotFoundError
+    with pytest.raises(ConfigEntryError):
+        await async_setup_entry(hass, entry)
+    assert entry.options == original_options
+
+
 async def test_success_normalizes_effective_location_options(entry, setup_environment):
     hass, api, _, _ = setup_environment
+    # Legacy repairs explicitly stored group=None in data as well as options
+    entry.data["group"] = None
     entry.options.update({"street_id": 30, "house_id": 40, "group": None})
     assert await async_setup_entry(hass, entry)
     api.fetch_group_by_address.assert_awaited_once_with(
