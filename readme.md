@@ -98,6 +98,7 @@ First, thanks! Check [contributing guideline](./contributing.md) for more inform
 - ☀️ [Fayna SES](https://github.com/denysdovhan/ha-fayna-ses) — provides battery levels, power flows, and energy data from Fayna SES stations.
 - 💨 [LUN Misto Air](https://github.com/denysdovhan/ha-lun-misto-air) — provides air quality and environmental data from LUN Misto monitoring stations.
 - 🌦️ [Ukrainian Hydrometeorological Center](https://github.com/denysdovhan/ha-ukr-hmc) — provides weather, radiation, and hydrology data from meteo.gov.ua.
+- 💧 [Kyiv Vodokanal](https://github.com/denysdovhan/ha-kyiv-vodokanal) — water meter readings, bills, payments, and tariffs.
 
 ## License
 
