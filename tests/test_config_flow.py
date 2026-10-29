@@ -89,8 +89,8 @@ async def test_reconfigure_updates_entry_not_creates_new(reconfigure_entry):
     assert flow.async_update_reload_and_abort.call_args.args[0] == reconfigure_entry
 
 
-async def test_reconfigure_address_mode_clears_group(reconfigure_entry):
-    """Address reconfigure clears group and stores address fields."""
+async def test_reconfigure_address_mode_replaces_group(reconfigure_entry):
+    """Address reconfigure stores the newly validated group with its address."""
     flow = YasnoOutagesConfigFlow()
     flow.context = {"source": SOURCE_RECONFIGURE}
     flow._is_reconfigure = True
@@ -103,10 +103,16 @@ async def test_reconfigure_address_mode_clears_group(reconfigure_entry):
     flow._house_name = "2"
     flow.data[CONF_STREET_ID] = 1061
     flow.data[CONF_HOUSE_ID] = 26887
+    flow._house_options = {"26887": "2"}
+    flow.api.get_region_by_name = MagicMock(return_value={"id": 25})
+    flow.api.get_provider_by_name = MagicMock(return_value={"id": 902})
+    flow.api.fetch_group_by_address = AsyncMock(return_value="1.1")
     flow.async_update_reload_and_abort = MagicMock(return_value={"type": "abort"})
 
     with patch.object(flow, "_get_reconfigure_entry", return_value=reconfigure_entry):
         await flow.async_step_address()
+        assert CONF_GROUP not in flow.data
+        await flow.async_step_house({"house": "26887"})
         await flow.async_step_preferences(
             user_input={
                 CONF_FILTER_PROBABLE: True,
@@ -115,7 +121,7 @@ async def test_reconfigure_address_mode_clears_group(reconfigure_entry):
         )
 
     data = flow.async_update_reload_and_abort.call_args.kwargs["data"]
-    assert CONF_GROUP not in data
+    assert data[CONF_GROUP] == "1.1"
     assert data[CONF_STREET_ID] == 1061
     assert data[CONF_HOUSE_ID] == 26887
     assert data[CONF_ADDRESS_NAME] == "Салютна 2"
@@ -145,3 +151,87 @@ async def test_reconfigure_group_mode_clears_address_fields(reconfigure_entry):
     assert flow.data[CONF_HOUSE_ID] is None
     assert flow.data[CONF_ADDRESS_NAME] is None
     assert flow.data[CONF_GROUP] == "4.2"
+
+
+@pytest.mark.parametrize("street_count", [1, 2])
+async def test_complete_address_configuration(regions_data, street_count):
+    flow = YasnoOutagesConfigFlow()
+    flow.context = {"source": "user"}
+    flow.api.regions_data = regions_data
+    flow.api.fetch_regions = AsyncMock()
+    flow.api.fetch_streets = AsyncMock(
+        return_value=[
+            {"id": 10 + index, "value": f"Test Street {index}"}
+            for index in range(street_count)
+        ]
+    )
+    flow.api.fetch_houses = AsyncMock(return_value=[{"id": 20, "value": "1"}])
+    flow.api.fetch_group_by_address = AsyncMock(return_value="3.1")
+
+    assert (await flow.async_step_user())["step_id"] == "user"
+    assert (await flow.async_step_user({CONF_REGION: regions_data[0]["value"]}))[
+        "step_id"
+    ] == "method"
+    assert (await flow.async_step_address())["step_id"] == "street_query"
+    result = await flow.async_step_street_query({"street_query": "Test"})
+    if street_count == 2:
+        assert result["step_id"] == "street"
+        result = await flow.async_step_street({"street": "10"})
+    assert result["step_id"] == "house_query"
+    assert (await flow.async_step_house_query({"house_query": "1"}))[
+        "step_id"
+    ] == "house"
+    assert (await flow.async_step_house({"house": "20"}))["step_id"] == "preferences"
+    result = await flow.async_step_preferences(
+        {
+            CONF_FILTER_PROBABLE: True,
+            CONF_STATUS_ALL_DAY_EVENTS: False,
+        }
+    )
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_GROUP] == "3.1"
+    assert result["data"]["address_group"] == {
+        "region_id": 25,
+        "provider_id": 902,
+        "street_id": 10,
+        "house_id": 20,
+        "group": "3.1",
+    }
+    assert result["data"][CONF_ADDRESS_NAME] == "Test Street 0 1"
+
+
+async def test_complete_group_configuration_with_provider_selection(regions_data):
+    flow = YasnoOutagesConfigFlow()
+    flow.context = {"source": "user"}
+    flow.api.regions_data = regions_data
+    flow.api.fetch_regions = AsyncMock()
+    flow.api.fetch_group_by_address = AsyncMock()
+    region = regions_data[1]
+    assert (await flow.async_step_user())["step_id"] == "user"
+    assert (await flow.async_step_user({CONF_REGION: region["value"]}))[
+        "step_id"
+    ] == "provider"
+    assert (await flow.async_step_provider({CONF_PROVIDER: region["dsos"][1]["name"]}))[
+        "step_id"
+    ] == "method"
+    group_api = MagicMock()
+    group_api.planned.fetch_planned_outages_data = AsyncMock()
+    group_api.planned.get_groups.return_value = ["3.1", "4.2"]
+    with patch(
+        "custom_components.yasno_outages.config_flow.YasnoApi", return_value=group_api
+    ):
+        assert (await flow.async_step_group())["step_id"] == "group"
+    assert (await flow.async_step_group({CONF_GROUP: "4.2"}))[
+        "step_id"
+    ] == "preferences"
+    result = await flow.async_step_preferences(
+        {
+            CONF_FILTER_PROBABLE: True,
+            CONF_STATUS_ALL_DAY_EVENTS: False,
+        }
+    )
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_GROUP] == "4.2"
+    assert CONF_STREET_ID not in result["data"]
+    assert "address_group" not in result["data"]
+    flow.api.fetch_group_by_address.assert_not_awaited()

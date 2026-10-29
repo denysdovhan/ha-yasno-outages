@@ -65,6 +65,18 @@ Here is an example of setup process with an address:
 
 <https://github.com/user-attachments/assets/887300f1-2abf-4a08-a476-e9200ae6f8e7>
 
+Address entries save the group returned by a successful address lookup and validate
+the address again on startup or reload. If Yasno stops recognizing the saved address
+IDs, monitoring can continue with that previously validated group while it remains
+available for the same provider. A warning in **Settings > System > Repairs** asks
+you to reselect the address and confirm its current group.
+
+Entries without a validated group cache need a successful address lookup or repair
+before this fallback is available. A cached group cannot confirm a later household
+reassignment, so complete the repair even if monitoring continues. Selecting group
+mode explicitly stops address lookups. Entity IDs remain unchanged when the entry
+and group stay the same.
+
 After setup you can see the your configured entries and corresponding entities:
 
 ![Devices page](/media/devices.png)

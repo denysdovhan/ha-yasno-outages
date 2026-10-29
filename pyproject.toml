@@ -22,6 +22,7 @@ target-version = "py314"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+  "CPY001", # This project does not require per-file copyright notices
   "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
   "D203", # no-blank-line-before-class (incompatible with formatter)
   "D212", # multi-line-summary-first-line (incompatible with formatter)

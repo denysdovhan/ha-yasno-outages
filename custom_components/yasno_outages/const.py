@@ -13,10 +13,22 @@ CONF_GROUP: Final = "group"
 CONF_STREET_ID: Final = "street_id"
 CONF_HOUSE_ID: Final = "house_id"
 CONF_ADDRESS_NAME: Final = "address_name"
+CONF_ADDRESS_GROUP: Final = "address_group"
 CONF_FILTER_PROBABLE: Final = "filter_probable"
 CONF_STATUS_ALL_DAY_EVENTS: Final = "status_all_day_events"
 CONF_CITY: Final = "city"  # Deprecated, use CONF_REGION
 CONF_SERVICE: Final = "service"  # Deprecated, use CONF_PROVIDER
+
+# Location settings belong in entry data, separate from user preferences
+LOCATION_CONFIG_KEYS: Final = (
+    CONF_REGION,
+    CONF_PROVIDER,
+    CONF_GROUP,
+    CONF_STREET_ID,
+    CONF_HOUSE_ID,
+    CONF_ADDRESS_NAME,
+    CONF_ADDRESS_GROUP,
+)
 
 # Config-flow step fields
 CONF_STEP_SETUP_MODE: Final = "setup_mode"

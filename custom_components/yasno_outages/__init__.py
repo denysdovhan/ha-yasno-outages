@@ -6,20 +6,23 @@ import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
-from homeassistant.exceptions import ConfigEntryError
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.loader import async_get_loaded_integration
 
 from .api import YasnoApi, YasnoNotFoundError
 from .const import (
+    CONF_ADDRESS_GROUP,
     CONF_GROUP,
     CONF_HOUSE_ID,
     CONF_PROVIDER,
     CONF_REGION,
     CONF_SERVICE,
     CONF_STREET_ID,
+    LOCATION_CONFIG_KEYS,
 )
 from .coordinator import YasnoOutagesCoordinator
 from .data import YasnoOutagesData
+from .helpers import build_address_data
 from .repairs import (
     async_check_and_create_repair,
     async_create_stale_address_issue,
@@ -74,6 +77,84 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def _async_resolve_group(
+    hass: HomeAssistant,
+    entry: YasnoOutagesConfigEntry,
+    api: YasnoApi,
+    *,
+    region_id: int,
+    provider_id: int,
+) -> tuple[str | None, bool]:
+    """Resolve the group and report whether the address needs repair."""
+    config = {**entry.data, **entry.options}
+    # A cached group must not turn address configuration into group configuration
+    group = config.get(CONF_GROUP)
+    street_id = config.get(CONF_STREET_ID)
+    house_id = config.get(CONF_HOUSE_ID)
+    cached_address = config.get(CONF_ADDRESS_GROUP)
+    if street_id is None and house_id is None and cached_address is None:
+        return group, False
+    if not street_id or not house_id:
+        msg = "Incomplete address; reconfigure integration entry"
+        raise ConfigEntryError(msg)
+
+    try:
+        group = await api.fetch_group_by_address(
+            region_id=region_id,
+            provider_id=provider_id,
+            street_id=street_id,
+            house_id=house_id,
+        )
+    except YasnoNotFoundError as err:
+        current_config = {**entry.data, **entry.options}
+        if any(
+            current_config.get(key) != config.get(key) for key in LOCATION_CONFIG_KEYS
+        ):
+            msg = "Configuration changed during address lookup; retry setup"
+            raise ConfigEntryNotReady(msg) from err
+        await async_create_stale_address_issue(hass, entry)
+        address_data = build_address_data(
+            config,
+            region_id=region_id,
+            provider_id=provider_id,
+            group=group,
+        )
+        if (
+            not isinstance(group, str)
+            or not group.strip()
+            or cached_address != address_data[CONF_ADDRESS_GROUP]
+        ):
+            msg = "Address no longer found; reconfigure integration entry"
+            raise ConfigEntryError(msg) from err
+        return group, True
+
+    current_config = {**entry.data, **entry.options}
+    if any(current_config.get(key) != config.get(key) for key in LOCATION_CONFIG_KEYS):
+        msg = "Configuration changed during address lookup; retry setup"
+        raise ConfigEntryNotReady(msg)
+    if not isinstance(group, str) or not group.strip():
+        group = None
+    address_data = build_address_data(
+        config,
+        region_id=region_id,
+        provider_id=provider_id,
+        group=group,
+    )
+    hass.config_entries.async_update_entry(
+        entry,
+        data={**entry.data, **address_data},
+        options={
+            key: value
+            for key, value in entry.options.items()
+            if key not in LOCATION_CONFIG_KEYS
+        },
+    )
+    if not group:
+        msg = "No group found for address; reconfigure integration entry"
+        raise ConfigEntryError(msg)
+    return group, False
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: YasnoOutagesConfigEntry,
@@ -81,9 +162,45 @@ async def async_setup_entry(
     """Set up a new entry."""
     LOGGER.info("Setup entry: %s", entry)
 
+    # Legacy repairs saved group=None in data and options; reconfigure replaced
+    # data with either a group and no address, or an address and no group key
+    # Only remove those stale options; never reinterpret a validated cache
+    if (
+        entry.options.get(CONF_STREET_ID)
+        and entry.options.get(CONF_HOUSE_ID)
+        and CONF_GROUP in entry.options
+        and entry.options[CONF_GROUP] is None
+        and CONF_ADDRESS_GROUP not in entry.data
+        and CONF_ADDRESS_GROUP not in entry.options
+        and entry.data.get(CONF_REGION)
+        and entry.data.get(CONF_PROVIDER)
+        and (
+            (
+                isinstance(entry.data.get(CONF_GROUP), str)
+                and entry.data[CONF_GROUP].strip()
+                and CONF_STREET_ID not in entry.data
+                and CONF_HOUSE_ID not in entry.data
+            )
+            or (
+                CONF_GROUP not in entry.data
+                and entry.data.get(CONF_STREET_ID)
+                and entry.data.get(CONF_HOUSE_ID)
+            )
+        )
+    ):
+        hass.config_entries.async_update_entry(
+            entry,
+            options={
+                key: value
+                for key, value in entry.options.items()
+                if key not in LOCATION_CONFIG_KEYS
+            },
+        )
+
     # Validate required keys are present
-    region = entry.options.get(CONF_REGION, entry.data.get(CONF_REGION))
-    provider = entry.options.get(CONF_PROVIDER, entry.data.get(CONF_PROVIDER))
+    config = {**entry.data, **entry.options}
+    region = config.get(CONF_REGION)
+    provider = config.get(CONF_PROVIDER)
 
     # Check for other issues (like old API format)
     await async_check_and_create_repair(hass, entry)
@@ -100,6 +217,10 @@ async def async_setup_entry(
     # Setup API for resolving region and provider ids
     bootstrap_api = YasnoApi()
     await bootstrap_api.fetch_regions()
+    current_config = {**entry.data, **entry.options}
+    if any(current_config.get(key) != config.get(key) for key in LOCATION_CONFIG_KEYS):
+        msg = "Configuration changed during region lookup; retry setup"
+        raise ConfigEntryNotReady(msg)
 
     region_data = bootstrap_api.get_region_by_name(region)
     provider_data = bootstrap_api.get_provider_by_name(region, provider)
@@ -110,27 +231,21 @@ async def async_setup_entry(
         )
         return False
 
-    # Resolve group for address if group is not provided
-    group = entry.options.get(CONF_GROUP, entry.data.get(CONF_GROUP))
-    street_id = entry.options.get(CONF_STREET_ID, entry.data.get(CONF_STREET_ID))
-    house_id = entry.options.get(CONF_HOUSE_ID, entry.data.get(CONF_HOUSE_ID))
-    if not group and street_id and house_id:
-        try:
-            group = await bootstrap_api.fetch_group_by_address(
-                region_id=region_data["id"],
-                provider_id=provider_data["id"],
-                street_id=street_id,
-                house_id=house_id,
-            )
-        except YasnoNotFoundError as err:
-            await async_create_stale_address_issue(hass, entry)
-            msg = "Address no longer found; reconfigure integration entry"
-            raise ConfigEntryError(msg) from err
+    group, stale_address = await _async_resolve_group(
+        hass,
+        entry,
+        bootstrap_api,
+        region_id=region_data["id"],
+        provider_id=provider_data["id"],
+    )
 
     # If group is not resolved, return error
     if not group:
         LOGGER.error("Missing group for entry %s", entry.entry_id)
         return False
+
+    # Address resolution may have persisted the group and normalized options
+    resolved_config = {**entry.data, **entry.options}
 
     # Create new API instance with resolved group
     api = YasnoApi(
@@ -139,6 +254,10 @@ async def async_setup_entry(
         group=group,
     )
     await api.fetch_regions()
+
+    if stale_address:
+        # Surface fetch errors before the coordinator can substitute cached data
+        await api.planned.fetch_planned_outages_data()
 
     coordinator = YasnoOutagesCoordinator(hass, entry, api, group=group)
     entry.runtime_data = YasnoOutagesData(
@@ -150,9 +269,29 @@ async def async_setup_entry(
     # First refresh
     await coordinator.async_config_entry_first_refresh()
 
+    current_config = {**entry.data, **entry.options}
+    if any(
+        current_config.get(key) != resolved_config.get(key)
+        for key in LOCATION_CONFIG_KEYS
+    ):
+        await async_delete_stale_address_issue(hass, entry)
+        msg = "Configuration changed during setup; retry setup"
+        raise ConfigEntryNotReady(msg)
+
+    if stale_address:
+        if group not in api.planned.get_groups():
+            msg = "Cached address group is no longer available; reconfigure entry"
+            raise ConfigEntryError(msg)
+        await async_create_stale_address_issue(hass, entry, using_cached_group=True)
+        LOGGER.warning(
+            "Address needs revalidation for entry %s; using its last validated group",
+            entry.entry_id,
+        )
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
-    await async_delete_stale_address_issue(hass, entry)
+    if not stale_address:
+        await async_delete_stale_address_issue(hass, entry)
     return True
 
 

@@ -28,6 +28,7 @@ def _build_entry():
         CONF_GROUP: "1.1",
     }
     entry.options = {}
+    entry.update_listeners = []
     return entry
 
 
@@ -105,12 +106,13 @@ async def test_house_step_updates_entry_and_schedules_reload():
     assert updated_data[CONF_STREET_ID] == 1061
     assert updated_data[CONF_HOUSE_ID] == 26887
     assert updated_data[CONF_ADDRESS_NAME] == "Салютна 2"
-    assert updated_data[CONF_GROUP] is None
+    assert updated_data[CONF_GROUP] == "4.2"
+    assert updated_data["address_group"][CONF_HOUSE_ID] == 26887
     updated_options = update_call.kwargs["options"]
-    assert updated_options[CONF_STREET_ID] == 1061
-    assert updated_options[CONF_HOUSE_ID] == 26887
-    assert updated_options[CONF_ADDRESS_NAME] == "Салютна 2"
-    assert updated_options[CONF_GROUP] is None
+    assert CONF_STREET_ID not in updated_options
+    assert CONF_HOUSE_ID not in updated_options
+    assert CONF_ADDRESS_NAME not in updated_options
+    assert CONF_GROUP not in updated_options
     flow.hass.config_entries.async_schedule_reload.assert_called_once_with(
         entry.entry_id
     )
