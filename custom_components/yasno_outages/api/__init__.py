@@ -35,12 +35,12 @@ class YasnoApi:
         return self._probable
 
     @property
-    def regions_data(self) -> dict | None:
+    def regions_data(self) -> list[dict] | None:
         """Get shared regions data."""
         return self._planned.regions_data
 
     @regions_data.setter
-    def regions_data(self, value: dict | None) -> None:
+    def regions_data(self, value: list[dict] | None) -> None:
         """Set shared regions data for both APIs."""
         self._planned.regions_data = value
         self._probable.regions_data = value
@@ -59,9 +59,17 @@ class YasnoApi:
         """Get region data by name."""
         return self._planned.get_region_by_name(region_name)
 
-    def get_providers_for_region(self, region_name: str) -> list[dict]:
+    def get_region_by_id(self, region_id: int) -> dict | None:
+        """Get region data by its stable identifier."""
+        return self._planned.get_region_by_id(region_id)
+
+    def get_providers_for_region(self, region_id: int) -> list[dict]:
         """Get providers (dsos) for a specific region."""
-        return self._planned.get_providers_for_region(region_name)
+        return self._planned.get_providers_for_region(region_id)
+
+    def get_provider_by_id(self, region_id: int, provider_id: int) -> dict | None:
+        """Get provider data by its region and stable identifier."""
+        return self._planned.get_provider_by_id(region_id, provider_id)
 
     def get_provider_by_name(
         self,

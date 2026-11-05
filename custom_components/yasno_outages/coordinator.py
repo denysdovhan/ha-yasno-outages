@@ -23,8 +23,6 @@ from .const import (
     CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
-    CONF_PROVIDER,
-    CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
     DOMAIN,
     PLANNED_OUTAGE_LOOKAHEAD,
@@ -129,17 +127,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self.translations = {}
 
         # Get configuration values
-        self.region = config_entry.options.get(
-            CONF_REGION,
-            config_entry.data.get(CONF_REGION),
-        )
-        self.provider = config_entry.options.get(
-            CONF_PROVIDER,
-            config_entry.data.get(CONF_PROVIDER),
-        )
-        self.group = group or config_entry.options.get(
-            CONF_GROUP, config_entry.data.get(CONF_GROUP)
-        )
+        self.region_id = api.planned.region_id
+        self.provider_id = api.planned.provider_id
+        self.group = group or config_entry.data.get(CONF_GROUP)
         self.address_name = config_entry.data.get(CONF_ADDRESS_NAME)
         self.filter_probable = config_entry.options.get(
             CONF_FILTER_PROBABLE,
@@ -150,7 +140,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             config_entry.data.get(CONF_STATUS_ALL_DAY_EVENTS, True),
         )
 
-        if not self.region:
+        if not self.region_id:
             region_required_msg = (
                 "Region not set in configuration - this should not happen "
                 "with proper config flow"
@@ -159,7 +149,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             LOGGER.error(region_required_msg)
             raise ValueError(region_error)
 
-        if not self.provider:
+        if not self.provider_id:
             provider_required_msg = (
                 "Provider not set in configuration - this should not happen "
                 "with proper config flow"
@@ -262,7 +252,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     @property
     def region_name(self) -> str:
         """Get the configured region name."""
-        return self.region or ""
+        region = self.api.get_region_by_id(self.region_id)
+        return region["value"] if region else ""
 
     @property
     def provider_name(self) -> str:
@@ -275,16 +266,11 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         if not self.api.regions_data:
             return ""
 
-        region_data = self.api.get_region_by_name(self.region)
-        if not region_data:
-            return ""
-
-        providers = region_data.get("dsos", [])
-        for provider in providers:
-            if (provider_name := provider.get("name", "")) == self.provider:
-                # Cache the simplified name
-                self._provider_name = provider_name
-                return simplify_provider_name(provider_name)
+        provider = self.api.get_provider_by_id(self.region_id, self.provider_id)
+        if provider:
+            # Cache the simplified name
+            self._provider_name = provider["name"]
+            return simplify_provider_name(self._provider_name)
 
         return ""
 
@@ -293,7 +279,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get the current planned event (including NotPlanned events)."""
         try:
             return self.api.planned.get_current_event(dt_utils.now())
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, RUF100
             LOGGER.warning(
                 "Failed to get current event, sensors will show unknown state",
                 exc_info=True,
@@ -406,7 +392,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get an outage event at a given time from provided API."""
         try:
             event = api.get_current_event(at)
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, RUF100
             LOGGER.warning("Failed to get current outage", exc_info=True)
             return None
         if not is_outage_event(event):
@@ -430,7 +416,7 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         """Get outage events within the date range for provided API."""
         try:
             events = api.get_events_between(start_date, end_date)
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, RUF100
             LOGGER.warning(
                 'Failed to get events between "%s" -> "%s"',
                 start_date,

@@ -29,7 +29,9 @@ from .const import (
     CONF_GROUP,
     CONF_HOUSE_ID,
     CONF_PROVIDER,
+    CONF_PROVIDER_ID,
     CONF_REGION,
+    CONF_REGION_ID,
     CONF_STATUS_ALL_DAY_EVENTS,
     CONF_STEP_HOUSE,
     CONF_STEP_HOUSE_QUERY,
@@ -37,6 +39,7 @@ from .const import (
     CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
     DOMAIN,
+    LOCATION_CONFIG_KEYS,
     YASNO_GROUP_URL,
 )
 
@@ -78,12 +81,12 @@ def build_region_schema(
 ) -> vol.Schema:
     """Build the schema for the region selection step."""
     regions = api.get_regions()
-    region_options = [region["value"] for region in regions]
+    region_options = build_select_options(build_lookup_options(regions))
     return vol.Schema(
         {
             vol.Required(
                 CONF_REGION,
-                default=get_config_value(config_entry, CONF_REGION),
+                default=str(get_config_value(config_entry, CONF_REGION_ID, "")),
             ): SelectSelector(
                 SelectSelectorConfig(
                     options=region_options,
@@ -100,15 +103,17 @@ def build_provider_schema(
     data: dict,
 ) -> vol.Schema:
     """Build the schema for the provider selection step."""
-    region = data[CONF_REGION]
-    providers = api.get_providers_for_region(region)
-    provider_options = [provider["name"] for provider in providers]
+    region_id = data[CONF_REGION_ID]
+    providers = api.get_providers_for_region(region_id)
+    provider_options = build_select_options(
+        {str(provider["id"]): provider["name"] for provider in providers}
+    )
 
     return vol.Schema(
         {
             vol.Required(
                 CONF_PROVIDER,
-                default=get_config_value(config_entry, CONF_PROVIDER),
+                default=str(get_config_value(config_entry, CONF_PROVIDER_ID, "")),
             ): SelectSelector(
                 SelectSelectorConfig(
                     options=provider_options,
@@ -251,7 +256,7 @@ class YasnoOutagesOptionsFlow(OptionsFlow):
 class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Yasno Outages."""
 
-    VERSION = 3
+    VERSION = 4
     MINOR_VERSION = 0
 
     def __init__(self) -> None:
@@ -270,17 +275,6 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         """Get the options flow for this handler."""
         return YasnoOutagesOptionsFlow()
 
-    def _get_region_provider_ids(self) -> tuple[int | None, int | None]:
-        """Return region and provider IDs from selected names."""
-        region = self.data[CONF_REGION]
-        provider = self.data[CONF_PROVIDER]
-        region_data = self.api.get_region_by_name(region)
-        provider_data = self.api.get_provider_by_name(region, provider)
-        return (
-            region_data["id"] if region_data else None,
-            provider_data["id"] if provider_data else None,
-        )
-
     def _active_config_entry(self) -> ConfigEntry | None:
         """Return config entry for reconfigure source."""
         if self._is_reconfigure:
@@ -290,8 +284,8 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     def _build_entry_data(self) -> dict[str, Any]:
         """Build config-entry data from current flow data."""
         common_data: dict[str, Any] = {
-            CONF_REGION: self.data[CONF_REGION],
-            CONF_PROVIDER: self.data[CONF_PROVIDER],
+            CONF_REGION_ID: self.data[CONF_REGION_ID],
+            CONF_PROVIDER_ID: self.data[CONF_PROVIDER_ID],
             CONF_FILTER_PROBABLE: self.data[CONF_FILTER_PROBABLE],
             CONF_STATUS_ALL_DAY_EVENTS: self.data[CONF_STATUS_ALL_DAY_EVENTS],
         }
@@ -306,14 +300,18 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def _build_entry_title(self) -> str:
         """Build config-entry title from current flow data."""
+        region = self.api.get_region_by_id(self.data[CONF_REGION_ID])
         if self.data.get(CONF_GROUP):
+            provider = self.api.get_provider_by_id(
+                self.data[CONF_REGION_ID], self.data[CONF_PROVIDER_ID]
+            )
             return build_entry_title(
-                region=self.data[CONF_REGION],
-                provider=self.data[CONF_PROVIDER],
+                region=region["value"],
+                provider=provider["name"],
                 group=self.data[CONF_GROUP],
             )
         return build_address_entry_title(
-            region=self.data[CONF_REGION],
+            region=region["value"],
             street=self._street_name,
             house=self._house_name,
         )
@@ -321,6 +319,8 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     def _build_reconfigure_options(self, config_entry: ConfigEntry) -> dict[str, Any]:
         """Build options map preserving existing preferences."""
         options = dict(config_entry.options)
+        for key in LOCATION_CONFIG_KEYS:
+            options.pop(key, None)
         scan_interval = self.data.get(
             CONF_SCAN_INTERVAL,
             get_config_value(config_entry, CONF_SCAN_INTERVAL, default=15),
@@ -350,7 +350,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             self.data.update(config_entry.options)
 
         if user_input is not None:
-            self.data.update(user_input)
+            self.data[CONF_REGION_ID] = int(user_input[CONF_REGION])
             return await self.async_step_provider()
 
         try:
@@ -368,7 +368,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle the initial step."""
         if user_input is not None:
             LOGGER.debug("Region selected: %s", user_input)
-            self.data.update(user_input)
+            self.data[CONF_REGION_ID] = int(user_input[CONF_REGION])
             return await self.async_step_provider()
 
         await self.api.fetch_regions()
@@ -388,17 +388,17 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle the provider step."""
         if user_input is not None:
             LOGGER.debug("Provider selected: %s", user_input)
-            self.data.update(user_input)
+            self.data[CONF_PROVIDER_ID] = int(user_input[CONF_PROVIDER])
             return await self.async_step_method()
 
-        region = self.data[CONF_REGION]
-        providers = self.api.get_providers_for_region(region)
+        region_id = self.data[CONF_REGION_ID]
+        providers = self.api.get_providers_for_region(region_id)
 
         # If only one provider available, auto-select it and proceed
         if len(providers) == 1:
             provider_name = providers[0]["name"]
             LOGGER.debug("Auto-selecting only available provider: %s", provider_name)
-            self.data[CONF_PROVIDER] = provider_name
+            self.data[CONF_PROVIDER_ID] = providers[0]["id"]
             return await self.async_step_method()
 
         return self.async_show_form(
@@ -440,11 +440,10 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             if not query:
                 errors["base"] = "street_query_required"
             else:
-                region_id, provider_id = self._get_region_provider_ids()
                 try:
                     streets = await self.api.fetch_streets(
-                        region_id=region_id,
-                        provider_id=provider_id,
+                        region_id=self.data[CONF_REGION_ID],
+                        provider_id=self.data[CONF_PROVIDER_ID],
                         query=query,
                     )
                 except Exception:  # noqa: BLE001
@@ -505,12 +504,11 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 self.data[CONF_HOUSE_ID] = int(house_id)
                 self._house_name = house_name
-                region_id, provider_id = self._get_region_provider_ids()
                 street_id = self.data.get(CONF_STREET_ID)
                 try:
                     group = await self.api.fetch_group_by_address(
-                        region_id=region_id,
-                        provider_id=provider_id,
+                        region_id=self.data[CONF_REGION_ID],
+                        provider_id=self.data[CONF_PROVIDER_ID],
                         street_id=street_id,
                         house_id=self.data.get(CONF_HOUSE_ID),
                     )
@@ -539,12 +537,11 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             if not query:
                 errors["base"] = "house_query_required"
             else:
-                region_id, provider_id = self._get_region_provider_ids()
                 street_id = self.data.get(CONF_STREET_ID)
                 try:
                     houses = await self.api.fetch_houses(
-                        region_id=region_id,
-                        provider_id=provider_id,
+                        region_id=self.data[CONF_REGION_ID],
+                        provider_id=self.data[CONF_PROVIDER_ID],
                         street_id=street_id,
                         query=query,
                     )
@@ -607,19 +604,12 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self.async_step_preferences()
 
         # Fetch groups for the selected region/provider
-        region = self.data[CONF_REGION]
-        provider = self.data[CONF_PROVIDER]
-
-        region_data = self.api.get_region_by_name(region)
-        provider_data = self.api.get_provider_by_name(region, provider)
-        groups = []
-        if region_data and provider_data:
-            temp_api = YasnoApi(
-                region_id=region_data["id"],
-                provider_id=provider_data["id"],
-            )
-            await temp_api.planned.fetch_planned_outages_data()
-            groups = temp_api.planned.get_groups()
+        temp_api = YasnoApi(
+            region_id=self.data[CONF_REGION_ID],
+            provider_id=self.data[CONF_PROVIDER_ID],
+        )
+        await temp_api.planned.fetch_planned_outages_data()
+        groups = temp_api.planned.get_groups()
 
         return self.async_show_form(
             step_id="group",

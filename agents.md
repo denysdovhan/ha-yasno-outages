@@ -35,6 +35,7 @@ This repository is a Home Assistant custom integration providing electricity out
 - `const.py` - a file containing constants used throughout the project. Use `homeassistant.const` for commonly used constants.
 - `coordinator.py` - a data fetching coordinator (`DataUpdateCoordinator`). Fetches data from API facade, filters NOT_PLANNED events, transforms to CalendarEvents. Polls API every 15 minutes. Takes API instance as a parameter.
 - `data.py` - defines runtime data types: `YasnoOutagesData` dataclass holding API, coordinator, and integration instances, and `YasnoOutagesConfigEntry` type alias for typed config entries.
+- `migrations.py` - handles legacy entry migration and resolves region/provider names to IDs using cached API data during setup.
 - `entity.py` - a base entity class (`YasnoOutagesEntity`) that is used as a template when creating sensors and calendar. Contains important `DeviceInfo` joining different entities into a single device.
 - `repairs.py` - repair flow for detecting and notifying users about deprecated configuration (API v1 → v2 migration).
 - `manifest.json` - a file declaring an integration manifest.
@@ -291,6 +292,9 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - Calendar events are always sorted by `start` before returning from coordinator getters.
   - Calendar can optionally show all-day events for today/tomorrow statuses if enabled in config.
 - **Config flow**
+  - Config entry v4 stores `region_id` and `provider_id` in data; resolve display names through API ID lookups. Legacy names migrate during setup so API failures remain retryable.
+  - Legacy Kyiv DTEK names migrate by the shared `ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ` name only when exactly one provider matches in the same region.
+  - Location fields belong in data; options hold preferences only. Address mode retains `street_id`, `house_id`, and `address_name`, resolving the group on every setup without persisting it.
   - Multi-step: Region → Service (DSO) → Group
   - Auto-skip: If only one service available, auto-select it and skip to group step
   - Options flow: Same steps as config flow, allows reconfiguration

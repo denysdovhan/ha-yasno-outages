@@ -42,8 +42,8 @@ def config_entry():
     entry = MagicMock()
     entry.entry_id = "test_entry"
     entry.data = {
-        "region": "Київ",
-        "provider": "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»",
+        "region_id": 25,
+        "provider_id": 902,
         "group": "3.1",
     }
     entry.options = {}
@@ -55,6 +55,8 @@ def mock_api():
     """Create a mock API."""
     api = MagicMock()
     api.planned = MagicMock()
+    api.planned.region_id = 25
+    api.planned.provider_id = 902
     api.probable = MagicMock()
     api.regions_data = []
     api.get_region_by_name = MagicMock(return_value=None)
@@ -718,8 +720,8 @@ class TestCoordinatorProviderName:
                 "dsos": [{"name": "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»"}],
             }
         ]
-        coordinator.api.get_region_by_name = MagicMock(
-            return_value=coordinator.api.regions_data[0]
+        coordinator.api.get_provider_by_id = MagicMock(
+            return_value=coordinator.api.regions_data[0]["dsos"][0]
         )
 
         provider_name = coordinator.provider_name

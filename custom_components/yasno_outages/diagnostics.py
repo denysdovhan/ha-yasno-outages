@@ -16,8 +16,8 @@ from .const import (
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_HOUSE_ID,
-    CONF_PROVIDER,
-    CONF_REGION,
+    CONF_PROVIDER_ID,
+    CONF_REGION_ID,
     CONF_STATUS_ALL_DAY_EVENTS,
     CONF_STREET_ID,
 )
@@ -46,8 +46,8 @@ async def async_get_config_entry_diagnostics(
             "title": entry.title,
             "state": str(entry.state),
             "data": {
-                "region": data.get(CONF_REGION),
-                "provider": data.get(CONF_PROVIDER),
+                "region_id": data.get(CONF_REGION_ID),
+                "provider_id": data.get(CONF_PROVIDER_ID),
                 "group": data.get(CONF_GROUP),
                 "street_id": data.get(CONF_STREET_ID),
                 "house_id": data.get(CONF_HOUSE_ID),
@@ -57,8 +57,6 @@ async def async_get_config_entry_diagnostics(
                 CONF_SCAN_INTERVAL: data.get(CONF_SCAN_INTERVAL),
             },
             "options": {
-                "region": entry.options.get(CONF_REGION),
-                "provider": entry.options.get(CONF_PROVIDER),
                 "group": entry.options.get(CONF_GROUP),
                 "street_id": entry.options.get(CONF_STREET_ID),
                 "house_id": entry.options.get(CONF_HOUSE_ID),
@@ -70,9 +68,8 @@ async def async_get_config_entry_diagnostics(
         },
         "coordinator": {
             "last_update_success": coordinator.last_update_success,
-            "region": coordinator.region,
+            "region": coordinator.region_name,
             "region_id": coordinator.region_id,
-            "provider": coordinator.provider,
             "provider_id": coordinator.provider_id,
             "provider_name": coordinator.provider_name,
             "group": coordinator.group,
