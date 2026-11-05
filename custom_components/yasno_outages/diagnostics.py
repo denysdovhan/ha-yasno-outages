@@ -78,10 +78,15 @@ async def async_get_config_entry_diagnostics(
             "current_state": coordinator.current_state,
             "status_today": coordinator.status_today,
             "status_tomorrow": coordinator.status_tomorrow,
-            "schedule_updated_on": coordinator.schedule_updated_on.isoformat(),
-            "next_planned_outage": coordinator.next_planned_outage.isoformat(),
-            "next_probable_outage": coordinator.next_probable_outage.isoformat(),
-            "next_connectivity": coordinator.next_connectivity.isoformat(),
+            **{
+                key: value.isoformat() if value is not None else None
+                for key, value in (
+                    ("schedule_updated_on", coordinator.schedule_updated_on),
+                    ("next_planned_outage", coordinator.next_planned_outage),
+                    ("next_probable_outage", coordinator.next_probable_outage),
+                    ("next_connectivity", coordinator.next_connectivity),
+                )
+            },
         },
         "api": {
             "region_id": api.planned.region_id,
