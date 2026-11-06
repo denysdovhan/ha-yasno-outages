@@ -22,13 +22,16 @@ from .const import (
     CONF_GROUP,
     CONF_HOUSE_ID,
     CONF_PROVIDER,
+    CONF_PROVIDER_ID,
     CONF_REGION,
+    CONF_REGION_ID,
     CONF_STEP_HOUSE,
     CONF_STEP_HOUSE_QUERY,
     CONF_STEP_STREET,
     CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
     DOMAIN,
+    LOCATION_CONFIG_KEYS,
 )
 
 if TYPE_CHECKING:
@@ -46,8 +49,8 @@ class StaleAddressRepairFlow(RepairsFlow):
         """Initialize the stale-address repair flow."""
         self._entry = entry
         self._api = YasnoApi()
-        self._region_id: int | None = None
-        self._provider_id: int | None = None
+        self._region_id: int | None = self._get_config_value(CONF_REGION_ID)
+        self._provider_id: int | None = self._get_config_value(CONF_PROVIDER_ID)
         self._street_options: dict[str, str] = {}
         self._house_options: dict[str, str] = {}
         self._street_name = ""
@@ -60,16 +63,20 @@ class StaleAddressRepairFlow(RepairsFlow):
         return self._entry.options.get(key, self._entry.data.get(key))
 
     async def _resolve_region_provider_ids(self) -> bool:
-        """Resolve selected region/provider names into ids."""
+        """Validate saved IDs or resolve legacy region/provider names."""
+        if self._api.regions_data is None:
+            await self._api.fetch_regions()
         if self._region_id and self._provider_id:
-            return True
+            return (
+                self._api.get_provider_by_id(self._region_id, self._provider_id)
+                is not None
+            )
 
         region = self._get_config_value(CONF_REGION)
         provider = self._get_config_value(CONF_PROVIDER)
         if not region or not provider:
             return False
 
-        await self._api.fetch_regions()
         region_data = self._api.get_region_by_name(region)
         provider_data = self._api.get_provider_by_name(region, provider)
         if not region_data or not provider_data:
@@ -235,6 +242,8 @@ class StaleAddressRepairFlow(RepairsFlow):
                         updated_data = dict(self._entry.data)
                         updated_data.update(
                             {
+                                CONF_REGION_ID: self._region_id,
+                                CONF_PROVIDER_ID: self._provider_id,
                                 CONF_STREET_ID: self._street_id,
                                 CONF_HOUSE_ID: resolved_house_id,
                                 CONF_ADDRESS_NAME: (
@@ -243,23 +252,19 @@ class StaleAddressRepairFlow(RepairsFlow):
                                 CONF_GROUP: None,
                             }
                         )
-                        region = self._get_config_value(CONF_REGION)
+                        updated_data.pop(CONF_REGION, None)
+                        updated_data.pop(CONF_PROVIDER, None)
+                        region = self._api.get_region_by_id(self._region_id)
                         title = build_address_entry_title(
-                            region=region if isinstance(region, str) else "",
+                            region=region["value"],
                             street=self._street_name,
                             house=self._house_name,
                         )
-                        updated_options = dict(self._entry.options)
-                        updated_options.update(
-                            {
-                                CONF_STREET_ID: self._street_id,
-                                CONF_HOUSE_ID: resolved_house_id,
-                                CONF_ADDRESS_NAME: (
-                                    f"{self._street_name} {self._house_name}"
-                                ),
-                                CONF_GROUP: None,
-                            }
-                        )
+                        updated_options = {
+                            key: value
+                            for key, value in self._entry.options.items()
+                            if key not in LOCATION_CONFIG_KEYS
+                        }
                         self.hass.config_entries.async_update_entry(
                             self._entry,
                             data=updated_data,
@@ -317,8 +322,11 @@ async def async_check_and_create_repair(
     # Check for missing required configuration keys
     region = entry.options.get(CONF_REGION, entry.data.get(CONF_REGION))
     provider = entry.options.get(CONF_PROVIDER, entry.data.get(CONF_PROVIDER))
+    region_id = entry.data.get(CONF_REGION_ID)
+    provider_id = entry.data.get(CONF_PROVIDER_ID)
 
-    if not region or not provider:
+    has_ids = region_id is not None and provider_id is not None
+    if not has_ids and (not region or not provider):
         LOGGER.info(
             "Missing required keys for entry %s, creating repair",
             entry.entry_id,

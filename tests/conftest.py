@@ -24,7 +24,9 @@ def regions_data():
     return [
         {
             "hasCities": False,
-            "dsos": [{"id": 902, "name": "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»"}],
+            "dsos": [
+                {"id": 902, "name": "ТОВ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»"},  # noqa: RUF001
+            ],
             "id": 25,
             "value": "Київ",
         },

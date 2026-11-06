@@ -213,21 +213,22 @@ class TestBaseYasnoApiRegions:
     def test_get_providers_for_region(self, api, regions_data):
         """Test getting providers for region."""
         api.regions_data = regions_data
-        providers = api.get_providers_for_region("Київ")
+        providers = api.get_providers_for_region(25)
         assert len(providers) == 1
         assert providers[0]["id"] == TEST_PROVIDER_ID
 
     def test_get_providers_for_nonexistent_region(self, api, regions_data):
         """Test getting providers for non-existent region."""
         api.regions_data = regions_data
-        providers = api.get_providers_for_region("NonExistent")
+        providers = api.get_providers_for_region(999)
         assert providers == []
 
     def test_get_provider_by_name(self, api, regions_data):
         """Test getting provider by name."""
         api.regions_data = regions_data
         provider = api.get_provider_by_name(
-            "Київ", "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»"
+            "Київ",
+            "ТОВ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»",  # noqa: RUF001
         )
         assert provider is not None
         assert provider["id"] == TEST_PROVIDER_ID
@@ -237,6 +238,17 @@ class TestBaseYasnoApiRegions:
         api.regions_data = regions_data
         provider = api.get_provider_by_name("Київ", "NonExistent")
         assert provider is None
+
+    def test_get_names_by_ids(self, api, regions_data):
+        api.regions_data = regions_data
+        regions_data[0]["value"] = "Renamed region"
+        regions_data[0]["dsos"][0]["name"] = "Renamed provider"
+
+        assert api.get_region_by_id(25)["value"] == "Renamed region"
+        assert api.get_provider_by_id(25, 902)["name"] == "Renamed provider"
+        assert api.get_region_by_id(999) is None
+        assert api.get_provider_by_id(3, 902) is None
+        assert api.get_provider_by_id(999, 902) is None
 
 
 class TestBaseYasnoApiTimeConversion:

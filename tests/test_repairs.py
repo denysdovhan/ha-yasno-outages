@@ -76,7 +76,7 @@ async def test_repair_init_ignores_empty_user_input():
     assert result["step_id"] == "street_query"
 
 
-async def test_house_step_updates_entry_and_schedules_reload():
+async def test_house_step_updates_entry_and_schedules_reload(regions_data):
     """House selection updates config entry and schedules reload."""
     entry = _build_entry()
     entry.options = {
@@ -84,6 +84,7 @@ async def test_house_step_updates_entry_and_schedules_reload():
         CONF_STREET_ID: 1,
         CONF_HOUSE_ID: 2,
         CONF_ADDRESS_NAME: "Old 1",
+        "scan_interval": 5,
     }
     flow = StaleAddressRepairFlow(entry)
     flow.hass = MagicMock()
@@ -96,6 +97,7 @@ async def test_house_step_updates_entry_and_schedules_reload():
     flow._street_name = "Салютна"
     flow._house_options = {"26887": "2"}
     flow._api.fetch_group_by_address = AsyncMock(return_value="4.2")
+    flow._api.regions_data = regions_data
 
     result = await flow.async_step_house({"house": "26887"})
 
@@ -107,10 +109,8 @@ async def test_house_step_updates_entry_and_schedules_reload():
     assert updated_data[CONF_ADDRESS_NAME] == "Салютна 2"
     assert updated_data[CONF_GROUP] is None
     updated_options = update_call.kwargs["options"]
-    assert updated_options[CONF_STREET_ID] == 1061
-    assert updated_options[CONF_HOUSE_ID] == 26887
-    assert updated_options[CONF_ADDRESS_NAME] == "Салютна 2"
-    assert updated_options[CONF_GROUP] is None
+    assert updated_options == {"scan_interval": 5}
+    assert update_call.kwargs["title"] == "Yasno Київ Салютна 2"
     flow.hass.config_entries.async_schedule_reload.assert_called_once_with(
         entry.entry_id
     )
@@ -130,3 +130,21 @@ async def test_repair_street_query_uses_legacy_address_fallback():
     assert result["type"] == "form"
     assert result["step_id"] == "street_query"
     assert result["description_placeholders"]["current_address"] == "Хрещатик 10Б"
+
+
+async def test_address_repair_uses_saved_region_provider_ids(regions_data):
+    entry = _build_entry()
+    entry.data.update({"region_id": 25, "provider_id": 902})
+    flow = StaleAddressRepairFlow(entry)
+    flow.handler = DOMAIN
+    flow.flow_id = "flow-1"
+    flow._api.fetch_regions = AsyncMock()
+    flow._api.regions_data = regions_data
+
+    result = await flow.async_step_init()
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "street_query"
+    assert result["errors"] == {}
+    assert flow._region_id == 25
+    assert flow._provider_id == 902
