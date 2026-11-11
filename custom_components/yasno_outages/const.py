@@ -7,16 +7,30 @@ NAME: Final = "Yasno Outages"
 YASNO_GROUP_URL: Final = "https://static.yasno.ua/kyiv/outages"
 
 # Configuration option
-CONF_REGION: Final = "region"
-CONF_PROVIDER: Final = "provider"
+CONF_REGION_ID: Final = "region_id"
+CONF_PROVIDER_ID: Final = "provider_id"
 CONF_GROUP: Final = "group"
 CONF_STREET_ID: Final = "street_id"
 CONF_HOUSE_ID: Final = "house_id"
 CONF_ADDRESS_NAME: Final = "address_name"
 CONF_FILTER_PROBABLE: Final = "filter_probable"
 CONF_STATUS_ALL_DAY_EVENTS: Final = "status_all_day_events"
+
+CONF_REGION: Final = "region"  # Deprecated in entry data, use CONF_REGION_ID
+CONF_PROVIDER: Final = "provider"  # Deprecated in entry data, use CONF_PROVIDER_ID
 CONF_CITY: Final = "city"  # Deprecated, use CONF_REGION
 CONF_SERVICE: Final = "service"  # Deprecated, use CONF_PROVIDER
+
+LOCATION_CONFIG_KEYS: Final = (
+    CONF_REGION,
+    CONF_PROVIDER,
+    CONF_REGION_ID,
+    CONF_PROVIDER_ID,
+    CONF_GROUP,
+    CONF_STREET_ID,
+    CONF_HOUSE_ID,
+    CONF_ADDRESS_NAME,
+)
 
 # Config-flow step fields
 CONF_STEP_SETUP_MODE: Final = "setup_mode"

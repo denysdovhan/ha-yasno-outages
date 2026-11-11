@@ -5,21 +5,24 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from homeassistant.config_entries import SOURCE_RECONFIGURE
 from homeassistant.const import Platform
-from homeassistant.exceptions import ConfigEntryError
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.loader import async_get_loaded_integration
 
-from .api import YasnoApi, YasnoNotFoundError
+from .api import YasnoApi, YasnoApiError, YasnoNotFoundError
 from .const import (
     CONF_GROUP,
     CONF_HOUSE_ID,
     CONF_PROVIDER,
+    CONF_PROVIDER_ID,
     CONF_REGION,
-    CONF_SERVICE,
+    CONF_REGION_ID,
     CONF_STREET_ID,
 )
 from .coordinator import YasnoOutagesCoordinator
 from .data import YasnoOutagesData
+from .migrations import async_migrate_entry_data, async_migrate_legacy_entry
 from .repairs import (
     async_check_and_create_repair,
     async_create_stale_address_issue,
@@ -39,39 +42,7 @@ PLATFORMS = [Platform.CALENDAR, Platform.SENSOR]
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate config entry to new version."""
-    LOGGER.info(
-        "Migrating entry %s from version %s",
-        entry.entry_id,
-        entry.version,
-    )
-
-    # Migration from version 1 to 2: rename service -> provider
-    if entry.version == 1:
-        updated_data = dict(entry.data)
-        updated_options = dict(entry.options)
-
-        # Migrate service to provider in data
-        if CONF_SERVICE in updated_data:
-            LOGGER.info("Migrating service to provider in data")
-            updated_data[CONF_PROVIDER] = updated_data.pop(CONF_SERVICE)
-
-        # Migrate service to provider in options
-        if CONF_SERVICE in updated_options:
-            LOGGER.info("Migrating service to provider in options")
-            updated_options[CONF_PROVIDER] = updated_options.pop(CONF_SERVICE)
-
-        # Update entry with new data and version
-        hass.config_entries.async_update_entry(
-            entry,
-            data=updated_data,
-            options=updated_options,
-            version=2,
-        )
-
-        LOGGER.info("Migration to version 2 complete")
-
-    LOGGER.info("Entry %s now at version %s", entry.entry_id, entry.version)
-    return True
+    return await async_migrate_legacy_entry(hass, entry)
 
 
 async def async_setup_entry(
@@ -84,11 +55,13 @@ async def async_setup_entry(
     # Validate required keys are present
     region = entry.options.get(CONF_REGION, entry.data.get(CONF_REGION))
     provider = entry.options.get(CONF_PROVIDER, entry.data.get(CONF_PROVIDER))
+    region_id = entry.options.get(CONF_REGION_ID, entry.data.get(CONF_REGION_ID))
+    provider_id = entry.options.get(CONF_PROVIDER_ID, entry.data.get(CONF_PROVIDER_ID))
 
     # Check for other issues (like old API format)
     await async_check_and_create_repair(hass, entry)
 
-    if not region or not provider:
+    if (region_id is None or provider_id is None) and (not region or not provider):
         LOGGER.error(
             "Missing required keys for entry %s: region=%s, provider=%s",
             entry.entry_id,
@@ -99,26 +72,33 @@ async def async_setup_entry(
 
     # Setup API for resolving region and provider ids
     bootstrap_api = YasnoApi()
-    await bootstrap_api.fetch_regions()
+    try:
+        await bootstrap_api.fetch_regions()
+    except (YasnoApiError, TimeoutError) as err:
+        raise ConfigEntryNotReady from err
 
-    region_data = bootstrap_api.get_region_by_name(region)
-    provider_data = bootstrap_api.get_provider_by_name(region, provider)
-    if not region_data or not provider_data:
-        LOGGER.error(
-            "Failed to resolve region/provider ids for entry %s",
-            entry.entry_id,
-        )
-        return False
+    try:
+        async_migrate_entry_data(hass, entry, bootstrap_api)
+    except ConfigEntryError:
+        if not any(entry.async_get_active_flows(hass, {SOURCE_RECONFIGURE})):
+            await hass.config_entries.flow.async_init(
+                entry.domain,
+                context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+            )
+        raise
+
+    region_id = entry.data[CONF_REGION_ID]
+    provider_id = entry.data[CONF_PROVIDER_ID]
 
     # Resolve group for address if group is not provided
-    group = entry.options.get(CONF_GROUP, entry.data.get(CONF_GROUP))
-    street_id = entry.options.get(CONF_STREET_ID, entry.data.get(CONF_STREET_ID))
-    house_id = entry.options.get(CONF_HOUSE_ID, entry.data.get(CONF_HOUSE_ID))
+    group = entry.data.get(CONF_GROUP)
+    street_id = entry.data.get(CONF_STREET_ID)
+    house_id = entry.data.get(CONF_HOUSE_ID)
     if not group and street_id and house_id:
         try:
             group = await bootstrap_api.fetch_group_by_address(
-                region_id=region_data["id"],
-                provider_id=provider_data["id"],
+                region_id=region_id,
+                provider_id=provider_id,
                 street_id=street_id,
                 house_id=house_id,
             )
@@ -134,11 +114,11 @@ async def async_setup_entry(
 
     # Create new API instance with resolved group
     api = YasnoApi(
-        region_id=region_data["id"],
-        provider_id=provider_data["id"],
+        region_id=region_id,
+        provider_id=provider_id,
         group=group,
     )
-    await api.fetch_regions()
+    api.regions_data = bootstrap_api.regions_data
 
     coordinator = YasnoOutagesCoordinator(hass, entry, api, group=group)
     entry.runtime_data = YasnoOutagesData(

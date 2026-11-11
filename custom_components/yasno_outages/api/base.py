@@ -75,7 +75,7 @@ class BaseYasnoApi(ABC):
         """Fetch regions and providers data."""
         async with aiohttp.ClientSession() as session:
             data = await self._get_data(session, REGIONS_ENDPOINT)
-        if not isinstance(data, list):
+        if not isinstance(data, list) or not data:
             msg = "Unexpected regions response format"
             raise YasnoApiError(msg)
         self.regions_data = data
@@ -93,18 +93,35 @@ class BaseYasnoApi(ABC):
                 return region
         return None
 
-    def get_providers_for_region(self, region_name: str) -> list[dict]:
+    def get_region_by_id(self, region_id: int) -> dict | None:
+        """Get region data by its stable identifier."""
+        for region in self.get_regions():
+            if region["id"] == region_id:
+                return region
+        return None
+
+    def get_providers_for_region(self, region_id: int) -> list[dict]:
         """Get providers (dsos) for a specific region."""
-        region = self.get_region_by_name(region_name)
+        region = self.get_region_by_id(region_id)
         if not region:
             return []
         return region.get("dsos", [])
 
     def get_provider_by_name(self, region_name: str, provider_name: str) -> dict | None:
         """Get provider (dso) data by region and provider name."""
-        providers = self.get_providers_for_region(region_name)
+        region = self.get_region_by_name(region_name)
+        if not region:
+            return None
+        providers = self.get_providers_for_region(region["id"])
         for provider in providers:
             if provider["name"] == provider_name:
+                return provider
+        return None
+
+    def get_provider_by_id(self, region_id: int, provider_id: int) -> dict | None:
+        """Get provider data by its region and stable identifier."""
+        for provider in self.get_providers_for_region(region_id):
+            if provider["id"] == provider_id:
                 return provider
         return None
 

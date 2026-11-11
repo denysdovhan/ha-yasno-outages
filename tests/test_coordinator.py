@@ -1,7 +1,9 @@
 """Tests for coordinator functionality."""
 
 import datetime
+import json
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 from zoneinfo import ZoneInfo
 
@@ -11,6 +13,7 @@ from homeassistant.const import STATE_UNKNOWN
 from custom_components.yasno_outages.api import (
     OutageEvent,
     OutageEventType,
+    YasnoApi,
     YasnoApiError,
 )
 from custom_components.yasno_outages.api.const import (
@@ -34,6 +37,9 @@ from custom_components.yasno_outages.coordinator import (
     is_outage_event,
     simplify_provider_name,
 )
+from custom_components.yasno_outages.diagnostics import (
+    async_get_config_entry_diagnostics,
+)
 
 
 @pytest.fixture
@@ -42,8 +48,8 @@ def config_entry():
     entry = MagicMock()
     entry.entry_id = "test_entry"
     entry.data = {
-        "region": "Київ",
-        "provider": "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»",
+        "region_id": 25,
+        "provider_id": 902,
         "group": "3.1",
     }
     entry.options = {}
@@ -55,6 +61,8 @@ def mock_api():
     """Create a mock API."""
     api = MagicMock()
     api.planned = MagicMock()
+    api.planned.region_id = 25
+    api.planned.provider_id = 902
     api.probable = MagicMock()
     api.regions_data = []
     api.get_region_by_name = MagicMock(return_value=None)
@@ -718,14 +726,39 @@ class TestCoordinatorProviderName:
                 "dsos": [{"name": "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»"}],
             }
         ]
-        coordinator.api.get_region_by_name = MagicMock(
-            return_value=coordinator.api.regions_data[0]
+        coordinator.api.get_provider_by_id = MagicMock(
+            return_value=coordinator.api.regions_data[0]["dsos"][0]
         )
 
         provider_name = coordinator.provider_name
 
         assert provider_name == "ДТЕК"
         assert coordinator._provider_name == "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»"
+
+
+async def test_diagnostics_with_id_only_entry_and_no_outages(
+    coordinator, config_entry, regions_data
+):
+    api = YasnoApi(region_id=25, provider_id=902, group="3.1")
+    api.regions_data = regions_data
+    coordinator.api = api
+    config_entry.version = 4
+    config_entry.minor_version = 0
+    config_entry.domain = "yasno_outages"
+    config_entry.title = "Yasno test"
+    config_entry.runtime_data = SimpleNamespace(api=api, coordinator=coordinator)
+
+    diagnostics = await async_get_config_entry_diagnostics(MagicMock(), config_entry)
+
+    assert diagnostics["entry"]["data"]["region_id"] == 25
+    assert diagnostics["coordinator"]["region_id"] == 25
+    assert diagnostics["coordinator"]["provider_id"] == 902
+    assert diagnostics["coordinator"]["region"] == "Київ"
+    assert diagnostics["coordinator"]["provider_name"] == "ДТЕК"
+    assert diagnostics["coordinator"]["next_connectivity"] is None
+    regions_data[0]["value"] = "Renamed region"
+    assert coordinator.region_name == "Renamed region"
+    json.dumps(diagnostics)
 
 
 class TestCoordinatorDataCaching:

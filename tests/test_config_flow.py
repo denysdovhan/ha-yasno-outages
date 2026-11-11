@@ -65,14 +65,49 @@ async def test_reconfigure_handles_regions_fetch_error(reconfigure_entry):
     assert result["errors"]["base"] == "cannot_connect"
 
 
-async def test_reconfigure_updates_entry_not_creates_new(reconfigure_entry):
+@pytest.mark.parametrize(("region_id", "provider_id"), [(25, 902), (3, 303)])
+async def test_region_and_provider_selectors_use_ids(
+    regions_data, region_id, provider_id
+):
+    flow = YasnoOutagesConfigFlow()
+    flow.context = {"source": "user"}
+    flow.api.regions_data = regions_data
+    flow.api.fetch_regions = AsyncMock()
+
+    result = await flow.async_step_user()
+    selection = {CONF_REGION: str(region_id)}
+    assert result["data_schema"](selection) == selection
+    result = await flow.async_step_user(selection)
+    if result["step_id"] == "provider":
+        selection = {CONF_PROVIDER: str(provider_id)}
+        assert result["data_schema"](selection) == selection
+        result = await flow.async_step_provider(selection)
+    assert result["step_id"] == "method"
+    assert flow.data["region_id"] == region_id
+    assert flow.data["provider_id"] == provider_id
+
+    await flow.async_step_group({CONF_GROUP: "15.1"})
+    result = await flow.async_step_preferences(
+        {CONF_FILTER_PROBABLE: True, CONF_STATUS_ALL_DAY_EVENTS: True}
+    )
+    assert result["data"]["region_id"] == region_id
+    assert result["data"]["provider_id"] == provider_id
+    assert CONF_REGION not in result["data"]
+    assert CONF_PROVIDER not in result["data"]
+    assert flow.api.get_region_by_id(region_id)["value"] in result["title"]
+
+
+async def test_reconfigure_updates_entry_not_creates_new(
+    reconfigure_entry, regions_data
+):
     """Reconfigure updates current entry and does not create new entry."""
     flow = YasnoOutagesConfigFlow()
     flow.context = {"source": SOURCE_RECONFIGURE}
     flow._is_reconfigure = True
+    flow.api.regions_data = regions_data
     flow.data = {
-        CONF_REGION: "Київ",
-        CONF_PROVIDER: "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»",
+        "region_id": 25,
+        "provider_id": 902,
         CONF_GROUP: "1.1",
         CONF_FILTER_PROBABLE: False,
         CONF_STATUS_ALL_DAY_EVENTS: False,
@@ -89,14 +124,83 @@ async def test_reconfigure_updates_entry_not_creates_new(reconfigure_entry):
     assert flow.async_update_reload_and_abort.call_args.args[0] == reconfigure_entry
 
 
-async def test_reconfigure_address_mode_clears_group(reconfigure_entry):
+@pytest.mark.parametrize("mode", ["group", "address"])
+async def test_new_entry_stores_region_provider_ids(regions_data, mode):
+    flow = YasnoOutagesConfigFlow()
+    flow.context = {"source": "user"}
+    flow.api.regions_data = regions_data
+    flow.data = {
+        "region_id": 25,
+        "provider_id": 902,
+        CONF_FILTER_PROBABLE: True,
+        CONF_STATUS_ALL_DAY_EVENTS: True,
+    }
+    if mode == "group":
+        flow.data[CONF_GROUP] = "15.1"
+    else:
+        flow.data.update({CONF_STREET_ID: 1061, CONF_HOUSE_ID: 26887})
+
+    result = await flow.async_step_preferences({})
+
+    assert result["data"]["region_id"] == 25
+    assert result["data"]["provider_id"] == 902
+    assert CONF_REGION not in result["data"]
+    assert CONF_PROVIDER not in result["data"]
+
+
+async def test_reconfigure_replaces_ids_and_legacy_options(
+    reconfigure_entry, regions_data
+):
+    reconfigure_entry.data.update({"region_id": 25, "provider_id": 902})
+    reconfigure_entry.options.update(
+        {
+            CONF_REGION: "Київ",
+            CONF_PROVIDER: "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»",
+            "region_id": 25,
+            "provider_id": 902,
+            CONF_GROUP: None,
+            CONF_STREET_ID: 1,
+            CONF_HOUSE_ID: 2,
+            CONF_ADDRESS_NAME: "Old address",
+        }
+    )
+    flow = YasnoOutagesConfigFlow()
+    flow.context = {"source": SOURCE_RECONFIGURE}
+    flow._is_reconfigure = True
+    flow.api.regions_data = regions_data
+    flow.data = {
+        **reconfigure_entry.data,
+        "region_id": 3,
+        "provider_id": 303,
+        CONF_GROUP: "1.1",
+        CONF_FILTER_PROBABLE: True,
+        CONF_STATUS_ALL_DAY_EVENTS: True,
+    }
+    flow.async_update_reload_and_abort = MagicMock(return_value={"type": "abort"})
+
+    with patch.object(flow, "_get_reconfigure_entry", return_value=reconfigure_entry):
+        await flow.async_step_preferences({})
+
+    changes = flow.async_update_reload_and_abort.call_args.kwargs
+    effective_config = {**changes["data"], **changes["options"]}
+    assert effective_config["region_id"] == 3
+    assert effective_config["provider_id"] == 303
+    assert CONF_REGION not in effective_config
+    assert CONF_PROVIDER not in effective_config
+    assert effective_config[CONF_GROUP] == "1.1"
+    assert CONF_STREET_ID not in effective_config
+    assert CONF_HOUSE_ID not in effective_config
+
+
+async def test_reconfigure_address_mode_clears_group(reconfigure_entry, regions_data):
     """Address reconfigure clears group and stores address fields."""
     flow = YasnoOutagesConfigFlow()
     flow.context = {"source": SOURCE_RECONFIGURE}
     flow._is_reconfigure = True
+    flow.api.regions_data = regions_data
     flow.data = {
-        CONF_REGION: "Київ",
-        CONF_PROVIDER: "ПРАТ «ДТЕК КИЇВСЬКІ ЕЛЕКТРОМЕРЕЖІ»",
+        "region_id": 25,
+        "provider_id": 902,
         CONF_GROUP: "3.1",
     }
     flow._street_name = "Салютна"
