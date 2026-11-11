@@ -9,10 +9,13 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from homeassistant.const import STATE_UNKNOWN
+from homeassistant.core import HomeAssistant
 
 from custom_components.yasno_outages.api import (
     OutageEvent,
     OutageEventType,
+    PlannedOutagesApi,
+    ProbableOutagesApi,
     YasnoApi,
     YasnoApiError,
 )
@@ -23,7 +26,9 @@ from custom_components.yasno_outages.api.const import (
     API_STATUS_WAITING_FOR_SCHEDULE,
 )
 from custom_components.yasno_outages.api.models import OutageSource
+from custom_components.yasno_outages.calendar import YasnoPlannedOutagesCalendar
 from custom_components.yasno_outages.const import (
+    CONF_PRESERVE_SCHEDULE,
     STATE_NORMAL,
     STATE_OUTAGE,
     STATE_STATUS_EMERGENCY_SHUTDOWNS,
@@ -63,6 +68,8 @@ def mock_api():
     api.planned = MagicMock()
     api.planned.region_id = 25
     api.planned.provider_id = 902
+    api.planned.get_today_date.return_value = None
+    api.planned.get_tomorrow_date.return_value = None
     api.probable = MagicMock()
     api.regions_data = []
     api.get_region_by_name = MagicMock(return_value=None)
@@ -759,6 +766,137 @@ async def test_diagnostics_with_id_only_entry_and_no_outages(
     regions_data[0]["value"] = "Renamed region"
     assert coordinator.region_name == "Renamed region"
     json.dumps(diagnostics)
+
+
+@pytest.mark.parametrize(
+    ("options", "reloaded_group"),
+    [
+        pytest.param({}, "3.1", id="same-group"),
+        pytest.param({}, "3.2", id="changed-group"),
+        pytest.param({CONF_PRESERVE_SCHEDULE: False}, "3.1", id="disabled"),
+    ],
+)
+async def test_calendar_preserves_only_the_matching_emergency_schedule(
+    config_entry, today, options, reloaded_group, tmp_path
+):
+    config_entry.options = options
+
+    def new_coordinator(group):
+        hass = HomeAssistant(str(tmp_path))
+        api = YasnoApi(region_id=25, provider_id=902, group=group)
+        return YasnoOutagesCoordinator(hass, config_entry, api, group=group)
+
+    tomorrow = today + timedelta(days=1)
+    next_day = tomorrow + timedelta(days=1)
+    original_slots = [{"start": 480, "end": 600, "type": "Definite"}]
+    published = {
+        "today": {"date": today.isoformat(), "status": API_STATUS_NO_OUTAGES},
+        "tomorrow": {
+            "date": tomorrow.isoformat(),
+            "status": API_STATUS_SCHEDULE_APPLIES,
+            "slots": original_slots,
+        },
+    }
+    emergency = {
+        "today": {
+            "date": tomorrow.isoformat(),
+            "status": API_STATUS_EMERGENCY_SHUTDOWNS,
+            "slots": [],
+        },
+        "tomorrow": {
+            "date": next_day.isoformat(),
+            "status": API_STATUS_EMERGENCY_SHUTDOWNS,
+        },
+    }
+    revised = {
+        **emergency,
+        "today": {
+            **emergency["today"],
+            "slots": [{"start": 660, "end": 720, "type": "Definite"}],
+        },
+    }
+    waiting = {
+        **emergency,
+        "today": {**emergency["today"], "status": API_STATUS_WAITING_FOR_SCHEDULE},
+    }
+    no_outage_slots = {
+        **emergency,
+        "today": {
+            **emergency["today"],
+            "slots": [{"start": 0, "end": 1440, "type": "NotPlanned"}],
+        },
+    }
+    invalid = {
+        **emergency,
+        "today": {
+            **emergency["today"],
+            "status": API_STATUS_SCHEDULE_APPLIES,
+            "slots": [{"type": "Unknown"}],
+        },
+    }
+    cancelled = {
+        **emergency,
+        "today": {**emergency["today"], "status": API_STATUS_NO_OUTAGES},
+    }
+    restored_hour = 8 if not options and reloaded_group == "3.1" else None
+    revised_hour = 11 if not options else None
+    responses = (
+        (published, 8),
+        (waiting, None),
+        (emergency, restored_hour),
+        (emergency, restored_hour),
+        (no_outage_slots, None),
+        (emergency, None),
+        (revised, 11),
+        (invalid, None),
+        (emergency, revised_hour),
+        (cancelled, None),
+        (emergency, None),
+    )
+
+    with (
+        patch("homeassistant.helpers.frame.report_usage"),
+        patch.object(
+            PlannedOutagesApi,
+            "_get_data",
+            side_effect=[{"3.1": days, "3.2": days} for days, _ in responses],
+        ),
+        patch.object(ProbableOutagesApi, "fetch_data"),
+        patch.object(YasnoOutagesCoordinator, "async_fetch_translations"),
+        patch(
+            "custom_components.yasno_outages.coordinator.dt_utils.now",
+            return_value=tomorrow + timedelta(hours=9),
+        ),
+    ):
+        coordinator = new_coordinator("3.1")
+        calendar = YasnoPlannedOutagesCalendar(coordinator)
+        for response, expected_hour in responses:
+            if response is waiting:
+                coordinator = new_coordinator(reloaded_group)
+                calendar = YasnoPlannedOutagesCalendar(coordinator)
+            await coordinator._async_update_data()
+            events = await calendar.async_get_events(
+                coordinator.hass, tomorrow, next_day + timedelta(days=1)
+            )
+            slots = [event for event in events if not event.all_day]
+            assert [event.start.hour for event in slots] == (
+                [] if expected_hour is None else [expected_hour]
+            )
+            if slots:
+                assert slots[0].uid == f"planned-{slots[0].start.isoformat()}"
+                assert slots[0].summary == "Outage"
+                assert slots[0].description == "Definite"
+            if response is emergency:
+                assert (
+                    coordinator.api.planned.get_events_between(tomorrow, next_day) == []
+                )
+                assert coordinator.status_today == STATE_STATUS_EMERGENCY_SHUTDOWNS
+                assert STATE_STATUS_EMERGENCY_SHUTDOWNS in {
+                    event.description for event in events if event.all_day
+                }
+                assert coordinator.current_state == STATE_UNKNOWN
+                assert coordinator.next_planned_outage is None
+                assert coordinator.next_connectivity is None
 
 
 class TestCoordinatorDataCaching:

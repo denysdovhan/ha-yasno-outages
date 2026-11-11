@@ -5,12 +5,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from homeassistant.config_entries import SOURCE_RECONFIGURE
 
-from custom_components.yasno_outages.config_flow import YasnoOutagesConfigFlow
+from custom_components.yasno_outages.config_flow import (
+    YasnoOutagesConfigFlow,
+    YasnoOutagesOptionsFlow,
+)
 from custom_components.yasno_outages.const import (
     CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_HOUSE_ID,
+    CONF_PRESERVE_SCHEDULE,
     CONF_PROVIDER,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
@@ -33,6 +37,28 @@ def reconfigure_entry():
         CONF_STATUS_ALL_DAY_EVENTS: True,
     }
     return entry
+
+
+async def test_options_flow_can_enable_and_disable_emergency_schedule(
+    reconfigure_entry,
+):
+    with patch.object(YasnoOutagesOptionsFlow, "config_entry", reconfigure_entry):
+        flow = YasnoOutagesOptionsFlow()
+        form = await flow.async_step_init()
+        assert form["data_schema"]({})[CONF_PRESERVE_SCHEDULE] is True
+
+        disabled = form["data_schema"]({CONF_PRESERVE_SCHEDULE: False})
+        result = await flow.async_step_init(disabled)
+        assert result["data"][CONF_PRESERVE_SCHEDULE] is False
+
+        reconfigure_entry.options = result["data"]
+        flow = YasnoOutagesOptionsFlow()
+        form = await flow.async_step_init()
+        assert form["data_schema"]({})[CONF_PRESERVE_SCHEDULE] is False
+
+        enabled = form["data_schema"]({CONF_PRESERVE_SCHEDULE: True})
+        result = await flow.async_step_init(enabled)
+        assert result["data"][CONF_PRESERVE_SCHEDULE] is True
 
 
 async def test_reconfigure_starts_from_reconfigure_step(reconfigure_entry):
@@ -88,10 +114,15 @@ async def test_region_and_provider_selectors_use_ids(
 
     await flow.async_step_group({CONF_GROUP: "15.1"})
     result = await flow.async_step_preferences(
-        {CONF_FILTER_PROBABLE: True, CONF_STATUS_ALL_DAY_EVENTS: True}
+        {
+            CONF_FILTER_PROBABLE: True,
+            CONF_STATUS_ALL_DAY_EVENTS: True,
+            CONF_PRESERVE_SCHEDULE: True,
+        }
     )
     assert result["data"]["region_id"] == region_id
     assert result["data"]["provider_id"] == provider_id
+    assert result["data"][CONF_PRESERVE_SCHEDULE] is True
     assert CONF_REGION not in result["data"]
     assert CONF_PROVIDER not in result["data"]
     assert flow.api.get_region_by_id(region_id)["value"] in result["title"]
@@ -109,14 +140,13 @@ async def test_reconfigure_updates_entry_not_creates_new(
         "region_id": 25,
         "provider_id": 902,
         CONF_GROUP: "1.1",
-        CONF_FILTER_PROBABLE: False,
-        CONF_STATUS_ALL_DAY_EVENTS: False,
     }
     flow.async_update_reload_and_abort = MagicMock(return_value={"type": "abort"})
     flow.async_create_entry = MagicMock(return_value={"type": "create_entry"})
 
     with patch.object(flow, "_get_reconfigure_entry", return_value=reconfigure_entry):
-        result = await flow.async_step_preferences(user_input={})
+        form = await flow.async_step_preferences()
+        result = await flow.async_step_preferences(form["data_schema"]({}))
 
     assert result["type"] == "abort"
     flow.async_update_reload_and_abort.assert_called_once()
@@ -132,18 +162,18 @@ async def test_new_entry_stores_region_provider_ids(regions_data, mode):
     flow.data = {
         "region_id": 25,
         "provider_id": 902,
-        CONF_FILTER_PROBABLE: True,
-        CONF_STATUS_ALL_DAY_EVENTS: True,
     }
     if mode == "group":
         flow.data[CONF_GROUP] = "15.1"
     else:
         flow.data.update({CONF_STREET_ID: 1061, CONF_HOUSE_ID: 26887})
 
-    result = await flow.async_step_preferences({})
+    form = await flow.async_step_preferences()
+    result = await flow.async_step_preferences(form["data_schema"]({}))
 
     assert result["data"]["region_id"] == 25
     assert result["data"]["provider_id"] == 902
+    assert result["data"][CONF_PRESERVE_SCHEDULE] is True
     assert CONF_REGION not in result["data"]
     assert CONF_PROVIDER not in result["data"]
 
@@ -162,6 +192,7 @@ async def test_reconfigure_replaces_ids_and_legacy_options(
             CONF_STREET_ID: 1,
             CONF_HOUSE_ID: 2,
             CONF_ADDRESS_NAME: "Old address",
+            CONF_PRESERVE_SCHEDULE: True,
         }
     )
     flow = YasnoOutagesConfigFlow()
@@ -173,18 +204,20 @@ async def test_reconfigure_replaces_ids_and_legacy_options(
         "region_id": 3,
         "provider_id": 303,
         CONF_GROUP: "1.1",
-        CONF_FILTER_PROBABLE: True,
-        CONF_STATUS_ALL_DAY_EVENTS: True,
     }
     flow.async_update_reload_and_abort = MagicMock(return_value={"type": "abort"})
 
     with patch.object(flow, "_get_reconfigure_entry", return_value=reconfigure_entry):
-        await flow.async_step_preferences({})
+        form = await flow.async_step_preferences()
+        preferences = form["data_schema"]({CONF_PRESERVE_SCHEDULE: False})
+        await flow.async_step_preferences(preferences)
 
     changes = flow.async_update_reload_and_abort.call_args.kwargs
     effective_config = {**changes["data"], **changes["options"]}
     assert effective_config["region_id"] == 3
     assert effective_config["provider_id"] == 303
+    assert changes["data"][CONF_PRESERVE_SCHEDULE] is False
+    assert changes["options"][CONF_PRESERVE_SCHEDULE] is False
     assert CONF_REGION not in effective_config
     assert CONF_PROVIDER not in effective_config
     assert effective_config[CONF_GROUP] == "1.1"
@@ -211,12 +244,8 @@ async def test_reconfigure_address_mode_clears_group(reconfigure_entry, regions_
 
     with patch.object(flow, "_get_reconfigure_entry", return_value=reconfigure_entry):
         await flow.async_step_address()
-        await flow.async_step_preferences(
-            user_input={
-                CONF_FILTER_PROBABLE: True,
-                CONF_STATUS_ALL_DAY_EVENTS: True,
-            }
-        )
+        form = await flow.async_step_preferences()
+        await flow.async_step_preferences(form["data_schema"]({}))
 
     data = flow.async_update_reload_and_abort.call_args.kwargs["data"]
     assert CONF_GROUP not in data

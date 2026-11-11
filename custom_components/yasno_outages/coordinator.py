@@ -7,6 +7,8 @@ import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.const import CONF_SCAN_INTERVAL, STATE_UNKNOWN
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_utils
@@ -17,13 +19,16 @@ from .api.const import (
     API_STATUS_NO_OUTAGES,
     API_STATUS_SCHEDULE_APPLIES,
     API_STATUS_WAITING_FOR_SCHEDULE,
+    UA_TZ,
 )
 from .api.models import OutageSource
 from .const import (
     CONF_ADDRESS_NAME,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
+    CONF_PRESERVE_SCHEDULE,
     CONF_STATUS_ALL_DAY_EVENTS,
+    DEFAULT_PRESERVE_SCHEDULE,
     DOMAIN,
     PLANNED_OUTAGE_LOOKAHEAD,
     PLANNED_OUTAGE_TEXT_FALLBACK,
@@ -69,6 +74,13 @@ STATUS_STATE_MAP: dict[str, str] = {
     API_STATUS_WAITING_FOR_SCHEDULE: STATE_STATUS_WAITING_FOR_SCHEDULE,
     API_STATUS_EMERGENCY_SHUTDOWNS: STATE_STATUS_EMERGENCY_SHUTDOWNS,
 }
+
+
+def create_schedule_store(
+    hass: HomeAssistant, entry_id: str
+) -> Store[dict[str, list[list[float]]]]:
+    """Create the store for one entry's last known schedule."""
+    return Store(hass, 1, f"{DOMAIN}.schedule.{entry_id}", atomic_writes=True)
 
 
 def is_outage_event(event: OutageEvent | None) -> bool:
@@ -139,6 +151,12 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             CONF_STATUS_ALL_DAY_EVENTS,
             config_entry.data.get(CONF_STATUS_ALL_DAY_EVENTS, True),
         )
+        self.preserve_schedule = config_entry.options.get(
+            CONF_PRESERVE_SCHEDULE,
+            config_entry.data.get(CONF_PRESERVE_SCHEDULE, DEFAULT_PRESERVE_SCHEDULE),
+        )
+        self._last_planned_events: dict[datetime.date, list[OutageEvent]] | None = None
+        self._preserved_events: list[OutageEvent] = []
 
         if not self.region_id:
             region_required_msg = (
@@ -168,6 +186,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             raise ValueError(group_error)
 
         self._provider_name = ""  # Cache the provider name
+        self._schedule_location = f"{self.region_id}/{self.provider_id}/{self.group}"
+        self._schedule_store = create_schedule_store(hass, config_entry.entry_id)
 
         # Use the provided API instance
         self.api = api
@@ -188,6 +208,9 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 "Failed to fetch planned outages, using cached data", exc_info=True
             )
             self.api.planned.planned_outages_data = planned_cache
+        else:
+            if self.preserve_schedule:
+                await self._async_update_preserved_schedule()
 
         # Fetch probable outages data
         try:
@@ -197,6 +220,100 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
                 "Failed to fetch probable outages, using cached data", exc_info=True
             )
             self.api.probable.probable_outages_data = probable_cache
+
+    async def _async_load_planned_schedule(
+        self,
+    ) -> dict[datetime.date, list[OutageEvent]]:
+        """Load outage events for the entry's current region, provider, and group."""
+        events_by_date: dict[datetime.date, list[OutageEvent]] = {}
+        try:
+            stored = await self._schedule_store.async_load()
+            if not isinstance(stored, dict):
+                return events_by_date
+
+            for start_timestamp, end_timestamp in stored.get(
+                self._schedule_location, []
+            ):
+                event = OutageEvent(
+                    event_type=OutageEventType.DEFINITE,
+                    start=datetime.datetime.fromtimestamp(start_timestamp, UA_TZ),
+                    end=datetime.datetime.fromtimestamp(end_timestamp, UA_TZ),
+                    source=OutageSource.PLANNED,
+                )
+                events_by_date.setdefault(event.start.date(), []).append(event)
+        except HomeAssistantError, OSError, OverflowError, TypeError, ValueError:
+            LOGGER.warning("Could not load the preserved schedule", exc_info=True)
+            return {}
+
+        return events_by_date
+
+    def _read_planned_schedule(
+        self,
+    ) -> tuple[dict[datetime.date, str | None], list[OutageEvent]]:
+        """Read the reported days and their slots, including non-outage slots."""
+        reported_days = (
+            (self.today_date, self.status_today),
+            (self.tomorrow_date, self.status_tomorrow),
+        )
+        statuses = {date: status for date, status in reported_days if date is not None}
+        if not statuses:
+            return {}, []
+
+        start = datetime.datetime.combine(min(statuses), datetime.time.min, UA_TZ)
+        end = datetime.datetime.combine(
+            max(statuses) + datetime.timedelta(days=1), datetime.time.min, UA_TZ
+        )
+        return statuses, self.api.planned.get_events_between(start, end)
+
+    async def _async_update_preserved_schedule(self) -> None:
+        """Keep the latest usable schedule by date and track emergency fallbacks."""
+        self._preserved_events = []
+        try:
+            statuses, live_slots = self._read_planned_schedule()
+        except KeyError, OverflowError, TypeError, ValueError:
+            LOGGER.debug("Failed to read planned schedule for the cache", exc_info=True)
+            return
+
+        if not statuses:
+            return
+
+        cached_outages = self._last_planned_events
+        if cached_outages is None:
+            cached_outages = await self._async_load_planned_schedule()
+
+        latest_outages = {}
+        for date, status in sorted(statuses.items()):
+            if status == STATE_STATUS_NO_OUTAGES:
+                continue
+
+            day_slots = [slot for slot in live_slots if slot.start.date() == date]
+            if day_slots:
+                outages = [slot for slot in day_slots if is_outage_event(slot)]
+            else:
+                outages = cached_outages.get(date, [])
+
+            if not outages:
+                continue
+
+            latest_outages[date] = outages
+            if not day_slots and status == STATE_STATUS_EMERGENCY_SHUTDOWNS:
+                self._preserved_events.extend(outages)
+
+        self._last_planned_events = latest_outages
+        if latest_outages != cached_outages:
+            await self._async_save_planned_schedule(latest_outages)
+
+    async def _async_save_planned_schedule(
+        self,
+        outages_by_date: dict[datetime.date, list[OutageEvent]],
+    ) -> None:
+        """Save the latest outage intervals for this entry's schedule."""
+        intervals = [
+            [event.start.timestamp(), event.end.timestamp()]
+            for outages in outages_by_date.values()
+            for event in outages
+        ]
+        await self._schedule_store.async_save({self._schedule_location: intervals})
 
     def _event_to_state(self, event: OutageEvent | None) -> str:
         """Map outage event to electricity state."""
@@ -435,6 +552,23 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     ) -> list[OutageEvent]:
         """Get all planned events (filtering out NOT_PLANNED)."""
         return self.get_events_between(self.api.planned, start_date, end_date)
+
+    def get_preserved_events_between(
+        self,
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
+    ) -> list[OutageEvent]:
+        """Get cached outage events that overlap the requested calendar range."""
+        if not self._preserved_events:
+            return []
+
+        start = self.api.planned.to_ua_time(start_date).timestamp()
+        end = self.api.planned.to_ua_time(end_date).timestamp()
+        return [
+            event
+            for event in self._preserved_events
+            if event.start.timestamp() <= end and event.end.timestamp() >= start
+        ]
 
     def get_probable_events_between(
         self,

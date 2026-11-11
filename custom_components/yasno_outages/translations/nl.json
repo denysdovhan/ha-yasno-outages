@@ -80,12 +80,14 @@
         "data": {
           "scan_interval": "Updatefrequentie",
           "filter_probable": "Verberg waarschijnlijke onderbrekingen op geplande dagen",
-          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+          "status_all_day_events": "Toon status-evenementen voor de hele dag",
+          "preserve_schedule": "Behoud het laatste schema bij noodafschakelingen"
         },
         "data_description": {
           "scan_interval": "Aantal minuten tussen updates",
           "filter_probable": "Verbergt waarschijnlijke onderbrekingen in de kalender op dagen waarop een gepland schema beschikbaar is",
-          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven"
+          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van de onderbrekingen van vandaag en morgen beschrijven",
+          "preserve_schedule": "Toont het laatst bekende schema voor dezelfde datum in de kalender als Yasno een noodafschakeling zonder tijdvakken meldt. Deze tijden kunnen verouderd zijn."
         }
       },
       "group": {
@@ -116,12 +118,14 @@
         "data": {
           "scan_interval": "Updatefrequentie",
           "filter_probable": "Verberg waarschijnlijke onderbrekingen wanneer een gepland schema beschikbaar is",
-          "status_all_day_events": "Toon status-evenementen voor de hele dag"
+          "status_all_day_events": "Toon status-evenementen voor de hele dag",
+          "preserve_schedule": "Behoud het laatste schema bij noodafschakelingen"
         },
         "data_description": {
           "scan_interval": "Aantal minuten tussen updates",
           "filter_probable": "Verbergt waarschijnlijke onderbrekingen als er een gepland schema is",
-          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven"
+          "status_all_day_events": "Voegt kalenderitems voor de hele dag toe die de status van vandaag en morgen beschrijven",
+          "preserve_schedule": "Toont het laatst bekende schema voor dezelfde datum in de kalender als Yasno een noodafschakeling zonder tijdvakken meldt. Deze tijden kunnen verouderd zijn."
         }
       }
     }

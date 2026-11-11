@@ -20,7 +20,7 @@ from .const import (
     CONF_REGION_ID,
     CONF_STREET_ID,
 )
-from .coordinator import YasnoOutagesCoordinator
+from .coordinator import YasnoOutagesCoordinator, create_schedule_store
 from .data import YasnoOutagesData
 from .migrations import async_migrate_entry_data, async_migrate_legacy_entry
 from .repairs import (
@@ -151,3 +151,8 @@ async def async_unload_entry(
     """Handle removal of an entry."""
     LOGGER.info("Unload entry: %s", entry)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove the entry's stored schedule."""
+    await create_schedule_store(hass, entry.entry_id).async_remove()

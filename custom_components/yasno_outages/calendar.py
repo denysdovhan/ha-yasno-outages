@@ -145,6 +145,12 @@ class YasnoPlannedOutagesCalendar(YasnoOutagesEntity, CalendarEntity):
         events = self.coordinator.get_planned_events_between(start_date, end_date)
         events = merge_consecutive_outages(events)
 
+        if preserved := self.coordinator.get_preserved_events_between(
+            start_date, end_date
+        ):
+            events.extend(merge_consecutive_outages(preserved))
+            events.sort(key=lambda event: event.start.timestamp())
+
         calendar_events = [
             to_calendar_event(self.coordinator, event) for event in events
         ]
