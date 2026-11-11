@@ -14,7 +14,9 @@ CONF_STREET_ID: Final = "street_id"
 CONF_HOUSE_ID: Final = "house_id"
 CONF_ADDRESS_NAME: Final = "address_name"
 CONF_FILTER_PROBABLE: Final = "filter_probable"
+CONF_PRESERVE_SCHEDULE: Final = "preserve_schedule"
 CONF_STATUS_ALL_DAY_EVENTS: Final = "status_all_day_events"
+DEFAULT_PRESERVE_SCHEDULE: Final = True
 
 CONF_REGION: Final = "region"  # Deprecated in entry data, use CONF_REGION_ID
 CONF_PROVIDER: Final = "provider"  # Deprecated in entry data, use CONF_PROVIDER_ID
@@ -82,7 +84,7 @@ TRANSLATION_KEY_STATUS_EMERGENCY_SHUTDOWNS: Final = (
     f"component.{DOMAIN}.common.status_emergency_shutdowns"
 )
 # Text fallbacks
-PLANNED_OUTAGE_TEXT_FALLBACK: Final = "Planned Outage"
+PLANNED_OUTAGE_TEXT_FALLBACK: Final = "Outage"
 PROBABLE_OUTAGE_TEXT_FALLBACK: Final = "Probable Outage"
 STATUS_NO_OUTAGES_TEXT_FALLBACK: Final = "No Outages"
 STATUS_SCHEDULE_APPLIES_TEXT_FALLBACK: Final = "Schedule Applies"

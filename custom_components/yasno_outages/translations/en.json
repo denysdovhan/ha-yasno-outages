@@ -80,12 +80,14 @@
         "data": {
           "scan_interval": "Update interval",
           "filter_probable": "Hide probable outages for planned days",
-          "status_all_day_events": "Show status all-day events"
+          "status_all_day_events": "Show status all-day events",
+          "preserve_schedule": "Keep the last schedule during emergency outages"
         },
         "data_description": {
           "scan_interval": "The number of minutes between updates",
           "filter_probable": "Hides probable outages in the calendar for days when a planned schedule is available",
-          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status"
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's outage status",
+          "preserve_schedule": "Shows the last known schedule for the same date in the calendar when Yasno reports an emergency without time slots. These times may be outdated."
         }
       },
       "group": {
@@ -116,12 +118,14 @@
         "data": {
           "scan_interval": "Update interval",
           "filter_probable": "Hide probable outages when planned schedule is available",
-          "status_all_day_events": "Show status all-day events"
+          "status_all_day_events": "Show status all-day events",
+          "preserve_schedule": "Keep the last schedule during emergency outages"
         },
         "data_description": {
           "scan_interval": "The number of minutes between updates",
           "filter_probable": "Hides probable outages when planned schedule exists for a day",
-          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status"
+          "status_all_day_events": "Adds all-day calendar entries describing today's and tomorrow's status",
+          "preserve_schedule": "Shows the last known schedule for the same date in the calendar when Yasno reports an emergency without time slots. These times may be outdated."
         }
       }
     }

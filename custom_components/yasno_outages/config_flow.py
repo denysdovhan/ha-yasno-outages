@@ -28,6 +28,7 @@ from .const import (
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_HOUSE_ID,
+    CONF_PRESERVE_SCHEDULE,
     CONF_PROVIDER,
     CONF_PROVIDER_ID,
     CONF_REGION,
@@ -38,6 +39,7 @@ from .const import (
     CONF_STEP_STREET,
     CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
+    DEFAULT_PRESERVE_SCHEDULE,
     DOMAIN,
     LOCATION_CONFIG_KEYS,
     YASNO_GROUP_URL,
@@ -228,6 +230,14 @@ def build_preferences_schema(
                     default=True,
                 ),
             ): bool,
+            vol.Required(
+                CONF_PRESERVE_SCHEDULE,
+                default=get_config_value(
+                    config_entry,
+                    CONF_PRESERVE_SCHEDULE,
+                    default=DEFAULT_PRESERVE_SCHEDULE,
+                ),
+            ): bool,
         },
     )
 
@@ -288,6 +298,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             CONF_PROVIDER_ID: self.data[CONF_PROVIDER_ID],
             CONF_FILTER_PROBABLE: self.data[CONF_FILTER_PROBABLE],
             CONF_STATUS_ALL_DAY_EVENTS: self.data[CONF_STATUS_ALL_DAY_EVENTS],
+            CONF_PRESERVE_SCHEDULE: self.data[CONF_PRESERVE_SCHEDULE],
         }
         if self.data.get(CONF_GROUP):
             return {**common_data, CONF_GROUP: self.data[CONF_GROUP]}
@@ -330,6 +341,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                 CONF_SCAN_INTERVAL: scan_interval,
                 CONF_FILTER_PROBABLE: self.data[CONF_FILTER_PROBABLE],
                 CONF_STATUS_ALL_DAY_EVENTS: self.data[CONF_STATUS_ALL_DAY_EVENTS],
+                CONF_PRESERVE_SCHEDULE: self.data[CONF_PRESERVE_SCHEDULE],
             }
         )
         return options

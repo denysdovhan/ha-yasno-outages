@@ -4,11 +4,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.config_entries import SOURCE_RECONFIGURE
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 
-from custom_components.yasno_outages import async_migrate_entry, async_setup_entry
+from custom_components.yasno_outages import (
+    async_migrate_entry,
+    async_remove_entry,
+    async_setup_entry,
+)
 from custom_components.yasno_outages.api import YasnoApiError, YasnoNotFoundError
 from custom_components.yasno_outages.const import DOMAIN
+from custom_components.yasno_outages.coordinator import create_schedule_store
 
 
 @pytest.fixture
@@ -47,6 +53,16 @@ def config_entry():
     entry.async_on_unload = MagicMock()
     entry.async_get_active_flows.return_value = []
     return entry
+
+
+async def test_removing_entry_deletes_preserved_schedule(config_entry, tmp_path):
+    hass = HomeAssistant(str(tmp_path))
+    store = create_schedule_store(hass, config_entry.entry_id)
+    await store.async_save({"25/902/3.1": [[1.0, 2.0]]})
+
+    await async_remove_entry(hass, config_entry)
+
+    assert await store.async_load() is None
 
 
 async def test_setup_fails_with_stale_address_issue(hass, config_entry):
