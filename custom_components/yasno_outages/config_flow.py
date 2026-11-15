@@ -28,6 +28,7 @@ from .const import (
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_HOUSE_ID,
+    CONF_HOUSE_NAME,
     CONF_PRESERVE_SCHEDULE,
     CONF_PROVIDER,
     CONF_PROVIDER_ID,
@@ -39,6 +40,7 @@ from .const import (
     CONF_STEP_STREET,
     CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
+    CONF_STREET_NAME,
     DEFAULT_PRESERVE_SCHEDULE,
     DOMAIN,
     LOCATION_CONFIG_KEYS,
@@ -307,6 +309,8 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
             CONF_STREET_ID: self.data[CONF_STREET_ID],
             CONF_HOUSE_ID: self.data[CONF_HOUSE_ID],
             CONF_ADDRESS_NAME: f"{self._street_name} {self._house_name}",
+            CONF_STREET_NAME: self._street_name,
+            CONF_HOUSE_NAME: self._house_name,
         }
 
     def _build_entry_title(self) -> str:

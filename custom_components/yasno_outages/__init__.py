@@ -14,11 +14,13 @@ from .api import YasnoApi, YasnoApiError, YasnoNotFoundError
 from .const import (
     CONF_GROUP,
     CONF_HOUSE_ID,
+    CONF_HOUSE_NAME,
     CONF_PROVIDER,
     CONF_PROVIDER_ID,
     CONF_REGION,
     CONF_REGION_ID,
     CONF_STREET_ID,
+    CONF_STREET_NAME,
 )
 from .coordinator import YasnoOutagesCoordinator, create_schedule_store
 from .data import YasnoOutagesData
@@ -43,6 +45,46 @@ PLATFORMS = [Platform.CALENDAR, Platform.SENSOR]
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate config entry to new version."""
     return await async_migrate_legacy_entry(hass, entry)
+
+
+async def _async_reresolve_address(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    api: YasnoApi,
+    region_id: int,
+    provider_id: int,
+) -> str | None:
+    """Refresh stale street/house IDs from saved names; return the group."""
+    street_name = entry.data.get(CONF_STREET_NAME)
+    house_name = entry.data.get(CONF_HOUSE_NAME)
+    if not street_name or not house_name:
+        return None
+    try:
+        ids = await api.find_address_ids(
+            region_id, provider_id, street_name, house_name
+        )
+        if ids is None:
+            return None
+        street_id, house_id = ids
+        group = await api.fetch_group_by_address(
+            region_id=region_id,
+            provider_id=provider_id,
+            street_id=street_id,
+            house_id=house_id,
+        )
+    except YasnoNotFoundError:
+        return None
+    except (YasnoApiError, TimeoutError) as err:
+        raise ConfigEntryNotReady from err
+
+    hass.config_entries.async_update_entry(
+        entry,
+        data={**entry.data, CONF_STREET_ID: street_id, CONF_HOUSE_ID: house_id},
+    )
+    LOGGER.warning(
+        "Address IDs changed upstream; re-resolved %s %s", street_name, house_name
+    )
+    return group
 
 
 async def async_setup_entry(
@@ -103,9 +145,13 @@ async def async_setup_entry(
                 house_id=house_id,
             )
         except YasnoNotFoundError as err:
-            await async_create_stale_address_issue(hass, entry)
-            msg = "Address no longer found; reconfigure integration entry"
-            raise ConfigEntryError(msg) from err
+            group = await _async_reresolve_address(
+                hass, entry, bootstrap_api, region_id, provider_id
+            )
+            if not group:
+                await async_create_stale_address_issue(hass, entry)
+                msg = "Address no longer found; reconfigure integration entry"
+                raise ConfigEntryError(msg) from err
 
     # If group is not resolved, return error
     if not group:

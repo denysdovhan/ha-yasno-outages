@@ -223,6 +223,33 @@ class BaseYasnoApi(ABC):
 
         return f"{group}.{subgroup}"
 
+    async def find_address_ids(
+        self,
+        region_id: int | None,
+        provider_id: int | None,
+        street_name: str,
+        house_name: str,
+    ) -> tuple[int, int] | None:
+        """Return (street_id, house_id) only if each name matches exactly once."""
+        streets = await self.fetch_streets(region_id, provider_id, street_name)
+        street = self._single_exact_match(streets, street_name)
+        if street is None:
+            return None
+        houses = await self.fetch_houses(
+            region_id, provider_id, street["id"], house_name
+        )
+        house = self._single_exact_match(houses, house_name)
+        if house is None:
+            return None
+        return street["id"], house["id"]
+
+    @staticmethod
+    def _single_exact_match(items: list[dict], name: str) -> dict | None:
+        """Return the only item whose value equals name, else None."""
+        target = name.strip().casefold()
+        matches = [i for i in items if str(i["value"]).strip().casefold() == target]
+        return matches[0] if len(matches) == 1 else None
+
     def get_next_event(
         self,
         at: datetime.datetime,

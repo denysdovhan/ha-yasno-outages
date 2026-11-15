@@ -13,6 +13,8 @@ CONF_GROUP: Final = "group"
 CONF_STREET_ID: Final = "street_id"
 CONF_HOUSE_ID: Final = "house_id"
 CONF_ADDRESS_NAME: Final = "address_name"
+CONF_STREET_NAME: Final = "street_name"
+CONF_HOUSE_NAME: Final = "house_name"
 CONF_FILTER_PROBABLE: Final = "filter_probable"
 CONF_PRESERVE_SCHEDULE: Final = "preserve_schedule"
 CONF_STATUS_ALL_DAY_EVENTS: Final = "status_all_day_events"
@@ -32,6 +34,8 @@ LOCATION_CONFIG_KEYS: Final = (
     CONF_STREET_ID,
     CONF_HOUSE_ID,
     CONF_ADDRESS_NAME,
+    CONF_STREET_NAME,
+    CONF_HOUSE_NAME,
 )
 
 # Config-flow step fields

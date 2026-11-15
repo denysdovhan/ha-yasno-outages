@@ -21,6 +21,7 @@ from .const import (
     CONF_ADDRESS_NAME,
     CONF_GROUP,
     CONF_HOUSE_ID,
+    CONF_HOUSE_NAME,
     CONF_PROVIDER,
     CONF_PROVIDER_ID,
     CONF_REGION,
@@ -30,6 +31,7 @@ from .const import (
     CONF_STEP_STREET,
     CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
+    CONF_STREET_NAME,
     DOMAIN,
     LOCATION_CONFIG_KEYS,
 )
@@ -249,6 +251,8 @@ class StaleAddressRepairFlow(RepairsFlow):
                                 CONF_ADDRESS_NAME: (
                                     f"{self._street_name} {self._house_name}"
                                 ),
+                                CONF_STREET_NAME: self._street_name,
+                                CONF_HOUSE_NAME: self._house_name,
                                 CONF_GROUP: None,
                             }
                         )
