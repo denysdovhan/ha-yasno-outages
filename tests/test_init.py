@@ -400,3 +400,77 @@ async def test_legacy_migration_resolves_names_during_setup(
     assert "provider" not in config_entry.data
     assert "service" not in config_entry.data
     assert config_entry.options == {"scan_interval": 5}
+
+
+async def test_address_setup_reresolves_ids_from_saved_names(
+    hass, config_entry, setup_dependencies, regions_data
+):
+    config_entry.data = {
+        "region_id": 25,
+        "provider_id": 902,
+        "street_id": 1061,
+        "house_id": 26887,
+        "street_name": "Салютна",
+        "house_name": "2",
+    }
+    config_entry.version = 4
+    config_entry.minor_version = 0
+    request, create_issue = setup_dependencies
+    request.side_effect = [
+        regions_data,
+        YasnoNotFoundError("gone"),
+        [{"id": 2000, "value": "Салютна"}, {"id": 2001, "value": "Салютна 2"}],
+        [{"id": 777, "value": "2"}, {"id": 778, "value": "2Б"}],
+        {"group": 1, "subgroup": 1},
+    ]
+
+    assert await async_setup_entry(hass, config_entry) is True
+    assert config_entry.data["street_id"] == 2000
+    assert config_entry.data["house_id"] == 777
+    assert config_entry.runtime_data.api.planned.group == "1.1"
+    create_issue.assert_not_called()
+
+
+def _address_entry_with_names(config_entry):
+    config_entry.data = {
+        "region_id": 25,
+        "provider_id": 902,
+        "street_id": 1061,
+        "house_id": 26887,
+        "street_name": "Салютна",
+        "house_name": "2",
+    }
+    config_entry.version = 4
+    config_entry.minor_version = 0
+
+
+async def test_address_setup_falls_back_to_repair_without_a_name_match(
+    hass, config_entry, setup_dependencies, regions_data
+):
+    _address_entry_with_names(config_entry)
+    request, create_issue = setup_dependencies
+    request.side_effect = [regions_data, YasnoNotFoundError("gone"), []]
+
+    with pytest.raises(ConfigEntryError):
+        await async_setup_entry(hass, config_entry)
+
+    create_issue.assert_called_once()
+    assert config_entry.data["street_id"] == 1061
+    assert config_entry.data["house_id"] == 26887
+
+
+async def test_address_reresolve_retries_on_network_error(
+    hass, config_entry, setup_dependencies, regions_data
+):
+    _address_entry_with_names(config_entry)
+    request, create_issue = setup_dependencies
+    request.side_effect = [
+        regions_data,
+        YasnoNotFoundError("gone"),
+        YasnoApiError("down"),
+    ]
+
+    with pytest.raises(ConfigEntryNotReady):
+        await async_setup_entry(hass, config_entry)
+
+    create_issue.assert_not_called()

@@ -388,3 +388,9 @@ class TestBaseYasnoApiNextEvent:
         at = today.replace(hour=8)
         next_event = api.get_next_event(at, event_type=OutageEventType.DEFINITE)
         assert next_event == event2
+
+
+async def test_find_address_ids_rejects_ambiguous_match(api):
+    streets = [{"id": 1, "value": "Салютна"}, {"id": 2, "value": "салютна"}]
+    with patch.object(api, "fetch_streets", AsyncMock(return_value=streets)):
+        assert await api.find_address_ids(25, 902, "Салютна", "2") is None

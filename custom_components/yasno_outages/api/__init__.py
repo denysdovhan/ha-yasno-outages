@@ -118,6 +118,18 @@ class YasnoApi:
             house_id,
         )
 
+    async def find_address_ids(
+        self,
+        region_id: int | None,
+        provider_id: int | None,
+        street_name: str,
+        house_name: str,
+    ) -> tuple[int, int] | None:
+        """Re-resolve street/house IDs from saved names."""
+        return await self._planned.find_address_ids(
+            region_id, provider_id, street_name, house_name
+        )
+
 
 __all__ = [
     "OutageEvent",
