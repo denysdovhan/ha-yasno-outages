@@ -19,6 +19,7 @@ from .config_flow import (
 )
 from .const import (
     CONF_ADDRESS_NAME,
+    CONF_CITY_ID,
     CONF_GROUP,
     CONF_HOUSE_ID,
     CONF_PROVIDER,
@@ -51,6 +52,7 @@ class StaleAddressRepairFlow(RepairsFlow):
         self._api = YasnoApi()
         self._region_id: int | None = self._get_config_value(CONF_REGION_ID)
         self._provider_id: int | None = self._get_config_value(CONF_PROVIDER_ID)
+        self._city_id: int | None = self._get_config_value(CONF_CITY_ID)
         self._street_options: dict[str, str] = {}
         self._house_options: dict[str, str] = {}
         self._street_name = ""
@@ -130,6 +132,7 @@ class StaleAddressRepairFlow(RepairsFlow):
                         region_id=self._region_id,
                         provider_id=self._provider_id,
                         query=query,
+                        city_id=self._city_id,
                     )
                 except Exception:  # noqa: BLE001
                     errors["base"] = "cannot_connect"
@@ -194,6 +197,7 @@ class StaleAddressRepairFlow(RepairsFlow):
                         provider_id=self._provider_id,
                         street_id=self._street_id,
                         query=query,
+                        city_id=self._city_id,
                     )
                 except Exception:  # noqa: BLE001
                     errors["base"] = "cannot_connect"
@@ -232,6 +236,7 @@ class StaleAddressRepairFlow(RepairsFlow):
                         provider_id=self._provider_id,
                         street_id=self._street_id,
                         house_id=resolved_house_id,
+                        city_id=self._city_id,
                     )
                 except Exception:  # noqa: BLE001
                     errors["base"] = "cannot_connect"

@@ -10,6 +10,7 @@ YASNO_GROUP_URL: Final = "https://static.yasno.ua/kyiv/outages"
 CONF_REGION_ID: Final = "region_id"
 CONF_PROVIDER_ID: Final = "provider_id"
 CONF_GROUP: Final = "group"
+CONF_CITY_ID: Final = "city_id"
 CONF_STREET_ID: Final = "street_id"
 CONF_HOUSE_ID: Final = "house_id"
 CONF_ADDRESS_NAME: Final = "address_name"
@@ -29,6 +30,7 @@ LOCATION_CONFIG_KEYS: Final = (
     CONF_REGION_ID,
     CONF_PROVIDER_ID,
     CONF_GROUP,
+    CONF_CITY_ID,
     CONF_STREET_ID,
     CONF_HOUSE_ID,
     CONF_ADDRESS_NAME,
@@ -36,6 +38,8 @@ LOCATION_CONFIG_KEYS: Final = (
 
 # Config-flow step fields
 CONF_STEP_SETUP_MODE: Final = "setup_mode"
+CONF_STEP_CITY_QUERY: Final = "city_query"
+CONF_STEP_CITY: Final = "city_select"
 CONF_STEP_STREET_QUERY: Final = "street_query"
 CONF_STEP_HOUSE_QUERY: Final = "house_query"
 CONF_STEP_STREET: Final = "street"

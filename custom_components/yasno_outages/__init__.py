@@ -12,6 +12,7 @@ from homeassistant.loader import async_get_loaded_integration
 
 from .api import YasnoApi, YasnoApiError, YasnoNotFoundError
 from .const import (
+    CONF_CITY_ID,
     CONF_GROUP,
     CONF_HOUSE_ID,
     CONF_PROVIDER,
@@ -101,6 +102,7 @@ async def async_setup_entry(
                 provider_id=provider_id,
                 street_id=street_id,
                 house_id=house_id,
+                city_id=entry.data.get(CONF_CITY_ID),
             )
         except YasnoNotFoundError as err:
             await async_create_stale_address_issue(hass, entry)

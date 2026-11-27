@@ -34,6 +34,26 @@
           "address": "Op adres"
         }
       },
+      "city_query": {
+        "title": "Yasno Stroomonderbrekingen: Plaats zoeken",
+        "description": "Typ een deel van de naam van je stad of dorp.",
+        "data": {
+          "city_query": "Voer een deel van je plaatsnaam in:"
+        },
+        "data_description": {
+          "city_query": "Vereist in regio's met meerdere plaatsen"
+        }
+      },
+      "city_select": {
+        "title": "Yasno Stroomonderbrekingen: Plaats selecteren",
+        "description": "Selecteer de juiste plaats uit de zoekresultaten.",
+        "data": {
+          "city_select": "Selecteer je plaats:"
+        },
+        "data_description": {
+          "city_select": "Kies een plaats uit de zoekresultaten"
+        }
+      },
       "street_query": {
         "title": "Yasno Stroomonderbrekingen: Straat zoeken",
         "description": "Typ een deel van je straatnaam om te zoeken.",
@@ -103,8 +123,10 @@
     },
     "error": {
       "cannot_connect": "Kan geen verbinding maken met de Yasno API.",
+      "city_query_required": "Zoekopdracht voor plaats is vereist.",
       "street_query_required": "Zoekopdracht voor straat is vereist.",
       "house_query_required": "Zoekopdracht voor huis is vereist.",
+      "no_cities": "Geen plaatsen gevonden voor deze zoekopdracht.",
       "no_streets": "Geen straten gevonden voor deze zoekopdracht.",
       "no_houses": "Geen huizen gevonden voor deze straat.",
       "no_group": "Kan geen groep bepalen voor dit adres."
@@ -130,7 +152,6 @@
       }
     }
   },
-
   "device": {
     "yasno_outages": {
       "name": "Yasno {region} {address}"

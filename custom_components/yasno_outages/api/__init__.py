@@ -79,14 +79,29 @@ class YasnoApi:
         """Get provider data by name."""
         return self._planned.get_provider_by_name(region_name, provider_name)
 
+    async def fetch_cities(
+        self,
+        region_id: int | None,
+        provider_id: int | None,
+        query: str = "",
+    ) -> list[dict]:
+        """Fetch cities by query; empty when region has none."""
+        return await self._planned.fetch_cities(region_id, provider_id, query)
+
     async def fetch_streets(
         self,
         region_id: int | None,
         provider_id: int | None,
         query: str,
+        city_id: int | None = None,
     ) -> list[dict]:
         """Fetch streets by query."""
-        return await self._planned.fetch_streets(region_id, provider_id, query)
+        return await self._planned.fetch_streets(
+            region_id,
+            provider_id,
+            query,
+            city_id=city_id,
+        )
 
     async def fetch_houses(
         self,
@@ -94,6 +109,7 @@ class YasnoApi:
         provider_id: int | None,
         street_id: int | None,
         query: str,
+        city_id: int | None = None,
     ) -> list[dict]:
         """Fetch houses by street and query."""
         return await self._planned.fetch_houses(
@@ -101,6 +117,7 @@ class YasnoApi:
             provider_id,
             street_id,
             query,
+            city_id=city_id,
         )
 
     async def fetch_group_by_address(
@@ -109,6 +126,7 @@ class YasnoApi:
         provider_id: int | None,
         street_id: int | None,
         house_id: int | None,
+        city_id: int | None = None,
     ) -> str | None:
         """Fetch group by address ids."""
         return await self._planned.fetch_group_by_address(
@@ -116,6 +134,7 @@ class YasnoApi:
             provider_id,
             street_id,
             house_id,
+            city_id=city_id,
         )
 
 

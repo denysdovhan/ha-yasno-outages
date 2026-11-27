@@ -297,6 +297,7 @@ This project is developed from Devcontainer described in `.devcontainer.json` fi
   - Location fields belong in data; options hold preferences only. Address mode retains `street_id`, `house_id`, and `address_name`, resolving the group on every setup without persisting it.
   - Multi-step: Region → Service (DSO) → Group
   - Auto-skip: If only one service available, auto-select it and skip to group step
+  - Address mode: optional city step (`city_query` → `city_select`) shown only when `addresses/v2/cities` returns settlements (e.g. Dnipro; Kyiv returns `[]`). `cityId` required for streets/houses/group in such regions, else group lookup 404s. Stored as `city_id`; API omits `cityId` when unset (API rejects 0).
   - Options flow: Same steps as config flow, allows reconfiguration
   - No duplicate detection needed: Each entry is unique (users may want multiple groups)
   - API calls in flow: Fetch regions list, then services for region, then groups for service

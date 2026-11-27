@@ -34,6 +34,26 @@
           "group": "By group"
         }
       },
+      "city_query": {
+        "title": "Yasno Outages: City Search",
+        "description": "Type part of your city, town or village name.",
+        "data": {
+          "city_query": "Enter part of your settlement name:"
+        },
+        "data_description": {
+          "city_query": "Required in regions with multiple settlements"
+        }
+      },
+      "city_select": {
+        "title": "Yasno Outages: City Selection",
+        "description": "Select the correct settlement from the search results.",
+        "data": {
+          "city_select": "Select your settlement:"
+        },
+        "data_description": {
+          "city_select": "Pick a settlement from the search results"
+        }
+      },
       "street_query": {
         "title": "Yasno Outages: Street Search",
         "description": "Type part of your street name to narrow the search.",
@@ -103,8 +123,10 @@
     },
     "error": {
       "cannot_connect": "Failed to connect to Yasno API.",
+      "city_query_required": "City search query is required.",
       "street_query_required": "Street search query is required.",
       "house_query_required": "House search query is required.",
+      "no_cities": "No settlements found for this query.",
       "no_streets": "No streets found for this query.",
       "no_houses": "No houses found for this street.",
       "no_group": "Failed to resolve group for this address."
@@ -130,7 +152,6 @@
       }
     }
   },
-
   "device": {
     "yasno_outages": {
       "name": "Yasno {region} {address}"
