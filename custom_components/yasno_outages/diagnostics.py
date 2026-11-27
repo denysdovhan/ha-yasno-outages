@@ -13,6 +13,7 @@ from homeassistant.const import CONF_SCAN_INTERVAL
 
 from .const import (
     CONF_ADDRESS_NAME,
+    CONF_CITY_ID,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_HOUSE_ID,
@@ -49,6 +50,7 @@ async def async_get_config_entry_diagnostics(
                 "region_id": data.get(CONF_REGION_ID),
                 "provider_id": data.get(CONF_PROVIDER_ID),
                 "group": data.get(CONF_GROUP),
+                "city_id": data.get(CONF_CITY_ID),
                 "street_id": data.get(CONF_STREET_ID),
                 "house_id": data.get(CONF_HOUSE_ID),
                 "address_name_present": bool(data.get(CONF_ADDRESS_NAME)),

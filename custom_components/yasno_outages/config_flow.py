@@ -22,9 +22,10 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
 )
 
-from .api import YasnoApi
+from .api import YasnoApi, YasnoNotFoundError
 from .const import (
     CONF_ADDRESS_NAME,
+    CONF_CITY_ID,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_HOUSE_ID,
@@ -34,6 +35,8 @@ from .const import (
     CONF_REGION,
     CONF_REGION_ID,
     CONF_STATUS_ALL_DAY_EVENTS,
+    CONF_STEP_CITY,
+    CONF_STEP_CITY_QUERY,
     CONF_STEP_HOUSE,
     CONF_STEP_HOUSE_QUERY,
     CONF_STEP_STREET,
@@ -162,6 +165,22 @@ def build_lookup_options(items: list[dict[str, Any]]) -> dict[str, str]:
     return {str(item["id"]): item["value"] for item in items}
 
 
+def build_city_query_schema() -> vol.Schema:
+    """Build the schema for city search query."""
+    return vol.Schema({vol.Required(CONF_STEP_CITY_QUERY): str})
+
+
+def build_city_schema(options: dict[str, str]) -> vol.Schema:
+    """Build the schema for city selection."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_STEP_CITY): SelectSelector(
+                SelectSelectorConfig(options=build_select_options(options)),
+            ),
+        }
+    )
+
+
 def build_street_query_schema() -> vol.Schema:
     """Build the schema for street search query."""
     return vol.Schema({vol.Required(CONF_STEP_STREET_QUERY): str})
@@ -273,8 +292,10 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize config flow."""
         self.api = YasnoApi()
         self.data: dict[str, Any] = {}
+        self._city_options: dict[str, str] = {}
         self._street_options: dict[str, str] = {}
         self._house_options: dict[str, str] = {}
+        self._city_name = ""
         self._street_name = ""
         self._house_name = ""
         self._is_reconfigure = False
@@ -302,12 +323,18 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         }
         if self.data.get(CONF_GROUP):
             return {**common_data, CONF_GROUP: self.data[CONF_GROUP]}
-        return {
+        address = f"{self._street_name} {self._house_name}"
+        if self._city_name:
+            address = f"{self._city_name}, {address}"
+        data = {
             **common_data,
             CONF_STREET_ID: self.data[CONF_STREET_ID],
             CONF_HOUSE_ID: self.data[CONF_HOUSE_ID],
-            CONF_ADDRESS_NAME: f"{self._street_name} {self._house_name}",
+            CONF_ADDRESS_NAME: address,
         }
+        if self.data.get(CONF_CITY_ID):
+            data[CONF_CITY_ID] = self.data[CONF_CITY_ID]
+        return data
 
     def _build_entry_title(self) -> str:
         """Build config-entry title from current flow data."""
@@ -322,7 +349,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                 group=self.data[CONF_GROUP],
             )
         return build_address_entry_title(
-            region=region["value"],
+            region=self._city_name or region["value"],
             street=self._street_name,
             house=self._house_name,
         )
@@ -438,7 +465,81 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle address setup method."""
         self.data.pop(CONF_GROUP, None)
+        self.data.pop(CONF_CITY_ID, None)
+        self._city_name = ""
+        try:
+            cities = await self.api.fetch_cities(
+                region_id=self.data[CONF_REGION_ID],
+                provider_id=self.data[CONF_PROVIDER_ID],
+            )
+        except Exception:
+            LOGGER.exception("Failed to fetch cities")
+            cities = []
+        # Regions with settlements (e.g. Dnipro) need city to resolve group
+        if cities:
+            return await self.async_step_city_query()
         return await self.async_step_street_query()
+
+    async def async_step_city_query(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle city search query."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            query = user_input[CONF_STEP_CITY_QUERY].strip()
+            if not query:
+                errors["base"] = "city_query_required"
+            else:
+                try:
+                    cities = await self.api.fetch_cities(
+                        region_id=self.data[CONF_REGION_ID],
+                        provider_id=self.data[CONF_PROVIDER_ID],
+                        query=query,
+                    )
+                except Exception:
+                    LOGGER.exception("Failed to fetch address data")
+                    errors["base"] = "cannot_connect"
+                else:
+                    if not cities:
+                        errors["base"] = "no_cities"
+                    elif len(cities) == 1:
+                        self.data[CONF_CITY_ID] = cities[0]["id"]
+                        self._city_name = cities[0]["value"]
+                        return await self.async_step_street_query()
+                    else:
+                        self._city_options = build_lookup_options(cities)
+                        return await self.async_step_city_select()
+
+        return self.async_show_form(
+            step_id="city_query",
+            data_schema=build_city_query_schema(),
+            errors=errors,
+        )
+
+    async def async_step_city_select(
+        self,
+        user_input: dict | None = None,
+    ) -> ConfigFlowResult:
+        """Handle city selection."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            city_id = user_input[CONF_STEP_CITY]
+            city_name = self._city_options.get(city_id)
+            if not city_name:
+                errors["base"] = "no_cities"
+            else:
+                self.data[CONF_CITY_ID] = int(city_id)
+                self._city_name = city_name
+                return await self.async_step_street_query()
+
+        return self.async_show_form(
+            step_id="city_select",
+            data_schema=build_city_schema(self._city_options),
+            errors=errors,
+        )
 
     async def async_step_street_query(
         self,
@@ -457,8 +558,10 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                         region_id=self.data[CONF_REGION_ID],
                         provider_id=self.data[CONF_PROVIDER_ID],
                         query=query,
+                        city_id=self.data.get(CONF_CITY_ID),
                     )
-                except Exception:  # noqa: BLE001
+                except Exception:
+                    LOGGER.exception("Failed to fetch address data")
                     errors["base"] = "cannot_connect"
                 else:
                     if not streets:
@@ -523,8 +626,18 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                         provider_id=self.data[CONF_PROVIDER_ID],
                         street_id=street_id,
                         house_id=self.data.get(CONF_HOUSE_ID),
+                        city_id=self.data.get(CONF_CITY_ID),
                     )
-                except Exception:  # noqa: BLE001
+                except YasnoNotFoundError:
+                    LOGGER.warning(
+                        "No group found for street %s, house %s",
+                        street_id,
+                        house_id,
+                        exc_info=True,
+                    )
+                    errors["base"] = "no_group"
+                except Exception:
+                    LOGGER.exception("Failed to fetch group by address")
                     errors["base"] = "cannot_connect"
                 else:
                     if not group:
@@ -556,8 +669,10 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
                         provider_id=self.data[CONF_PROVIDER_ID],
                         street_id=street_id,
                         query=query,
+                        city_id=self.data.get(CONF_CITY_ID),
                     )
-                except Exception:  # noqa: BLE001
+                except Exception:
+                    LOGGER.exception("Failed to fetch address data")
                     errors["base"] = "cannot_connect"
                 else:
                     if not houses:
@@ -605,6 +720,7 @@ class YasnoOutagesConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle the group step."""
         self.data.update(
             {
+                CONF_CITY_ID: None,
                 CONF_STREET_ID: None,
                 CONF_HOUSE_ID: None,
                 CONF_ADDRESS_NAME: None,

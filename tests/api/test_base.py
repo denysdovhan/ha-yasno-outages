@@ -388,3 +388,65 @@ class TestBaseYasnoApiNextEvent:
         at = today.replace(hour=8)
         next_event = api.get_next_event(at, event_type=OutageEventType.DEFINITE)
         assert next_event == event2
+
+
+class TestBaseYasnoApiCity:
+    """Test city-aware address lookups."""
+
+    @staticmethod
+    def _mock_get(mock_get, payload):
+        mock_response = AsyncMock()
+        mock_response.json = AsyncMock(return_value=payload)
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+    async def test_fetch_cities(self, api):
+        """Test cities fetch passes region/provider/query."""
+        cities = [{"id": 6, "value": "м. Дніпро"}]
+        with patch("aiohttp.ClientSession.get") as mock_get:
+            self._mock_get(mock_get, cities)
+            result = await api.fetch_cities(3, 301, "Дніпро")
+
+        assert result == cities
+        params = mock_get.call_args.kwargs["params"]
+        assert params == {"regionId": 3, "dsoId": 301, "query": "Дніпро"}
+
+    async def test_fetch_cities_requires_ids(self, api):
+        """Test cities fetch returns empty without ids."""
+        assert await api.fetch_cities(None, 301) == []
+
+    async def test_fetch_cities_bad_format(self, api):
+        """Test cities fetch raises on non-list response."""
+        with patch("aiohttp.ClientSession.get") as mock_get:
+            self._mock_get(mock_get, {"oops": 1})
+            with pytest.raises(YasnoApiError):
+                await api.fetch_cities(3, 301)
+
+    @pytest.mark.parametrize(
+        ("city_id", "expected"),
+        [(6, {"cityId": 6}), (None, {}), (0, {})],
+    )
+    async def test_group_by_address_city_param(self, api, city_id, expected):
+        """Test cityId sent only when set (API rejects cityId=0)."""
+        with patch("aiohttp.ClientSession.get") as mock_get:
+            self._mock_get(mock_get, {"group": 1, "subgroup": 1})
+            group = await api.fetch_group_by_address(3, 301, 290, 9659, city_id)
+
+        assert group == "1.1"
+        params = mock_get.call_args.kwargs["params"]
+        assert params == {
+            "regionId": 3,
+            "streetId": 290,
+            "houseId": 9659,
+            "dsoId": 301,
+            **expected,
+        }
+
+    async def test_streets_and_houses_city_param(self, api):
+        """Test streets and houses lookups pass cityId."""
+        with patch("aiohttp.ClientSession.get") as mock_get:
+            self._mock_get(mock_get, [])
+            await api.fetch_streets(3, 301, "Перемог", city_id=6)
+            assert mock_get.call_args.kwargs["params"]["cityId"] == 6
+            await api.fetch_houses(3, 301, 290, "1", city_id=6)
+            assert mock_get.call_args.kwargs["params"]["cityId"] == 6

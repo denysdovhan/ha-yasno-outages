@@ -15,6 +15,9 @@ PLANNED_OUTAGES_ENDPOINT: Final = "https://app.yasno.ua/api/blackout-service/pub
 PROBABLE_OUTAGES_ENDPOINT: Final = (
     "https://app.yasno.ua/api/blackout-service/public/shutdowns/probable-outages"
 )
+CITIES_ENDPOINT: Final = (
+    "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/cities"
+)
 STREETS_ENDPOINT: Final = (
     "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2/streets"
 )
@@ -29,6 +32,7 @@ GROUP_BY_ADDRESS_ENDPOINT: Final = (
 API_PARAM_REGION_ID: Final = "regionId"
 API_PARAM_DSO_ID: Final = "dsoId"
 API_PARAM_QUERY: Final = "query"
+API_PARAM_CITY_ID: Final = "cityId"
 API_PARAM_STREET_ID: Final = "streetId"
 API_PARAM_HOUSE_ID: Final = "houseId"
 API_HTTP_STATUS_NOT_FOUND: Final = 404

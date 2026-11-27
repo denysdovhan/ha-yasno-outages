@@ -5,12 +5,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from homeassistant.config_entries import SOURCE_RECONFIGURE
 
+from custom_components.yasno_outages.api import YasnoApiError, YasnoNotFoundError
 from custom_components.yasno_outages.config_flow import (
     YasnoOutagesConfigFlow,
     YasnoOutagesOptionsFlow,
 )
 from custom_components.yasno_outages.const import (
     CONF_ADDRESS_NAME,
+    CONF_CITY_ID,
     CONF_FILTER_PROBABLE,
     CONF_GROUP,
     CONF_HOUSE_ID,
@@ -18,6 +20,11 @@ from custom_components.yasno_outages.const import (
     CONF_PROVIDER,
     CONF_REGION,
     CONF_STATUS_ALL_DAY_EVENTS,
+    CONF_STEP_CITY,
+    CONF_STEP_CITY_QUERY,
+    CONF_STEP_HOUSE,
+    CONF_STEP_HOUSE_QUERY,
+    CONF_STEP_STREET_QUERY,
     CONF_STREET_ID,
 )
 
@@ -241,6 +248,7 @@ async def test_reconfigure_address_mode_clears_group(reconfigure_entry, regions_
     flow.data[CONF_STREET_ID] = 1061
     flow.data[CONF_HOUSE_ID] = 26887
     flow.async_update_reload_and_abort = MagicMock(return_value={"type": "abort"})
+    flow.api.fetch_cities = AsyncMock(return_value=[])
 
     with patch.object(flow, "_get_reconfigure_entry", return_value=reconfigure_entry):
         await flow.async_step_address()
@@ -278,3 +286,129 @@ async def test_reconfigure_group_mode_clears_address_fields(reconfigure_entry):
     assert flow.data[CONF_HOUSE_ID] is None
     assert flow.data[CONF_ADDRESS_NAME] is None
     assert flow.data[CONF_GROUP] == "4.2"
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (YasnoNotFoundError("not found"), "no_group"),
+        (YasnoApiError("boom"), "cannot_connect"),
+    ],
+)
+async def test_house_step_maps_group_errors(error, expected):
+    """House step maps missing group to no_group, other errors to cannot_connect."""
+    flow = YasnoOutagesConfigFlow()
+    flow.data = {"region_id": 25, "provider_id": 902, CONF_STREET_ID: 911}
+    flow._house_options = {"41773": "1"}
+    flow.api.fetch_group_by_address = AsyncMock(side_effect=error)
+
+    result = await flow.async_step_house({CONF_STEP_HOUSE: "41773"})
+
+    assert result["errors"]["base"] == expected
+
+
+def _address_flow() -> YasnoOutagesConfigFlow:
+    flow = YasnoOutagesConfigFlow()
+    flow.data = {"region_id": 3, "provider_id": 301}
+    return flow
+
+
+async def test_address_skips_city_when_region_has_none():
+    """Regions without settlements go straight to street search."""
+    flow = _address_flow()
+    flow.api.fetch_cities = AsyncMock(return_value=[])
+
+    result = await flow.async_step_address()
+
+    assert result["step_id"] == "street_query"
+    assert CONF_CITY_ID not in flow.data
+
+
+async def test_address_asks_city_when_region_has_settlements():
+    """Regions with settlements ask for city first."""
+    flow = _address_flow()
+    flow.data[CONF_CITY_ID] = 99
+    flow.api.fetch_cities = AsyncMock(return_value=[{"id": 6, "value": "м. Дніпро"}])
+
+    result = await flow.async_step_address()
+
+    assert result["step_id"] == "city_query"
+    assert CONF_CITY_ID not in flow.data
+
+
+async def test_city_query_single_match_selects_city():
+    """Single city match is auto-selected."""
+    flow = _address_flow()
+    flow.api.fetch_cities = AsyncMock(return_value=[{"id": 6, "value": "м. Дніпро"}])
+
+    result = await flow.async_step_city_query({CONF_STEP_CITY_QUERY: "Дніпро"})
+
+    assert result["step_id"] == "street_query"
+    assert flow.data[CONF_CITY_ID] == 6
+
+
+async def test_city_query_multiple_matches_then_select():
+    """Multiple city matches show selector; selection stores city id."""
+    flow = _address_flow()
+    flow.api.fetch_cities = AsyncMock(
+        return_value=[
+            {"id": 4, "value": "м. Верхньодніпровськ"},
+            {"id": 6, "value": "м. Дніпро"},
+        ]
+    )
+
+    result = await flow.async_step_city_query({CONF_STEP_CITY_QUERY: "Дніп"})
+    assert result["step_id"] == "city_select"
+
+    result = await flow.async_step_city_select({CONF_STEP_CITY: "6"})
+    assert result["step_id"] == "street_query"
+    assert flow.data[CONF_CITY_ID] == 6
+
+
+@pytest.mark.parametrize(
+    ("user_input", "cities", "error"),
+    [
+        ({CONF_STEP_CITY_QUERY: "  "}, [], "city_query_required"),
+        ({CONF_STEP_CITY_QUERY: "zzz"}, [], "no_cities"),
+    ],
+)
+async def test_city_query_errors(user_input, cities, error):
+    """City query validates input and empty results."""
+    flow = _address_flow()
+    flow.api.fetch_cities = AsyncMock(return_value=cities)
+
+    result = await flow.async_step_city_query(user_input)
+
+    assert result["errors"]["base"] == error
+
+
+async def test_city_id_passed_to_lookups_and_entry():
+    """Selected city is sent to street/house/group lookups and stored."""
+    flow = _address_flow()
+    flow.data[CONF_CITY_ID] = 6
+    flow._city_name = "м. Дніпро"
+    flow.api.fetch_streets = AsyncMock(
+        return_value=[{"id": 290, "value": "вул. Перемоги"}]
+    )
+    flow.api.fetch_houses = AsyncMock(return_value=[{"id": 9659, "value": "11"}])
+    flow.api.fetch_group_by_address = AsyncMock(return_value="1.1")
+
+    await flow.async_step_street_query({CONF_STEP_STREET_QUERY: "Перемог"})
+    await flow.async_step_house_query({CONF_STEP_HOUSE_QUERY: "11"})
+    result = await flow.async_step_house({CONF_STEP_HOUSE: "9659"})
+
+    assert result["step_id"] == "preferences"
+    assert flow.api.fetch_streets.call_args.kwargs["city_id"] == 6
+    assert flow.api.fetch_houses.call_args.kwargs["city_id"] == 6
+    assert flow.api.fetch_group_by_address.call_args.kwargs["city_id"] == 6
+
+    flow.data.update(
+        {
+            CONF_FILTER_PROBABLE: True,
+            CONF_STATUS_ALL_DAY_EVENTS: True,
+            CONF_PRESERVE_SCHEDULE: True,
+        }
+    )
+    data = flow._build_entry_data()
+    assert data[CONF_CITY_ID] == 6
+    assert data[CONF_ADDRESS_NAME] == "м. Дніпро, вул. Перемоги 11"
